@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>選位系統 | 2026 Pro Version</title>
+    <title>互動座位系統 | 2026 Pro Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -325,22 +325,11 @@
                 const subject = encodeURIComponent(`教室座位通知 - ${item.name} 同學`);
                 const body = encodeURIComponent(
                     `親愛的 ${item.name} 同學：\n\n` +
-                    `您的座位已分配完成：\n` +
+                    `你的座位已分配完成：\n` +
                     `座位編號：${item.seatNum}\n` +
                     `物理位置：第 ${item.row} 橫排，走廊起算第 ${item.col} 個位置。\n\n` +
                     `請準時就座，祝學習愉快！`
-                    `  `
-                    `  `
-                    `  `
-                    `  `
-                    `  `
-                    `系統郵件請勿回覆，如有問題請洽平台管理者，謝謝！`
-                    `  `
-                    `  `
-                    `  `
-                    `  `
-                    `教室選位系統 Power By 王宥鈞`
-
+                    `教室選位系統 ｜ Power By 王宥鈞`
                 );
                 const mailto = `mailto:${item.email}?subject=${subject}&body=${body}`;
                 
