@@ -279,7 +279,7 @@
             results.sort((a, b) => a.origNo - b.origNo);
 
             let listStr = "【全班座位分配表】\n----------------------------\n";
-            results.forEach(item => { listStr += `座號 ${item.origNo} ${item.name}：第 ${item.row} 排 / 第 ${item.col} 位\n`; });
+            results.forEach(item => { listStr += `座號 ${item.origNo} ${item.name}：第 ${item.row} 橫排 / 由走廊起算第 ${item.col} 位\n`; });
 
             const sidebar = document.getElementById('sidebar');
             sidebar.style.display = 'flex';
