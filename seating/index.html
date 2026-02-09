@@ -3,161 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>座位表編輯 | 系統</title>
+    <title>座位配置系統 | Seating Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.15);
-            --glass-heavy: rgba(255, 255, 255, 0.25);
-            --border: rgba(255, 255, 255, 0.3);
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
         }
 
         body {
-            margin: 0;
-            padding: 40px 20px;
-            font-family: -apple-system, sans-serif;
-            background: url('https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
-            background-size: cover;
-            color: white;
-            min-height: 100vh;
+            margin: 0; padding: 0; min-height: 100vh;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-main);
+            font-family: "PingFang TC", sans-serif;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .back-btn {
-            position: fixed; top: 20px; left: 20px;
-            padding: 10px 20px; background: var(--glass);
-            backdrop-filter: blur(10px); border: 1px solid var(--border);
-            border-radius: 50px; color: white; text-decoration: none; font-size: 0.9rem;
+        /* 導航欄 */
+        .top-nav {
+            width: 100%; padding: 20px 40px; display: flex; 
+            justify-content: space-between; box-sizing: border-box;
         }
+        .back-link { color: var(--text-dim); text-decoration: none; font-size: 14px; }
+        .back-link:hover { color: var(--accent-blue); }
 
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { width: 90%; max-width: 1100px; padding: 20px 0; }
 
         .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 30px;
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 16px; padding: 25px; margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        h2 { font-weight: 300; margin-top: 0; letter-spacing: 2px; }
+        h2 { font-size: 1.2rem; font-weight: 500; margin-top: 0; color: var(--accent-blue); letter-spacing: 1px; }
 
-        /* 介面一控制項 */
-        .upload-area { border: 2px dashed var(--border); padding: 20px; border-radius: 15px; text-align: center; }
-        
-        /* 介面二控制項 */
-        .controls { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; }
-        input[type="number"] {
-            background: rgba(255,255,255,0.1); border: 1px solid var(--border);
-            color: white; border-radius: 8px; padding: 5px 10px; width: 60px;
+        /* 控制列 */
+        .controls { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        input[type="number"], input[type="file"] {
+            background: #0f172a; border: 1px solid var(--border);
+            color: white; border-radius: 8px; padding: 8px 12px;
+        }
+        button {
+            padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+            font-weight: 600; transition: 0.2s;
+        }
+        .btn-blue { background: var(--accent-blue); color: #0f172a; }
+        .btn-green { background: var(--accent-green); color: #0f172a; }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+
+        /* 座位區域佈局 */
+        .classroom-area {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px; background: rgba(0,0,0,0.2); border-radius: 20px;
         }
 
-        /* 座位網格 */
         .grid-container {
-            display: grid;
-            gap: 15px;
-            justify-content: center;
-            padding: 20px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 20px;
-            overflow-x: auto;
+            display: grid; gap: 12px; margin-bottom: 50px; /* 留空間給講桌 */
         }
 
         .seat {
-            width: 80px; height: 60px;
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.3s; font-size: 0.8rem;
+            width: 70px; height: 55px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border); border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; font-size: 0.75rem; position: relative;
         }
-
-        .seat:hover { background: var(--glass-heavy); transform: scale(1.05); }
-
-        /* 不坐人的紅色狀態 */
+        .seat:hover { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.1); }
+        
         .seat.disabled {
-            background: rgba(234, 67, 53, 0.4);
-            border-color: rgba(234, 67, 53, 0.8);
-            backdrop-filter: blur(5px);
+            background: rgba(239, 68, 68, 0.15); border-color: var(--accent-red);
         }
-        .seat.disabled::after { content: "✕"; opacity: 0.6; }
+        .seat.disabled::after { content: "✕"; color: var(--accent-red); font-size: 1.2rem; opacity: 0.5; }
 
-        button {
-            background: #1a73e8; color: white; border: none;
-            padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: 0.3s;
+        .seat-num { color: var(--text-dim); margin-bottom: 2px; }
+        .student-name { color: var(--accent-blue); font-weight: bold; font-size: 0.85rem; }
+
+        /* 講桌 */
+        .teacher-desk {
+            width: 200px; height: 40px;
+            background: var(--border); border: 1px solid var(--accent-blue);
+            border-radius: 4px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; letter-spacing: 5px; color: var(--accent-blue);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
         }
-        button:hover { background: #1557b0; }
+
+        .status-msg { font-size: 0.85rem; color: var(--accent-green); margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <a href="../index.html" class="back-btn">← 返回首頁</a>
+    <div class="top-nav">
+        <a href="../index.html" class="back-link">← BACK TO TERMINAL</a>
+        <div id="system-time" style="color: var(--accent-blue); font-size: 14px; font-family: monospace;"></div>
+    </div>
 
     <div class="container">
         <div class="glass-panel">
-            <h2>介面一：匯入名單</h2>
-            <div class="upload-area">
+            <h2>STEP 1. 名單匯入</h2>
+            <div class="controls">
                 <input type="file" id="excel-input" accept=".xlsx, .xls">
-                <p id="status-text" style="margin: 10px 0 0; font-size: 0.9rem; opacity: 0.8;">請上傳 Excel 學生名單</p>
+                <span id="status-text" class="status-msg">等待匯入...</span>
             </div>
         </div>
 
         <div class="glass-panel">
-            <h2>介面二：教室佈置</h2>
+            <h2>STEP 2. 教室佈置與自動排座</h2>
             <div class="controls">
-                <span>橫向 (列): <input type="number" id="cols" value="6"></span>
-                <span>縱向 (行): <input type="number" id="rows" value="5"></span>
-                <button onclick="updateGrid()">重新生成</button>
+                <span>橫向 (列): <input type="number" id="cols" value="6" min="1"></span>
+                <span>縱向 (行): <input type="number" id="rows" value="5" min="1"></span>
+                <button class="btn-blue" onclick="renderGrid()">重新生成</button>
+                <button class="btn-green" onclick="assignSeats()">執行自動排座</button>
             </div>
-            <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 15px;">💡 點擊格子可標記為「走道/不坐人」區域</p>
-            
+        </div>
+
+        <div class="classroom-area">
             <div id="grid" class="grid-container"></div>
+            <div class="teacher-desk">講桌</div>
         </div>
     </div>
 
     <script>
-        let students = [];
+        let studentList = [];
 
         // 讀取 Excel
-        document.getElementById('excel-input').addEventListener('change', (e) => {
+        document.getElementById('excel-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = function(event) {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                students = XLSX.utils.sheet_to_json(firstSheet);
-                document.getElementById('status-text').innerText = `✅ 已讀取 ${students.length} 位學生`;
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                studentList = json.map(row => row["姓名"]).filter(n => n);
+                document.getElementById('status-text').innerText = `✅ 已讀取 ${studentList.length} 名學生`;
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // 更新教室網格
-        function updateGrid() {
-            const r = document.getElementById('rows').value;
-            const c = document.getElementById('cols').value;
+        // 渲染座位表
+        function renderGrid() {
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
             const grid = document.getElementById('grid');
             
-            grid.style.gridTemplateColumns = `repeat(${c}, 80px)`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, 70px)`;
             grid.innerHTML = '';
 
-            for (let i = 1; i <= r * c; i++) {
+            // 生成格子 (由上而下，但編號會根據有效位置重算)
+            for (let i = 0; i < rows * cols; i++) {
                 const seat = document.createElement('div');
                 seat.className = 'seat';
-                seat.innerHTML = `<span>${i}</span>`;
+                seat.dataset.active = "true";
                 
-                // 點擊切換紅色不坐人狀態
                 seat.onclick = function() {
                     this.classList.toggle('disabled');
-                    const label = this.querySelector('span');
-                    label.style.display = this.classList.contains('disabled') ? 'none' : 'block';
+                    this.dataset.active = this.classList.contains('disabled') ? "false" : "true";
+                    recalculateNumbers(); // 每次點擊打叉，都要重新算號碼
                 };
                 
                 grid.appendChild(seat);
             }
+            recalculateNumbers();
         }
 
-        updateGrid();
+        // 關鍵邏輯：重新計算編號 (順延邏輯)
+        function recalculateNumbers() {
+            const allSeats = document.querySelectorAll('.seat');
+            let currentNumber = 1;
+            
+            allSeats.forEach(seat => {
+                const nameSpan = seat.querySelector('.student-name');
+                const existingName = nameSpan ? nameSpan.innerText : "";
+
+                if (seat.dataset.active === "true") {
+                    seat.innerHTML = `<span class="seat-num">${currentNumber}</span><span class="student-name">${existingName}</span>`;
+                    currentNumber++;
+                } else {
+                    seat.innerHTML = ""; // 打叉的格子不顯示數字與名字
+                }
+            });
+        }
+
+        // 執行自動排座
+        function assignSeats() {
+            if (studentList.length === 0) {
+                alert("請先上傳名單！");
+                return;
+            }
+
+            const activeSeats = Array.from(document.querySelectorAll('.seat[data-active="true"]'));
+            if (studentList.length > activeSeats.length) {
+                alert("學生人數超過可用座位！");
+                return;
+            }
+
+            // 洗牌
+            const shuffled = [...studentList].sort(() => Math.random() - 0.5);
+
+            // 填入
+            activeSeats.forEach((seat, index) => {
+                const num = seat.querySelector('.seat-num').innerText;
+                const name = shuffled[index] || "";
+                seat.innerHTML = `<span class="seat-num">${num}</span><span class="student-name">${name}</span>`;
+            });
+        }
+
+        // 時間顯示
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('system-time').innerText = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 初始生成
+        renderGrid();
     </script>
 </body>
 </html>
