@@ -2,121 +2,98 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>班級座位系統 | 班級管理</title>
+    <title>班級座位系統 | PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --border: #334155; --danger: #ef4444; --success: #22c55e; }
+        /* 網頁顯示樣式 (深色模式) */
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --border: #334155; --danger: #ef4444; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        .navbar { display: flex; gap: 15px; padding: 12px 20px; background: var(--card); border-bottom: 2px solid var(--accent); align-items: center; flex-wrap: wrap; }
+        .navbar { display: flex; gap: 15px; padding: 12px 20px; background: var(--card); border-bottom: 2px solid var(--accent); align-items: center; flex-shrink: 0; }
         .nav-item { display: flex; flex-direction: column; gap: 4px; }
-        .nav-item label { font-size: 11px; color: var(--accent); font-weight: bold; }
-        
-        button { cursor: pointer; padding: 6px 12px; border-radius: 4px; border: none; font-weight: bold; transition: 0.2s; }
+        button { cursor: pointer; padding: 6px 12px; border-radius: 4px; border: none; font-weight: bold; }
         .btn-main { background: var(--accent); color: #000; }
         .btn-pdf { background: var(--danger); color: #fff; }
-        select, input { background: #0f172a; color: #fff; border: 1px solid var(--border); padding: 5px; border-radius: 4px; }
+        input { background: #0f172a; color: #fff; border: 1px solid var(--border); padding: 5px; width: 40px; }
 
         .content { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 260px; background: rgba(0,0,0,0.3); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: none; }
-        .seat-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        #sidebar { width: 260px; background: rgba(0,0,0,0.3); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; }
+        .seat-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
+        /* 網格邏輯 (左下角為1) */
         .grid-container { display: flex; flex-direction: column-reverse; gap: 10px; }
         .row-wrap { display: flex; gap: 10px; }
-        .seat { width: 80px; height: 55px; border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; background: rgba(255,255,255,0.03); }
-        .seat.disabled { background: var(--danger); opacity: 0.15; border-style: dashed; }
-        .seat.highlight { background: var(--success) !important; border-color: #fff; transform: scale(1.1); z-index: 10; }
+        .seat { width: 80px; height: 55px; border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+        .seat.disabled { background: var(--danger); opacity: 0.2; }
+        .seat.highlight { background: #22c55e !important; }
         .seat-num { position: absolute; top: 3px; left: 5px; font-size: 10px; color: var(--accent); }
-        .student-name { font-size: 1rem; font-weight: bold; }
 
-        /* PDF 佈局設定 */
-        #pdf-root { display: none; width: 190mm; min-height: 270mm; padding: 10mm; background: white; color: black; position: absolute; top: 0; left: 0; z-index: -1; }
-        .pdf-header { display: flex; justify-content: space-between; border-bottom: 1px solid black; margin-bottom: 10px; font-size: 14px; }
-        .pdf-grid { display: flex; flex-direction: column-reverse; gap: 8px; align-items: center; }
-        .pdf-seat { border: 1px solid black; width: 60px; height: 45px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; }
-
-        #tooltip { position: fixed; background: rgba(0,0,0,0.95); border: 1px solid var(--accent); padding: 10px; border-radius: 6px; font-size: 13px; pointer-events: none; display: none; z-index: 1000; }
-        .draw-card { background: var(--card); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid var(--accent); }
+        /* --- PDF 專用樣式 (強制顯色) --- */
+        #pdf-root { 
+            display: none; width: 180mm; padding: 10mm; background: #ffffff !important; color: #000000 !important;
+            position: absolute; top: 0; left: -5000px; /* 移出螢幕外 */
+        }
+        .pdf-print-area { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .pdf-grid { display: flex; flex-direction: column-reverse; gap: 10px; margin-top: 20px; }
+        .pdf-row { display: flex; gap: 10px; }
+        .pdf-seat-box { 
+            border: 1px solid #000 !important; width: 65px; height: 50px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #fff !important; color: #000 !important;
+        }
+        .pdf-stu-name { font-size: 14px; font-weight: bold; color: #000 !important; }
+        .pdf-stu-no { font-size: 9px; color: #666 !important; }
+        .pdf-desk { margin-top: 30px; border: 2px solid #000; width: 200px; text-align: center; padding: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="navbar">
-    <div class="nav-item"><label>1. Excel</label><input type="file" id="upload-excel"></div>
-    <div class="nav-item">
-        <label>2. 規模</label>
-        <div>
-            寬 <input type="number" id="cols" value="6" style="width:35px"> 
-            高 <input type="number" id="rows" value="6" style="width:35px">
-            <button class="btn-main" onclick="initGrid()">重置網格</button>
-        </div>
-    </div>
-    <div class="nav-item">
-        <label>3. 模式</label>
-        <select id="mode-select" onchange="switchMode()">
-            <option value="draw" selected>現場隨機抽位</option>
-            <option value="random">一鍵全班隨機</option>
-            <option value="manual">代號選位</option>
-        </select>
-    </div>
-    <button id="run-btn" class="btn-main" onclick="runOneClickRandom()" style="display:none">執行一鍵隨機</button>
-    <button class="btn-pdf" onclick="generatePDF()">下載 PDF</button>
+    <div class="nav-item"><label>Excel</label><input type="file" id="upload-excel" style="width:180px"></div>
+    <div class="nav-item">寬 <input type="number" id="cols" value="6"> 高 <input type="number" id="rows" value="6"></div>
+    <button class="btn-main" onclick="initGrid()">重置</button>
+    <button class="btn-pdf" onclick="generatePDF()">下載 PDF (修復版)</button>
 </div>
 
 <div class="content">
-    <div id="sidebar" style="display: block;"></div>
+    <div id="sidebar"><h3>請先匯入名單</h3></div>
     <div class="seat-view">
         <div id="main-grid" class="grid-container"></div>
-        <div style="margin-top:25px; border:2px solid var(--accent); padding:8px 80px; font-weight:bold; color:var(--accent); letter-spacing:10px;">講 桌</div>
+        <div style="margin-top:20px; color:var(--accent); font-weight:bold;">講 桌 (前方)</div>
     </div>
 </div>
 
-<div id="tooltip"></div>
-
 <div id="pdf-root">
-    <div class="pdf-header"><span id="p-class"></span><span id="p-teacher"></span></div>
-    <h2 style="text-align:center; margin: 10px 0;">班級座位表</h2>
-    <div style="display:flex; gap:15px;">
-        <div id="p-list" style="flex:0 0 20%; font-size:11px; border-right:1px solid #eee;"></div>
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
-            <div id="p-grid" class="pdf-grid"></div>
-            <div style="margin-top:30px; border:1px solid black; width:120px; text-align:center; padding:5px; font-size:12px;">講 桌</div>
-        </div>
+    <div class="pdf-print-area">
+        <h2 id="p-title" style="margin-bottom:5px;">班級座位表</h2>
+        <p id="p-info" style="margin-bottom:20px;"></p>
+        <div id="p-grid" class="pdf-grid"></div>
+        <div class="pdf-desk">講 桌</div>
     </div>
 </div>
 
 <script>
 let studentList = [];
 let assignedMap = new Map();
-let classInfo = { name: "未設定", teacher: "導師" };
+let classInfo = { name: "", teacher: "" };
 let drawIndex = 0;
 
-// Excel 匯入
 document.getElementById('upload-excel').onchange = (e) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
-        try {
-            const data = new Uint8Array(ev.target.result);
-            const wb = XLSX.read(data, {type: 'array'});
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            classInfo.name = ws['B1']?.v || "班級";
-            classInfo.teacher = ws['D1']?.v || "導師";
-            studentList = XLSX.utils.sheet_to_json(ws, {range: 1}).map(s => ({
-                座號: s['座號'], 姓名: s['姓名'], 信箱: s['教育信箱'], 
-                職務: [s['職務1'], s['職務2'], s['職務3']].filter(v=>v).join(', ')
-            }));
-            alert(`匯入成功！班級：${classInfo.name}，共 ${studentList.length} 人`);
-            updateSidebar();
-        } catch(err) { alert("讀取失敗，請確認 Excel 格式。"); }
+        const wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        classInfo.name = ws['B1']?.v || "班級";
+        classInfo.teacher = ws['D1']?.v || "導師";
+        studentList = XLSX.utils.sheet_to_json(ws, {range: 1}).map(s => ({
+            座號: s['座號'], 姓名: s['姓名'], 職務: s['職務1'] || ""
+        }));
+        updateSidebar();
+        alert("名單載入成功！");
     };
     reader.readAsArrayBuffer(e.target.files[0]);
 };
 
-// 初始化網格 (左下角為 1)
 function initGrid() {
     const r = document.getElementById('rows').value, c = document.getElementById('cols').value;
     const g = document.getElementById('main-grid');
@@ -132,8 +109,6 @@ function initGrid() {
                 this.dataset.active = !this.classList.contains('disabled');
                 renderDisplay();
             };
-            s.onmousemove = (e) => showTooltip(e, s);
-            s.onmouseleave = () => document.getElementById('tooltip').style.display='none';
             row.appendChild(s);
         }
         g.appendChild(row);
@@ -147,124 +122,72 @@ function renderDisplay() {
         row.querySelectorAll('.seat').forEach(seat => {
             if(seat.dataset.active === "true") {
                 const stu = assignedMap.get(num);
-                seat.innerHTML = `<span class="seat-num">${num}</span><span class="student-name">${stu ? stu.姓名 : ''}</span>`;
+                seat.innerHTML = `<span class="seat-num">${num}</span><span style="font-weight:bold">${stu ? stu.姓名 : ''}</span>`;
                 seat.dataset.seatId = num;
-                if(stu) { seat.dataset.hasStu = "true"; seat.dataset.info = JSON.stringify(stu); }
-                else { delete seat.dataset.hasStu; delete seat.dataset.info; }
+                seat.dataset.hasStu = stu ? "true" : "";
                 num++;
-            } else { seat.innerHTML = ""; delete seat.dataset.seatId; delete seat.dataset.hasStu; }
+            } else { seat.innerHTML = ""; delete seat.dataset.seatId; }
         });
     });
 }
 
-function switchMode() {
-    const m = document.getElementById('mode-select').value;
-    document.getElementById('sidebar').style.display = (m === 'random') ? 'none' : 'block';
-    document.getElementById('run-btn').style.display = (m === 'random') ? 'block' : 'none';
-    updateSidebar();
-}
-
 function updateSidebar() {
     const side = document.getElementById('sidebar');
-    const m = document.getElementById('mode-select').value;
-    if(!studentList.length) { side.innerHTML = "<p>請上傳 Excel 名單</p>"; return; }
-
-    if(m === 'draw') {
-        if(drawIndex >= studentList.length) { side.innerHTML = "<h3>抽籤結束</h3>"; return; }
-        const s = studentList[drawIndex];
-        side.innerHTML = `<div class="draw-card"><h3>現場抽位</h3><h1 style="color:var(--accent); font-size:2.5rem;">${s.姓名}</h1><button class="btn-main" style="width:100%; height:50px; font-size:1.2rem;" onclick="luckyDraw()">按下隨機抽位</button></div>`;
-    } else if(m === 'manual') {
-        side.innerHTML = "<h3>手動選位</h3>" + studentList.map(s => `<div style='margin-bottom:8px'>${s.姓名}: <input type='number' style='width:50px' onchange='manualSet(${s.座號}, this.value)'></div>`).join('');
-    }
+    if(!studentList.length) return;
+    if(drawIndex >= studentList.length) { side.innerHTML = "<h3>抽籤完成</h3>"; return; }
+    const s = studentList[drawIndex];
+    side.innerHTML = `<div><p>下一位：</p><h1>${s.姓名}</h1><button class="btn-main" style="width:100%" onclick="luckyDraw()">按下抽籤</button></div>`;
 }
 
 async function luckyDraw() {
-    const available = Array.from(document.querySelectorAll('.seat[data-active="true"]'))
-                           .filter(s => !assignedMap.has(parseInt(s.dataset.seatId)))
-                           .map(s => parseInt(s.dataset.seatId));
-    if(!available.length) return alert("已無空位可供隨機分配！");
-    
-    const btn = document.querySelector('.draw-card button');
-    btn.disabled = true;
+    const empty = Array.from(document.querySelectorAll('.seat[data-active="true"]'))
+                       .filter(s => !assignedMap.has(parseInt(s.dataset.seatId)))
+                       .map(s => parseInt(s.dataset.seatId));
+    if(!empty.length) return alert("沒位子了");
 
-    for(let i=0; i<15; i++) {
-        let tid = available[Math.floor(Math.random() * available.length)];
-        let el = document.querySelector(`[data-seat-id="${tid}"]`);
-        el.classList.add('highlight');
-        await new Promise(r => setTimeout(r, 60));
-        el.classList.remove('highlight');
+    // 動畫
+    for(let i=0; i<10; i++) {
+        let tid = empty[Math.floor(Math.random() * empty.length)];
+        document.querySelector(`[data-seat-id="${tid}"]`).classList.add('highlight');
+        await new Promise(r => setTimeout(r, 50));
+        document.querySelector(`[data-seat-id="${tid}"]`).classList.remove('highlight');
     }
 
-    const final = available[Math.floor(Math.random() * available.length)];
+    const final = empty[Math.floor(Math.random() * empty.length)];
     assignedMap.set(final, studentList[drawIndex]);
     drawIndex++;
     renderDisplay(); updateSidebar();
-    
-    const finalEl = document.querySelector(`[data-seat-id="${final}"]`);
-    finalEl.classList.add('highlight');
-    setTimeout(() => finalEl.classList.remove('highlight'), 800);
-}
-
-function runOneClickRandom() {
-    const count = document.querySelectorAll('.seat[data-active="true"]').length;
-    if(studentList.length > count) return alert("座位不足！");
-    const shuf = [...studentList].sort(() => Math.random() - 0.5);
-    assignedMap.clear();
-    shuf.forEach((s, i) => assignedMap.set(i+1, s));
-    renderDisplay();
-}
-
-function manualSet(sid, sn) {
-    const s = studentList.find(x => x.座號 == sid);
-    if(sn) assignedMap.set(parseInt(sn), s); else assignedMap.delete(parseInt(sn));
-    renderDisplay();
-}
-
-function showTooltip(e, s) {
-    if(!s.dataset.info) return;
-    const d = JSON.parse(s.dataset.info);
-    const t = document.getElementById('tooltip');
-    t.innerHTML = `<b>${d.姓名}</b> (${d.座號})<br>職務：${d.職務 || '無'}<br>信箱：${d.信箱 || '無'}`;
-    t.style.display = 'block'; t.style.left = e.clientX + 12 + 'px'; t.style.top = e.clientY + 12 + 'px';
 }
 
 function generatePDF() {
-    if (typeof html2pdf === 'undefined') {
-        alert("PDF 套件尚未載入完成，請檢查網路連線或稍等片刻再試。");
-        return;
-    }
-
     const root = document.getElementById('pdf-root');
-    root.style.display = 'block'; // 暫時顯示以供擷取
+    const pGrid = document.getElementById('p-grid');
+    pGrid.innerHTML = '';
+    root.style.display = 'block';
 
-    document.getElementById('p-class').innerText = `班級：${classInfo.name}`;
-    document.getElementById('p-teacher').innerText = `導師：${classInfo.teacher}`;
+    document.getElementById('p-title').innerText = `${classInfo.name} 座位表`;
+    document.getElementById('p-info').innerText = `導師：${classInfo.teacher} | 列印日期：2026/02/09`;
 
-    let listHtml = "<b>職務清單</b><hr>";
-    studentList.forEach(s => { if(s.職務) listHtml += `<div style='margin-bottom:2px'>${s.職務}:${s.姓名}</div>`; });
-    document.getElementById('p-list').innerHTML = listHtml;
-
-    const pGrid = document.getElementById('p-grid'); pGrid.innerHTML = '';
     document.querySelectorAll('.row-wrap').forEach(row => {
-        const pRow = document.createElement('div'); pRow.style.display = 'flex'; pRow.style.gap = '8px';
+        const pRow = document.createElement('div'); pRow.className = 'pdf-row';
         row.querySelectorAll('.seat').forEach(seat => {
-            const ps = document.createElement('div'); ps.className = 'pdf-seat';
+            const ps = document.createElement('div'); ps.className = 'pdf-seat-box';
             if(seat.dataset.active === "true") {
-                const sid = parseInt(seat.dataset.seatId);
-                const stu = assignedMap.get(sid);
-                ps.innerHTML = `<span style='font-size:8px'>${stu ? stu.座號 : sid}</span><b>${stu ? stu.姓名 : ''}</b>`;
-                if(!stu) ps.style.color = "#ccc";
-            } else { ps.style.border = "none"; }
+                const stu = assignedMap.get(parseInt(seat.dataset.seatId));
+                ps.innerHTML = `<span class="pdf-stu-no">${stu ? '座號:'+stu.座號 : seat.dataset.seatId}</span><span class="pdf-stu-name">${stu ? stu.姓名 : ''}</span>`;
+            } else {
+                ps.style.border = "none";
+            }
             pRow.appendChild(ps);
         });
         pGrid.appendChild(pRow);
     });
 
     const opt = {
-        margin: 5,
-        filename: `${classInfo.name}座位表.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+        margin: 0,
+        filename: '座位表.pdf',
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
