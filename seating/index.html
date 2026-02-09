@@ -2,248 +2,287 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>班級座位管理系統 PRO</title>
+    <title>班級座位系統 | 行政專業版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --border: #334155; --danger: #ef4444; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* 頂部控制列 */
-        .toolbar { display: flex; gap: 15px; padding: 15px 20px; background: var(--card); border-bottom: 2px solid var(--accent); align-items: flex-end; }
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 12px; color: var(--accent); font-weight: bold; }
-        button { cursor: pointer; background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
-        select, input { padding: 5px; border-radius: 4px; border: 1px solid var(--border); background: #0f172a; color: white; }
+        /* Toolbar */
+        .navbar { display: flex; gap: 20px; padding: 15px 25px; background: var(--card); border-bottom: 2px solid var(--accent); align-items: center; }
+        .nav-item { display: flex; flex-direction: column; gap: 5px; }
+        .nav-item label { font-size: 12px; color: var(--accent); font-weight: bold; }
+        
+        button { cursor: pointer; padding: 6px 15px; border-radius: 4px; border: none; font-weight: bold; transition: 0.2s; }
+        .btn-main { background: var(--accent); color: #000; }
+        .btn-pdf { background: var(--danger); color: #fff; }
+        select, input { background: #0f172a; color: #fff; border: 1px solid var(--border); padding: 5px; border-radius: 4px; }
 
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        /* 側邊欄：三種模式的互動區 */
-        #sidebar { width: 280px; background: rgba(0,0,0,0.3); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: none; }
-        
-        /* 座位展示區 */
-        .display-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        
-        /* 座位網格邏輯：Flex 逆向排列 */
-        #grid { display: flex; flex-direction: column-reverse; gap: 10px; }
-        .row-wrap { display: flex; flex-direction: row; gap: 10px; }
-        
-        .seat { width: 85px; height: 60px; border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: 0.2s; }
-        .seat:hover { border-color: var(--accent); box-shadow: 0 0 10px rgba(56,189,248,0.3); }
-        .seat.disabled { background: var(--danger); opacity: 0.3; }
-        .seat-num { position: absolute; top: 3px; left: 5px; font-size: 11px; color: var(--accent); }
-        .student-name { font-size: 16px; font-weight: bold; }
+        /* Main Content */
+        .content { display: flex; flex: 1; overflow: hidden; }
+        #sidebar { width: 300px; background: rgba(0,0,0,0.25); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: none; }
+        .seat-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
 
-        /* 資訊預覽框 */
-        #info-box { position: absolute; background: rgba(0,0,0,0.9); border: 1px solid var(--accent); padding: 10px; border-radius: 5px; font-size: 12px; pointer-events: none; display: none; z-index: 1000; line-height: 1.5; }
+        /* 座位網格：關鍵在於反向 Column */
+        .grid-container { display: flex; flex-direction: column-reverse; gap: 12px; }
+        .row-wrap { display: flex; gap: 12px; }
+        .seat { width: 90px; height: 65px; border: 2px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; background: rgba(255,255,255,0.03); }
+        .seat.disabled { background: var(--danger); opacity: 0.2; border-style: dashed; }
+        .seat-num { position: absolute; top: 4px; left: 6px; font-size: 11px; color: var(--accent); }
+        .student-name { font-size: 1.1rem; font-weight: bold; }
 
-        /* PDF 樣式 */
-        #pdf-root { display: none; width: 210mm; padding: 10mm; background: white; color: black; }
-        .pdf-grid { display: flex; flex-direction: column-reverse; gap: 10px; align-items: center; }
-        .desk-bottom { width: 300px; border: 2px solid black; text-align: center; margin-top: 30px; padding: 10px; font-weight: bold; font-size: 20px; }
+        /* Tooltip */
+        #tooltip { position: fixed; background: rgba(0,0,0,0.95); border: 1px solid var(--accent); padding: 10px; border-radius: 6px; font-size: 13px; pointer-events: none; display: none; z-index: 9999; }
+
+        /* PDF 隱藏區域 */
+        #pdf-layout { display: none; width: 210mm; padding: 15mm; background: white; color: black; font-family: "Microsoft JhengHei"; }
+        .pdf-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 5px; font-size: 12px; }
+        .pdf-grid { display: flex; flex-direction: column-reverse; gap: 10px; align-items: center; margin-top: 30px; }
+        .pdf-seat { border: 1px solid #000; width: 60px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-<div class="toolbar">
-    <div class="control-group">
-        <label>1. 檔案載入</label>
-        <input type="file" id="excel-file">
-        <button onclick="downloadSample()">下載範例 Excel</button>
+<div class="navbar">
+    <div class="nav-item">
+        <label>1. Excel 匯入</label>
+        <input type="file" id="upload-excel">
     </div>
-    <div class="control-group">
-        <label>2. 座位規模</label>
+    <div class="nav-item">
+        <label>2. 教室尺寸</label>
         <div>
             寬 <input type="number" id="cols" value="6" style="width:40px"> 
             高 <input type="number" id="rows" value="6" style="width:40px">
-            <button onclick="createGrid()">設定網格</button>
+            <button class="btn-main" onclick="initGrid()">生成教室</button>
         </div>
     </div>
-    <div class="control-group">
-        <label>3. 分配模式</label>
-        <select id="mode-select" onchange="toggleModeUI()">
+    <div class="nav-item">
+        <label>3. 選位模式</label>
+        <select id="mode-select" onchange="switchMode()">
             <option value="random">一鍵隨機</option>
-            <option value="draw">現場抽籤 (側邊欄操作)</option>
-            <option value="manual">代號選位 (側邊欄操作)</option>
+            <option value="draw">現場抽籤模式</option>
+            <option value="manual">代號選位模式</option>
         </select>
     </div>
-    <button id="main-action-btn" onclick="autoRandom()">開始自動分配</button>
-    <button style="background: #e11d48; color: white;" onclick="exportPDF()">匯出 PDF 座位表</button>
+    <button id="run-btn" class="btn-main" onclick="runAutoRandom()">開始自動分配</button>
+    <button class="btn-pdf" onclick="generatePDF()">匯出 A4 PDF</button>
 </div>
 
-<div class="main-container">
+<div class="content">
     <div id="sidebar"></div>
-    <div class="display-area">
-        <div id="grid"></div>
-        <div style="margin-top: 20px; color: var(--accent); font-weight: bold; border: 1px solid; padding: 5px 60px;">講 桌 (前方)</div>
-        <div id="info-box"></div>
+    <div class="seat-view">
+        <div id="main-grid" class="grid-container"></div>
+        <div style="margin-top:30px; border:2px solid var(--accent); padding:8px 80px; font-weight:bold; color:var(--accent); letter-spacing:10px;">講 桌 (前方)</div>
     </div>
 </div>
 
-<div id="pdf-root">
-    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000;" id="pdf-meta"></div>
-    <h1 id="pdf-title" style="text-align:center;">座位表</h1>
-    <div style="display: flex; gap: 20px;">
-        <div id="pdf-tables" style="flex: 0 0 20%;"></div>
-        <div style="flex: 0 0 80%; display: flex; flex-direction: column; align-items: center;">
-            <div id="pdf-grid-box" class="pdf-grid"></div>
-            <div class="desk-bottom">講 桌</div>
+<div id="tooltip"></div>
+
+<div id="pdf-layout">
+    <div class="pdf-header"><span id="p-class"></span><span id="p-teacher"></span></div>
+    <h1 style="text-align:center; margin: 20px 0;" id="p-title">班級座位表</h1>
+    <div style="display:flex; gap:20px">
+        <div id="p-sidebar" style="flex:0 0 22%; font-size:11px"></div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+            <div id="p-grid" class="pdf-grid"></div>
+            <div style="margin-top:40px; border:2px solid #000; width:200px; text-align:center; padding:10px; font-weight:bold;">講 桌</div>
         </div>
     </div>
 </div>
 
 <script>
-let students = [], assigned = new Map(), classInfo = { name: "", teacher: "" };
+let studentList = [];
+let seatMap = new Map(); // Key: 座位編號, Value: 學生物件
+let classInfo = { name: "班級座位表", teacher: "導師" };
 let currentDrawIdx = 0;
 
-function downloadSample() {
-    const data = [["班級","101","導師","林老師"],["座號","姓名","教育信箱","","職務1","職務2","職務3","職務4","職務5","職務6"]];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "名單");
-    XLSX.writeFile(wb, "班級名單範例.xlsx");
-}
-
-document.getElementById('excel-file').onchange = function(e) {
+// 1. 讀取 Excel (抓取 A1, D1 及名單)
+document.getElementById('upload-excel').addEventListener('change', function(e) {
     const reader = new FileReader();
-    reader.onload = function(ev) {
-        const wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array'});
-        const sh = wb.Sheets[wb.SheetNames[0]];
-        classInfo.name = sh['B1'] ? sh['B1'].v : "未命名班級";
-        classInfo.teacher = sh['D1'] ? sh['D1'].v : "未填寫導師";
-        students = XLSX.utils.sheet_to_json(sh, {range: 1});
-        alert(`成功載入 ${students.length} 位學生資訊`);
+    reader.onload = (event) => {
+        const data = new Uint8Array(event.target.result);
+        const wb = XLSX.read(data, {type: 'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        
+        classInfo.name = ws['B1'] ? ws['B1'].v : "未命名";
+        classInfo.teacher = ws['D1'] ? ws['D1'].v : "未填寫";
+        
+        // 從 Row 2 開始讀取 (A2:座號, B2:姓名, C2:信箱, E-J:職務)
+        const raw = XLSX.utils.sheet_to_json(ws, {range: 1});
+        studentList = raw.map(s => ({
+            座號: s['座號'],
+            姓名: s['姓名'],
+            信箱: s['教育信箱'],
+            職務: [s['職務1'], s['職務2'], s['職務3'], s['職務4'], s['職務5'], s['職務6']].filter(v => v)
+        }));
+        alert(`匯入成功：${classInfo.name} / ${classInfo.teacher}\n共計 ${studentList.length} 位學生`);
     };
     reader.readAsArrayBuffer(e.target.files[0]);
-};
+});
 
-function createGrid() {
-    const r = document.getElementById('rows').value, c = document.getElementById('cols').value;
-    const g = document.getElementById('grid');
-    g.innerHTML = ''; assigned.clear();
-    for(let i=0; i<r; i++) {
-        const row = document.createElement('div'); row.className = 'row-wrap';
-        for(let j=0; j<c; j++) {
-            const s = document.createElement('div'); s.className = 'seat';
-            s.dataset.active = "true";
-            s.onclick = function() {
-                if(this.dataset.student) return;
+// 2. 初始化網格 (左下角為 1)
+function initGrid() {
+    const rows = parseInt(document.getElementById('rows').value);
+    const cols = parseInt(document.getElementById('cols').value);
+    const container = document.getElementById('main-grid');
+    container.innerHTML = '';
+    seatMap.clear();
+
+    for (let r = 0; r < rows; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row-wrap';
+        for (let c = 0; c < cols; c++) {
+            const seat = document.createElement('div');
+            seat.className = 'seat';
+            seat.dataset.active = "true";
+            
+            // 點擊切換禁用狀態
+            seat.onclick = function() {
+                if(this.dataset.assigned === "true") return;
                 this.classList.toggle('disabled');
                 this.dataset.active = !this.classList.contains('disabled');
-                refreshGrid();
+                renderSeats();
             };
-            s.onmousemove = showInfo; s.onmouseleave = () => document.getElementById('info-box').style.display='none';
-            row.appendChild(s);
+
+            // 滑動預覽資訊
+            seat.onmousemove = (e) => showTooltip(e, seat);
+            seat.onmouseleave = hideTooltip;
+
+            rowDiv.appendChild(seat);
         }
-        g.appendChild(row);
+        container.appendChild(rowDiv);
     }
-    refreshGrid();
+    renderSeats();
 }
 
-function refreshGrid() {
-    let seatNumber = 1;
-    // 因為 flex-direction: column-reverse，DOM 的第一個 Row 會在最下面
-    document.querySelectorAll('.row-wrap').forEach(row => {
+// 核心渲染邏輯：依據視覺位置編號 (左下至右上)
+function renderSeats() {
+    let currentId = 1;
+    const rows = document.querySelectorAll('.row-wrap'); // 這裡的 rows 是由上而下
+    // 但因為 container 是 flex-direction: column-reverse，所以 rows[0] 是最底下那一排
+    rows.forEach(row => {
         row.querySelectorAll('.seat').forEach(seat => {
-            if(seat.dataset.active === "true") {
-                const stu = assigned.get(seatNumber);
-                seat.innerHTML = `<span class="seat-num">${seatNumber}</span><span class="student-name">${stu ? stu.姓名 : ''}</span>`;
-                seat.dataset.seatId = seatNumber;
-                if(stu) seat.dataset.student = JSON.stringify(stu);
-                else delete seat.dataset.student;
-                seatNumber++;
-            } else { seat.innerHTML = ""; delete seat.dataset.student; delete seat.dataset.seatId; }
+            if (seat.dataset.active === "true") {
+                const stu = seatMap.get(currentId);
+                seat.innerHTML = `<span class="seat-num">${currentId}</span>
+                                 <span class="student-name">${stu ? stu.姓名 : ''}</span>`;
+                seat.dataset.sid = currentId;
+                if(stu) seat.dataset.info = JSON.stringify(stu);
+                else delete seat.dataset.info;
+                currentId++;
+            } else {
+                seat.innerHTML = '';
+                delete seat.dataset.sid;
+                delete seat.dataset.info;
+            }
         });
     });
 }
 
-function toggleModeUI() {
+// 3. 模式切換
+function switchMode() {
     const mode = document.getElementById('mode-select').value;
     const side = document.getElementById('sidebar');
-    const actBtn = document.getElementById('main-action-btn');
+    const runBtn = document.getElementById('run-btn');
+    
     side.style.display = (mode === 'random') ? 'none' : 'block';
-    if(mode === 'random') { actBtn.style.display = 'block'; }
-    else { actBtn.style.display = 'none'; updateSidebar(); }
+    runBtn.style.display = (mode === 'random') ? 'block' : 'none';
+    
+    if(mode !== 'random') updateSidebar();
 }
 
 function updateSidebar() {
     const mode = document.getElementById('mode-select').value;
     const side = document.getElementById('sidebar');
+    if(!studentList.length) return side.innerHTML = "請先匯入名單";
+
     if(mode === 'draw') {
-        if(currentDrawIdx >= students.length) { side.innerHTML = "<h3>抽籤結束</h3>"; return; }
-        const s = students[currentDrawIdx];
-        side.innerHTML = `<h3>現場抽籤</h3><p>目前學生：<br><b style='font-size:24px; color:var(--accent)'>${s.姓名}</b></p><p>請輸入要坐的編號：</p>
-            <input type="number" id="draw-val" style="width:60px"> <button onclick="confirmDraw()">確認</button>`;
+        if(currentDrawIdx >= studentList.length) { side.innerHTML = "<h3>抽籤結束</h3>"; return; }
+        const s = studentList[currentDrawIdx];
+        side.innerHTML = `<h3>現場抽籤</h3>
+            <p>正在為 <b>${s.姓名}</b> 選位</p>
+            <input type="number" id="input-draw" placeholder="輸入座位編號">
+            <button class="btn-main" onclick="confirmDraw()">確定</button>`;
     } else if(mode === 'manual') {
-        side.innerHTML = `<h3>代號選位</h3>` + students.map(s => `
-            <div style="margin-bottom:5px">${s.姓名}: <input type="number" onchange="manualBind(${s.座號}, this.value)" style="width:50px"></div>
+        side.innerHTML = `<h3>代號選位</h3>` + studentList.map(s => `
+            <div style="margin-bottom:8px">${s.姓名}: <input type="number" onchange="manualSet(${s.座號}, this.value)" style="width:50px"></div>
         `).join('');
     }
 }
 
-function autoRandom() {
-    const seats = document.querySelectorAll('.seat[data-active="true"]').length;
-    if(students.length > seats) return alert("位置不足！");
-    const shuf = [...students].sort(() => Math.random() - 0.5);
-    assigned.clear();
-    shuf.forEach((s, i) => assigned.set(i + 1, s));
-    refreshGrid();
+function runAutoRandom() {
+    const activeSeats = document.querySelectorAll('.seat[data-active="true"]').length;
+    if(studentList.length > activeSeats) return alert("座位不足！");
+    
+    const shuffled = [...studentList].sort(() => Math.random() - 0.5);
+    seatMap.clear();
+    shuffled.forEach((s, i) => seatMap.set(i + 1, s));
+    renderSeats();
 }
 
 function confirmDraw() {
-    const val = parseInt(document.getElementById('draw-val').value);
-    if(!val || assigned.has(val) || !document.querySelector(`[data-seat-id="${val}"]`)) return alert("無效或已佔用");
-    assigned.set(val, students[currentDrawIdx]);
+    const num = parseInt(document.getElementById('input-draw').value);
+    if(!num || seatMap.has(num) || !document.querySelector(`[data-sid="${num}"]`)) return alert("編號無效或已有人");
+    seatMap.set(num, studentList[currentDrawIdx]);
     currentDrawIdx++;
-    refreshGrid(); updateSidebar();
+    renderSeats(); updateSidebar();
 }
 
-function manualBind(sid, snum) {
-    const stu = students.find(x => x.座號 == sid);
-    if(snum) assigned.set(parseInt(snum), stu);
-    else assigned.delete(parseInt(snum));
-    refreshGrid();
+function manualSet(stuNo, seatNo) {
+    const stu = studentList.find(x => x.座號 == stuNo);
+    if(seatNo) seatMap.set(parseInt(seatNo), stu);
+    else seatMap.delete(parseInt(seatNo));
+    renderSeats();
 }
 
-function showInfo(e) {
-    if(!this.dataset.student) return;
-    const stu = JSON.parse(this.dataset.student);
-    const box = document.getElementById('info-box');
-    box.style.display = 'block';
-    box.style.left = (e.pageX + 15) + 'px';
-    box.style.top = (e.pageY + 15) + 'px';
-    box.innerHTML = `<b>${stu.姓名}</b> (${stu.座號})<br>職務：${stu.職務1 || ''} ${stu.職務2 || ''}<br>信箱：${stu.教育信箱 || '無'}`;
+// 4. 預覽與 PDF
+function showTooltip(e, seat) {
+    if(!seat.dataset.info) return;
+    const stu = JSON.parse(seat.dataset.info);
+    const tip = document.getElementById('tooltip');
+    tip.innerHTML = `<b>${stu.姓名}</b> (${stu.座號})<br>
+                     信箱: ${stu.信箱 || '無'}<br>
+                     職務: ${stu.職務.join(', ') || '無'}`;
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 15) + 'px';
+    tip.style.top = (e.clientY + 15) + 'px';
 }
+function hideTooltip() { document.getElementById('tooltip').style.display = 'none'; }
 
-function exportPDF() {
-    const root = document.getElementById('pdf-root');
-    document.getElementById('pdf-meta').innerHTML = `<span>列印：${new Date().toLocaleDateString()}</span><span>導師：${classInfo.teacher}</span>`;
-    document.getElementById('pdf-title').innerText = `${classInfo.name} 座位表`;
+function generatePDF() {
+    const root = document.getElementById('pdf-layout');
+    document.getElementById('p-class').innerText = `班級：${classInfo.name}`;
+    document.getElementById('p-teacher').innerText = `導師：${classInfo.teacher}`;
     
-    // PDF 表格邏輯 (略縮)
-    let tHtml = "<table border='1' style='width:100%; font-size:10px; border-collapse:collapse'><tr><th>幹部/職務</th></tr>";
-    students.forEach(s => { if(s.職務1) tHtml += `<tr><td>${s.職務1}:${s.姓名}</td></tr>`; });
-    document.getElementById('pdf-tables').innerHTML = tHtml + "</table>";
+    let listHtml = "<b>班級職務表</b><hr>";
+    studentList.forEach(s => {
+        if(s.職務.length) listHtml += `<div style="margin-bottom:3px">${s.職務[0]}: ${s.姓名}</div>`;
+    });
+    document.getElementById('p-sidebar').innerHTML = listHtml;
 
-    const box = document.getElementById('pdf-grid-box'); box.innerHTML = '';
+    const pGrid = document.getElementById('p-grid'); pGrid.innerHTML = '';
     document.querySelectorAll('.row-wrap').forEach(row => {
         const pRow = document.createElement('div'); pRow.style.display = 'flex'; pRow.style.gap = '8px';
         row.querySelectorAll('.seat').forEach(seat => {
             const ps = document.createElement('div');
-            ps.style.cssText = "width:55px; height:45px; border:1px solid #000; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px";
+            ps.className = 'pdf-seat';
             if(seat.dataset.active === "true") {
-                const sid = seat.dataset.seatId;
-                const stu = assigned.get(parseInt(sid));
-                ps.innerHTML = `<span style="font-size:8px">${stu ? stu.座號 : sid}</span><b>${stu ? stu.姓名 : ''}</b>`;
+                const sid = parseInt(seat.dataset.sid);
+                const s = seatMap.get(sid);
+                ps.innerHTML = `<span style="font-size:8px">${s ? s.座號 : sid}</span><b>${s ? s.姓名 : ''}</b>`;
             } else { ps.style.border = "none"; }
             pRow.appendChild(ps);
         });
-        box.appendChild(pRow);
+        pGrid.appendChild(pRow);
     });
 
     root.style.display = 'block';
-    html2pdf().from(root).set({ margin: 0, filename: '座位表.pdf', jsPDF: { format: 'a4' } }).save().then(() => root.style.display = 'none');
+    html2pdf().from(root).set({ margin:0, filename: `${classInfo.name}座位表.pdf`, jsPDF:{format:'a4'} }).save().then(() => root.style.display='none');
 }
 
-createGrid();
+// 啟動
+initGrid();
 </script>
 </body>
 </html>
