@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教務管理系統 | Portal</title>
+    <title>學校班級管理系統 | Portal</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -125,12 +125,12 @@
     </div>
 
     <div class="hero">
-        <h1>教務管理控制台</h1>
+        <h1>班級管理平台</h1>
         
         <div class="action-row">
             <a href="seating/index.html" class="action-card">
                 <h3>學生座位表</h3>
-                <p>視覺化配置教室座位，支援隨機編排與名單管理。</p>
+                <p>配置教室座位，支援隨機編排與名單管理。</p>
             </a>
             
             <a href="exam-scores/index.html" class="action-card">
@@ -164,8 +164,8 @@
 
         // 模擬數據
         function setStats() {
-            document.getElementById('online-count').innerText = Math.floor(Math.random() * 6) + 3;
-            document.getElementById('visit-count').innerText = "2,841";
+            document.getElementById('online-count').innerText = "error";
+            document.getElementById('visit-count').innerText = "error";
         }
 
         setInterval(updateClock, 1000);
