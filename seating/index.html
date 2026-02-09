@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>班級座位系統 - 2026 行政列印 Pro</title>
+    <title>互動座位系統 | 2026 行政列印 Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -11,93 +11,124 @@
             --green: #10b981; --gold: #fbbf24; --text: #f8fafc; --border: #334155;
         }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .top-steps { display: flex; gap: 15px; padding: 10px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; }
+        
+        /* UI 排版 */
+        .top-steps { display: flex; gap: 15px; padding: 12px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); align-items: center; justify-content: space-between; }
         .step-group { display: flex; gap: 15px; align-items: center; }
-        .step-title { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-bottom: 2px; }
-        button { cursor: pointer; padding: 5px 12px; border-radius: 4px; border: none; font-weight: 600; background: var(--accent); color: #000; }
-        .btn-pdf { background: #e11d48; color: white; }
+        .step-title { font-size: 0.75rem; color: var(--accent); font-weight: bold; margin-bottom: 3px; }
+        input, button { padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem; }
+        button { cursor: pointer; background: var(--accent); color: #000; border: none; font-weight: bold; }
+        .btn-pdf { background: #ef4444; color: white; margin-left: 10px; }
+
+        .main-layout { display: flex; flex: 1; overflow: hidden; padding: 20px; gap: 20px; }
+        .seat-display { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed var(--border); position: relative; }
         
-        /* 主畫面 */
-        .main-layout { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
-        .seat-display { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); border-radius: 12px; }
-        .grid-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        /* 網頁預覽座位 */
+        .grid-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
         .row-wrap { display: flex; gap: 10px; }
-        .seat { width: 70px; height: 50px; border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); cursor: pointer; position: relative; }
+        .seat { width: 70px; height: 50px; border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; position: relative; }
         .seat.disabled { opacity: 0.2; background: #450a0a; }
-        .seat-num { position: absolute; top: 2px; left: 4px; font-size: 9px; color: var(--accent); }
+        .seat-num { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--accent); }
+        .student-name { font-weight: bold; font-size: 1rem; }
 
-        /* PDF 模板 (隱藏) */
-        #pdf-template { display: none; width: 210mm; padding: 10mm; background: white; color: black; box-sizing: border-box; }
-        .pdf-header { display: flex; justify-content: space-between; font-size: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-        .pdf-title { text-align: center; font-size: 22px; font-weight: bold; margin: 15px 0; }
-        .pdf-main { display: flex; gap: 10px; }
-        .pdf-left { flex: 0 0 22%; } /* 20% 稍微加一點 buffer */
-        .pdf-right { flex: 0 0 78%; display: flex; flex-direction: column; align-items: center; }
+        /* PDF 隱藏區域樣式 */
+        #pdf-template { display: none; width: 210mm; padding: 12mm; background: white; color: black; box-sizing: border-box; }
+        .pdf-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; border-bottom: 1.5px solid black; padding-bottom: 3px; }
+        .pdf-title { text-align: center; font-size: 26px; font-weight: bold; margin: 15px 0; letter-spacing: 2px; }
+        .pdf-body { display: flex; gap: 15px; }
+        .pdf-left { flex: 0 0 20%; }
+        .pdf-right { flex: 0 0 80%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
         
-        table.pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
-        table.pdf-table th { background: #f0f0f0; border: 1px solid #000; padding: 4px; text-align: center; }
-        table.pdf-table td { border: 1px solid #000; padding: 4px; }
+        table.pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+        table.pdf-table th { background: #eee; border: 1px solid black; padding: 4px; text-align: center; }
+        table.pdf-table td { border: 1px solid black; padding: 4px; text-align: left; }
 
-        .pdf-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 30px; }
-        .pdf-seat { width: 60px; height: 48px; border: 1px solid black; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .desk-bottom { width: 200px; border: 2px solid black; text-align: center; padding: 5px; font-weight: bold; margin-top: 20px; }
+        .pdf-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .pdf-seat { width: 65px; height: 50px; border: 1px solid black; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pdf-desk { width: 250px; border: 2px solid black; text-align: center; padding: 8px; font-weight: bold; margin-top: 40px; font-size: 16px; letter-spacing: 15px; }
     </style>
 </head>
 <body>
 
     <div class="top-steps">
         <div class="step-group">
-            <div><div class="step-title">STEP 1. 名單</div><input type="file" id="excel-input" style="width: 140px;"> <button onclick="generateExample()">下載範例</button></div>
-            <div><div class="step-title">STEP 2. 配置</div><input type="number" id="cols" value="6" style="width:35px"> x <input type="number" id="rows" value="6" style="width:35px"> <button onclick="renderGrid()">重設</button></div>
-            <div><div class="step-title">STEP 3. 分配</div><button onclick="executeRandom()">隨機排序</button></div>
+            <div class="step-box">
+                <div class="step-title">STEP 1. 匯入名單</div>
+                <input type="file" id="excel-input" style="width: 150px;">
+                <button onclick="downloadTemplate()">下載 A1 規格範例</button>
+            </div>
+            <div class="step-box">
+                <div class="step-title">STEP 2. 座位配置</div>
+                寬 <input type="number" id="cols" value="6" style="width: 35px;"> x 
+                高 <input type="number" id="rows" value="6" style="width: 35px;">
+                <button onclick="renderGrid()">重置網格</button>
+            </div>
+            <div class="step-box">
+                <div class="step-title">STEP 3. 自動分配</div>
+                <button onclick="executeRandom()">一鍵隨機排序</button>
+            </div>
         </div>
-        <button class="btn-pdf" onclick="exportPDF()">匯出 A4 直向 PDF</button>
+        <button class="btn-pdf" onclick="exportPDF()">🖨️ 匯出 A4 直向 PDF</button>
     </div>
 
     <div class="main-layout">
         <div class="seat-display">
             <div id="grid" class="grid-container"></div>
-            <div style="border:1px solid var(--accent); padding:5px 40px; color:var(--accent)">講桌 (前方)</div>
+            <div style="color: var(--accent); font-weight: bold; border: 1px solid var(--accent); padding: 5px 50px; border-radius: 4px;">講桌 (前方)</div>
         </div>
     </div>
 
     <div id="pdf-template">
-        <div class="pdf-header"><div id="pdf-time"></div><div id="pdf-teacher"></div></div>
+        <div class="pdf-header">
+            <div id="pdf-time"></div>
+            <div id="pdf-teacher">導師：</div>
+        </div>
         <div class="pdf-title" id="pdf-main-title">班級座位表</div>
-        <div class="pdf-main">
+        <div class="pdf-body">
             <div class="pdf-left">
-                <table class="pdf-table"><tr><th>班級幹部</th></tr><tbody id="pdf-officers"></tbody></table>
-                <table class="pdf-table"><tr><th>小老師</th></tr><tbody id="pdf-teachers"></tbody></table>
-                <table class="pdf-table"><tr><th>校級/公職</th></tr><tbody id="pdf-council"></tbody></table>
+                <table class="pdf-table"><thead><tr><th>班級幹部</th></tr></thead><tbody id="pdf-off-list"></tbody></table>
+                <table class="pdf-table"><thead><tr><th>小老師</th></tr></thead><tbody id="pdf-tea-list"></tbody></table>
+                <table class="pdf-table"><thead><tr><th>校級/公職</th></tr></thead><tbody id="pdf-cou-list"></tbody></table>
             </div>
             <div class="pdf-right">
-                <div id="pdf-grid-container" class="pdf-grid"></div>
-                <div class="desk-bottom">講 桌</div>
+                <div id="pdf-grid-box" class="pdf-grid"></div>
+                <div class="pdf-desk">講桌</div>
             </div>
         </div>
     </div>
 
     <script>
-        let fullData = [];
+        let classInfo = { name: "", teacher: "" };
+        let studentData = [];
         let assignedMap = new Map();
 
-        function generateExample() {
-            const data = [
-                { "座號": 1, "姓名": "王小明", "班級": "101", "導師": "張大千", "職務1": "班長", "職務2": "國文小老師" },
-                { "座號": 2, "姓名": "李小華", "班級": "101", "導師": "張大千", "職務1": "風紀股長", "職務2": "" }
+        // 1. 下載符合 A1 規格的範例
+        function downloadTemplate() {
+            const wsData = [
+                ["班級", "101", "導師", "王大明"], // A1, B1, C1, D1
+                ["座號", "姓名", "教育信箱", "", "職務1", "職務2", "職務3", "職務4", "職務5", "職務6"] // A2-J2
             ];
-            const ws = XLSX.utils.json_to_sheet(data);
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-            XLSX.writeFile(wb, "座位表範例.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "名單");
+            XLSX.writeFile(wb, "班級名單範例.xlsx");
         }
 
+        // 2. 讀取 Excel (處理 A1/B1 與 A2 起的名單)
         document.getElementById('excel-input').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
-                const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-                fullData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                alert(`已載入 ${fullData.length} 位學生`);
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // 抓取 B1 與 D1
+                classInfo.name = sheet['B1'] ? sheet['B1'].v : "未命名";
+                classInfo.teacher = sheet['D1'] ? sheet['D1'].v : "未填寫";
+
+                // 從第二列開始轉 JSON (名單)
+                studentData = XLSX.utils.sheet_to_json(sheet, {range: 1});
+                alert(`✅ 成功讀取：${classInfo.name}班，共 ${studentData.length} 位學生`);
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -111,7 +142,12 @@
                 for (let j = 0; j < c; j++) {
                     const seat = document.createElement('div'); seat.className = 'seat';
                     seat.dataset.active = "true";
-                    seat.onclick = function() { if(!this.innerText) { this.classList.toggle('disabled'); this.dataset.active = !this.classList.contains('disabled'); recalculate(); } };
+                    seat.onclick = function() { 
+                        if(this.innerText.length > 5) return;
+                        this.classList.toggle('disabled'); 
+                        this.dataset.active = !this.classList.contains('disabled');
+                        recalculate();
+                    };
                     row.appendChild(seat);
                 }
                 grid.appendChild(row);
@@ -124,82 +160,95 @@
             document.querySelectorAll('.seat').forEach(seat => {
                 if(seat.dataset.active === "true") {
                     const s = assignedMap.get(num);
-                    seat.innerHTML = `<span class="seat-num">${num}</span><b>${s ? s.姓名 : ''}</b>`;
+                    seat.innerHTML = `<span class="seat-num">${num}</span><span class="student-name">${s ? s.姓名 : ''}</span>`;
                     num++;
                 } else { seat.innerHTML = ""; }
             });
         }
 
         function executeRandom() {
-            if(!fullData.length) return alert("請先匯入Excel");
-            const activeSeats = document.querySelectorAll('.seat[data-active="true"]').length;
-            if(fullData.length > activeSeats) return alert("位置不足");
-            const shuffled = [...fullData].sort(() => Math.random() - 0.5);
+            const activeCount = document.querySelectorAll('.seat[data-active="true"]').length;
+            if(studentData.length > activeCount) return alert("座位數量不足以容納所有學生！");
+            const shuffled = [...studentData].sort(() => Math.random() - 0.5);
             assignedMap.clear();
             shuffled.forEach((s, i) => assignedMap.set(i + 1, s));
             recalculate();
         }
 
+        // 3. PDF 邏輯
         function exportPDF() {
-            const first = fullData[0] || {};
-            document.getElementById('pdf-time').innerText = `列印時間：${new Date().toLocaleString()}`;
-            document.getElementById('pdf-teacher').innerText = `導師：${first.導師 || ''}`;
-            document.getElementById('pdf-main-title').innerText = `${first.班級 || ''} 班級座位表`;
-
-            // 分類邏輯
-            const orderOff = ["班長", "副班長", "學藝股長", "風紀股長", "內衛生", "外衛生", "服務股長", "資訊股長"];
-            const orderTea = ["國文小老師", "英文小老師", "數學小老師"];
-            const councilKeys = ["秩序糾察", "交通糾察", "環評", "班聯會"];
-
-            let resOff = [], resTea = [], resCou = [];
+            if(!studentData.length) return alert("請先匯入名單");
             
-            fullData.forEach(s => {
-                Object.values(s).forEach(val => {
-                    if(!val || typeof val !== 'string') return;
-                    if(councilKeys.some(k => val.includes(k))) resCou.push(`${val}：${s.姓名}`);
-                    else if(val.includes("小老師")) resTea.push({title: val, name: s.姓名});
-                    else if(orderOff.includes(val) || (!val.includes("小老師") && !councilKeys.some(k => val.includes(k)) && val.includes("股長"))) {
-                        resOff.push({title: val, name: s.姓名});
+            document.getElementById('pdf-time').innerText = `列印時間：${new Date().toLocaleString()}`;
+            document.getElementById('pdf-teacher').innerText = `導師：${classInfo.teacher}`;
+            document.getElementById('pdf-main-title').innerText = `${classInfo.name} 班級座位表`;
+
+            const offOrder = ["班長", "副班長", "學藝股長", "風紀股長", "內衛生", "外衛生", "服務股長", "資訊股長"];
+            const teaOrder = ["國文小老師", "英文小老師", "數學小老師"];
+            const couKeywords = ["秩序糾察", "交通糾察", "環評", "班聯會"];
+
+            let offArr = [], teaArr = [], couArr = [];
+
+            studentData.forEach(s => {
+                // 檢查職務 1-6 (EFGHIJ 欄位)
+                for(let i=1; i<=6; i++) {
+                    const job = s[`職務${i}`];
+                    if(!job) continue;
+
+                    if(couKeywords.some(k => job.includes(k))) {
+                        couArr.push(`${job}：${s.姓名}`);
+                    } else if(job.includes("小老師")) {
+                        teaArr.push({title: job, name: s.姓名});
+                    } else {
+                        offArr.push({title: job, name: s.姓名});
                     }
-                });
+                }
             });
 
-            // 排序
-            const sortFn = (list, order) => list.sort((a,b) => {
-                let idxA = order.indexOf(a.title), idxB = order.indexOf(b.title);
-                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+            // 排序並渲染表格
+            const sortList = (list, order) => list.sort((a,b) => {
+                let ia = order.indexOf(a.title), ib = order.indexOf(b.title);
+                return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
             });
 
-            const renderTable = (id, list) => {
-                document.getElementById(id).innerHTML = list.map(item => `<tr><td>${item.title || item}：${item.name || ''}</td></tr>`).join('');
-            };
+            const toTr = (list) => list.map(item => `<tr><td>${item.title || item}${item.name ? '：'+item.name : ''}</td></tr>`).join('');
+            
+            document.getElementById('pdf-off-list').innerHTML = toTr(sortList(offArr, offOrder));
+            document.getElementById('pdf-tea-list').innerHTML = toTr(sortList(teaArr, teaOrder));
+            document.getElementById('pdf-cou-list').innerHTML = toTr(couArr);
 
-            renderTable('pdf-officers', sortFn(resOff, orderOff));
-            renderTable('pdf-teachers', sortFn(resTea, orderTea));
-            document.getElementById('pdf-council').innerHTML = resCou.map(i => `<tr><td>${i}</td></tr>`).join('');
-
-            // 繪製座位
-            const container = document.getElementById('pdf-grid-container');
-            container.innerHTML = '';
+            // 座位網格 (80%)
+            const gridBox = document.getElementById('pdf-grid-box');
+            gridBox.innerHTML = '';
             let num = 1;
             document.querySelectorAll('.row-wrap').forEach(row => {
-                const pdfRow = document.createElement('div'); pdfRow.style.display = "flex"; pdfRow.style.gap = "8px";
+                const pdfRow = document.createElement('div');
+                pdfRow.style.display = "flex"; pdfRow.style.gap = "8px";
                 row.querySelectorAll('.seat').forEach(seat => {
                     const s = assignedMap.get(num);
-                    const pdfSeat = document.createElement('div'); pdfSeat.className = 'pdf-seat';
+                    const pdfSeat = document.createElement('div');
+                    pdfSeat.className = 'pdf-seat';
                     if(seat.dataset.active === "true") {
-                        pdfSeat.innerHTML = `<span style="font-size:9px">${s?s.座號:num}</span><b style="font-size:14px">${s?s.姓名:''}</b>`;
+                        pdfSeat.innerHTML = `<span style="font-size:9px">${s ? s.座號 : num}</span><b style="font-size:14px">${s ? s.姓名 : ''}</b>`;
                         num++;
                     } else { pdfSeat.style.border = "none"; }
                     pdfRow.appendChild(pdfSeat);
                 });
-                container.appendChild(pdfRow);
+                gridBox.appendChild(pdfRow);
             });
 
+            // 執行匯出
             const element = document.getElementById('pdf-template');
             element.style.display = 'block';
-            html2pdf().set({ margin: 0, filename: '座位表.pdf', jsPDF: { format: 'a4', orientation: 'portrait' }, html2canvas: { scale: 3 } }).from(element).save().then(()=>element.style.display='none');
+            html2pdf().set({
+                margin: 0,
+                filename: `${classInfo.name}_座位表.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 3 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save().then(() => element.style.display = 'none');
         }
+
         renderGrid();
     </script>
 </body>
