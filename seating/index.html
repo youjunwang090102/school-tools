@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>互動座位系統 | 2026 Pro Version</title>
+    <title>選位系統 | 2026 Pro Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
@@ -19,7 +19,6 @@
             height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* 頂部橫向步驟條 */
         .top-steps {
             display: flex; gap: 15px; padding: 12px 20px;
             background: var(--card-bg); border-bottom: 1px solid var(--border);
@@ -37,24 +36,21 @@
         button { cursor: pointer; font-weight: 600; transition: 0.2s; background: var(--accent); color: #000; border: none; }
         button:hover { filter: brightness(1.2); transform: translateY(-1px); }
         .btn-pdf { background: var(--red); color: white; }
+        .btn-mail { background: var(--gold); color: #000; }
 
-        /* 下方主區域 */
         .main-layout { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
         
-        /* 左側操作區 (30%) */
         .control-sidebar { 
             flex: 0 0 30%; background: rgba(255,255,255,0.03); 
             border-radius: 10px; padding: 15px; display: none; 
             flex-direction: column; border: 1px solid var(--border);
         }
 
-        /* 右側座位區 (70% 或 100%) */
         .seat-display { 
             flex: 1; display: flex; flex-direction: column; align-items: center; 
             justify-content: center; position: relative; overflow: auto;
         }
 
-        /* 座位網格 */
         .grid-container { display: flex; flex-direction: column-reverse; gap: 10px; margin-bottom: 25px; padding: 20px; }
         .row-wrap { display: flex; gap: 10px; }
         .seat {
@@ -67,7 +63,6 @@
         .seat-num { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--accent); opacity: 0.7; }
         .student-name { font-size: 0.95rem; font-weight: bold; color: #fff; }
 
-        /* 懸浮預覽 (Tooltip) */
         .tooltip {
             visibility: hidden; width: 180px; background: #000; color: #fff;
             padding: 10px; border-radius: 6px; position: absolute; z-index: 100;
@@ -75,10 +70,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
         .seat:hover .tooltip { visibility: visible; opacity: 1; }
-        .tooltip b { color: var(--accent); }
-        .tooltip ul { padding-left: 15px; margin: 5px 0 0 0; color: var(--green); }
 
-        /* 抽籤卡片 */
         .congrats-card {
             background: var(--card-bg); border: 2px solid var(--gold); padding: 25px;
             text-align: center; border-radius: 15px; margin-bottom: 20px;
@@ -115,7 +107,7 @@
                 <button onclick="renderGrid()">重設</button>
             </div>
             <div class="step-box">
-                <div class="step-title">Step 3. 模式選擇</div>
+                <div class="step-title">Step 3. 模式</div>
                 <select id="mode-select" onchange="switchMode()">
                     <option value="random">一鍵隨機分配</option>
                     <option value="draw">互動現場抽籤</option>
@@ -125,14 +117,9 @@
             </div>
         </div>
         <div class="step-box" style="border:none;">
-            <div class="step-title" style="color:var(--red);">Step 4. 匯出</div>
-            <button class="btn-pdf" onclick="exportPDF()">匯出 PDF 座位表</button>
-            <div class="step-box" style="border:none;">
-    <div class="step-title" style="color:var(--red);">Step 4. 匯出</div>
-    <button class="btn-pdf" onclick="exportPDF()">匯出 PDF</button>
-    <button onclick="generateEmailNotification()" style="background:var(--gold); color:black; margin-left:5px;">通知學生</button>
-</div>
-
+            <div class="step-title" style="color:var(--red);">Step 4. 產出通知</div>
+            <button class="btn-pdf" onclick="exportPDF()">匯出 PDF</button>
+            <button class="btn-mail" onclick="generateEmailNotification()">通知學生</button>
         </div>
     </div>
 
@@ -150,7 +137,7 @@
 
     <script>
         let fullData = [];
-        let assignedMap = new Map(); // SeatNum -> Student Object
+        let assignedMap = new Map(); 
         let currentDrawIndex = 0;
 
         function generateTemplate() {
@@ -168,7 +155,6 @@
                 const workbook = XLSX.read(new Uint8Array(event.target.result), {type: 'array'});
                 fullData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 alert(`✅ 成功載入名單：共 ${fullData.length} 位學生`);
-                if(document.getElementById('mode-select').value === 'manual') updateManualTable();
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
@@ -227,46 +213,30 @@
             const mode = document.getElementById('mode-select').value;
             const sidebar = document.getElementById('sidebar');
             const actionBtn = document.getElementById('main-action-btn');
-            
             sidebar.style.display = (mode === 'random') ? 'none' : 'flex';
             actionBtn.style.display = (mode === 'random') ? 'block' : 'none';
-            document.getElementById('congrats-area').innerHTML = '';
-
-            if(mode === 'draw') {
-                currentDrawIndex = 0;
-                updateDrawSidebar();
-            } else if(mode === 'manual') {
-                updateManualTable();
-            }
+            if(mode === 'draw') { currentDrawIndex = 0; updateDrawSidebar(); } 
+            else if(mode === 'manual') { updateManualTable(); }
         }
 
-        // --- 模式 1: 一鍵隨機 ---
         function executeRandom() {
             const activeCount = document.querySelectorAll('.seat[data-active="true"]').length;
             if(fullData.length === 0) return alert("請先匯入名單");
             if(fullData.length > activeCount) return alert("座位不足！");
-            
             const shuffled = [...fullData].sort(() => Math.random() - 0.5);
             assignedMap.clear();
             shuffled.forEach((s, i) => assignedMap.set(i + 1, s));
             recalculate();
         }
 
-        // --- 模式 2: 現場抽籤 ---
         function updateDrawSidebar() {
             if (fullData.length === 0) return;
             const isFinished = currentDrawIndex >= fullData.length;
             const currentStudent = isFinished ? null : fullData[currentDrawIndex];
-            const nextStudent = (currentDrawIndex + 1 < fullData.length) ? fullData[currentDrawIndex + 1] : null;
-
             document.getElementById('sidebar-content').innerHTML = `
-                <h3 style="color:var(--gold)">🎲 抽籤遊戲</h3>
-                <div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:8px; border:1px solid var(--accent); margin-bottom:15px;">
-                    <div style="font-size:0.7rem; color:var(--accent)">正在抽籤：</div>
-                    <div style="font-size:1.3rem; font-weight:bold;">${isFinished ? "✅ 完畢" : currentStudent.姓名}</div>
-                </div>
-                ${nextStudent ? `<div style="font-size:0.8rem; opacity:0.7">下一位：${nextStudent.姓名} (準備)</div>` : ''}
-                <button onclick="drawNext()" style="width:100%; margin-top:20px; padding:12px; font-size:1.1rem; background:var(--green); display:${isFinished?'none':'block'}">🎁 抽出座位</button>
+                <h3 style="color:var(--gold)">🎲 抽籤中</h3>
+                <div style="font-size:1.3rem; font-weight:bold;">${isFinished ? "✅ 完畢" : currentStudent.姓名}</div>
+                <button onclick="drawNext()" style="width:100%; margin-top:20px; background:var(--green); display:${isFinished?'none':'block'}">🎁 抽出座位</button>
             `;
         }
 
@@ -274,29 +244,17 @@
             const activeSeats = Array.from(document.querySelectorAll('.seat[data-active="true"]'));
             const availableNums = activeSeats.map((_, i) => i + 1).filter(n => !assignedMap.has(n));
             const student = fullData[currentDrawIndex];
-            
             const picked = availableNums[Math.floor(Math.random() * availableNums.length)];
             assignedMap.set(picked, student);
-            
-            const nextStudent = (currentDrawIndex + 1 < fullData.length) ? fullData[currentDrawIndex + 1] : null;
-            document.getElementById('congrats-area').innerHTML = `
-                <div class="congrats-card">
-                    <div style="color:var(--gold)">恭喜 ${student.姓名}</div>
-                    <div style="font-size:2.5rem; font-weight:bold; color:var(--accent)">${picked} 號位置</div>
-                    ${nextStudent ? `<div style="margin-top:10px; font-size:0.9rem; border-top:1px solid var(--border); padding-top:10px;">📢 請 ${nextStudent.姓名} 上台</div>` : ''}
-                </div>`;
-            
             currentDrawIndex++;
             recalculate();
             updateDrawSidebar();
         }
 
-        // --- 模式 3: 手動選位 ---
         function updateManualTable() {
             const activeSeatsCount = document.querySelectorAll('.seat[data-active="true"]').length;
             const usedSeats = Array.from(assignedMap.keys());
-            let html = `<h3>代號選位清單</h3><div class="scroll-area"><table class="manual-list-table"><tr><th>座號</th><th>姓名</th><th>座位代號</th></tr>`;
-            
+            let html = `<h3>代號選位</h3><div class="scroll-area"><table class="manual-list-table"><tr><th>姓名</th><th>選位</th></tr>`;
             fullData.forEach((s, idx) => {
                 const mySeat = Array.from(assignedMap.entries()).find(([k, v]) => v.姓名 === s.姓名);
                 let options = `<option value="">請選擇</option>`;
@@ -305,7 +263,7 @@
                         options += `<option value="${i}" ${mySeat && mySeat[0] === i ? 'selected' : ''}>${i}</option>`;
                     }
                 }
-                html += `<tr><td>${s.座號 || idx+1}</td><td>${s.姓名}</td><td><select onchange="manualAssign('${s.姓名}', this.value)">${options}</select></td></tr>`;
+                html += `<tr><td>${s.姓名}</td><td><select onchange="manualAssign('${s.姓名}', this.value)">${options}</select></td></tr>`;
             });
             document.getElementById('sidebar-content').innerHTML = html + `</table></div>`;
         }
@@ -316,107 +274,77 @@
             recalculate();
         }
 
-        // --- Step 4: PDF 匯出 (討論點) ---
         function exportPDF() {
             const element = document.getElementById('capture-area');
             const opt = {
-                margin: 10,
-                filename: '教室座位表.pdf',
+                margin: 10, filename: '教室座位表.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, backgroundColor: '#ffffff' }, // 匯出時轉為白色背景較省墨水
+                html2canvas: { scale: 2 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
-            // 這裡可以加入動態修改樣式的邏輯，讓匯出的 PDF 是白底黑字
             html2pdf().set(opt).from(element).save();
         }
 
-        renderGrid();
-// --- 獨立功能：座標計算與郵件發送 ---
-function generateEmailNotification() {
-    if (fullData.length === 0 || assignedMap.size === 0) {
-        alert("請先匯入名單並完成座位分配！");
-        return;
-    }
-
-    const mode = document.getElementById('mode-select').value;
-    const sidebar = document.getElementById('sidebar');
-    const sidebarContent = document.getElementById('sidebar-content');
-    
-    // 強制顯示側邊欄
-    sidebar.style.display = 'flex';
-    
-    // 取得所有橫排 (rows)
-    // 你的 CSS 中 grid 是 column-reverse，代表視覺上的第一排是在 DOM 的最後一個
-    const allRows = Array.from(document.querySelectorAll('.row-wrap'));
-    
-    let emailListHTML = `
-        <h3 style="color:var(--accent); border-bottom:1px solid var(--accent); padding-bottom:10px;">📧 發送座位通知</h3>
-        <p style="font-size:0.75rem; color:#94a3b8; margin-bottom:15px;">點擊「發送」將啟動郵件軟體，並自動填寫座標。</p>
-        <div class="scroll-area" style="max-height: 70vh;">
-    `;
-
-    // 建立一個臨時陣列來存放座標資訊
-    let results = [];
-
-    // 邏輯遍歷：找出每個學生的物理座標
-    allRows.forEach((row, rowIndex) => {
-        const rowNum = rowIndex + 1; // 第幾排
-        const seatsInRow = row.querySelectorAll('.seat');
-        
-        seatsInRow.forEach((seat, seatIndex) => {
-            const colNum = seatIndex + 1; // 第幾個
+        // --- 核心功能：發送 Email 通知 ---
+        function generateEmailNotification() {
+            if (assignedMap.size === 0) return alert("請先完成座位分配！");
             
-            // 檢查這格有沒有學生
-            if (seat.dataset.hasStudent === "true") {
-                const seatLabelNum = seat.querySelector('.seat-num').innerText;
-                const student = assignedMap.get(parseInt(seatLabelNum));
+            const sidebar = document.getElementById('sidebar');
+            const sidebarContent = document.getElementById('sidebar-content');
+            sidebar.style.display = 'flex';
+            
+            // 抓取畫面上所有的排 (從講桌算起，或是視覺上的順序)
+            const allRows = Array.from(document.querySelectorAll('.row-wrap'));
+            let results = [];
+
+            allRows.forEach((row, rowIndex) => {
+                const seatsInRow = row.querySelectorAll('.seat');
+                seatsInRow.forEach((seat, colIndex) => {
+                    // 只處理有坐人的位置
+                    if (seat.dataset.hasStudent === "true") {
+                        const seatNum = parseInt(seat.querySelector('.seat-num').innerText);
+                        const student = assignedMap.get(seatNum);
+                        if(student) {
+                            results.push({
+                                name: student.姓名,
+                                email: student.教育信箱 || "",
+                                row: rowIndex + 1, // 第幾排
+                                col: colIndex + 1, // 第幾個
+                                seatNum: seatNum
+                            });
+                        }
+                    }
+                });
+            });
+
+            // 依姓名排序方便點選
+            results.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant-TW'));
+
+            let html = `<h3>📧 發送座位通知</h3><p style="font-size:0.7rem; color:var(--gold)">點擊「發送」會開啟預設信箱</p><div class="scroll-area">`;
+            results.forEach(item => {
+                const subject = encodeURIComponent(`教室座位通知 - ${item.name} 同學`);
+                const body = encodeURIComponent(
+                    `親愛的 ${item.name} 同學：\n\n` +
+                    `你的座位已分配完成：\n` +
+                    `座位編號：${item.seatNum}\n` +
+                    `物理位置：第 ${item.row} 排，左起第 ${item.col} 個位置。\n\n` +
+                    `請準時就座，祝學習愉快！`
+                );
+                const mailto = `mailto:${item.email}?subject=${subject}&body=${body}`;
                 
-                if (student) {
-                    results.push({
-                        name: student.姓名,
-                        email: student.教育信箱 || student.學號 + "@edu.tw", // 若沒信箱則嘗試組合
-                        row: rowNum,
-                        col: colNum,
-                        id: seatLabelNum
-                    });
-                }
-            }
-        });
-    });
+                html += `
+                    <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:bold">${item.name}</div>
+                            <div style="font-size:0.7rem; color:var(--accent)">第${item.row}排 / 第${item.col}個</div>
+                        </div>
+                        <a href="${mailto}" target="_blank" style="background:var(--gold); color:#000; padding:4px 10px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:0.8rem;">發送</a>
+                    </div>`;
+            });
+            sidebarContent.innerHTML = html + `</div>`;
+        }
 
-    // 依照姓名排序，方便老師對名單
-    results.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-TW'));
-
-    results.forEach(item => {
-        const subject = encodeURIComponent(`教室座位安排通知 - ${item.name} 同學`);
-        const body = encodeURIComponent(
-            `親愛的 ${item.name} 同學：\n\n` +
-            `你的教室座位已經分配完成，資訊如下：\n` +
-            `--------------------------------\n` +
-            `座位編號：${item.id}\n` +
-            `物理位置：第 ${item.row} 排，左起第 ${item.col} 個位置\n` +
-            `--------------------------------\n\n` +
-            `請依照此位置入座。祝學習愉快！`
-        );
-        const mailto = `mailto:${item.email}?subject=${subject}&body=${body}`;
-
-        emailListHTML += `
-            <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-                <div style="flex:1;">
-                    <div style="font-weight:bold; color:white;">${item.name}</div>
-                    <div style="font-size:0.7rem; color:var(--gold);">排:${item.row} / 位:${item.col}</div>
-                </div>
-                <a href="${mailto}" target="_blank" 
-                   style="background:var(--accent); color:black; padding:5px 12px; border-radius:4px; text-decoration:none; font-size:0.8rem; font-weight:bold;">
-                   發送
-                </a>
-            </div>
-        `;
-    });
-
-    sidebarContent.innerHTML = emailListHTML + `</div>`;
-}
-
+        renderGrid();
     </script>
 </body>
 </html>
