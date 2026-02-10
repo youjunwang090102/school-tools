@@ -6,16 +6,16 @@
     <title>班級數位平台</title>
     <style>
         :root {
-            /* 原有配色 */
-            --p: #4361ee; /* 座位 - 藍 */
-            --s: #2ec4b6; /* 段考 - 綠 */
-            --a: #ff9f1c; /* 學期 - 橘 */
-            
-            /* 新增配色 */
-            --t: #ef233c; /* 倒數 - 紅 */
-            --g: #7209b7; /* 分組 - 紫 */
-            --m: #ffd60a; /* 留言 - 黃 */
-            --v: #38b000; /* 投票 - 草綠 */
+            /* 擴充配色語意 */
+            --p: #4361ee;    /* 座位 - 藍 */
+            --s: #2ec4b6;    /* 段考 - 綠 */
+            --a: #ff9f1c;    /* 學期 - 橘 */
+            --t: #ef233c;    /* 倒數 - 紅 */
+            --g: #7209b7;    /* 分組 - 紫 */
+            --m: #ffd60a;    /* 留言 - 黃 */
+            --v: #38b000;    /* 投票 - 草綠 */
+            --cal: #5856D6;  /* 行事曆 - 靛藍 */
+            --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
 
             --bg: #f0f2f5;
             --card: #ffffff;
@@ -23,115 +23,68 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
         }
 
         /* 頂部標題區 */
         .header {
-            width: 100%;
-            padding: 40px 20px 20px;
-            background: white;
-            box-sizing: border-box;
-            border-bottom-left-radius: 30px;
-            border-bottom-right-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            text-align: center;
+            width: 100%; padding: 50px 20px 30px;
+            background: white; box-sizing: border-box;
+            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
         }
 
         .header h1 {
-            margin: 0;
-            font-size: 1.6rem;
-            font-weight: 800;
-            color: var(--text);
+            margin: 0; font-size: 1.8rem; font-weight: 800;
+            color: var(--text); cursor: pointer; user-select: none;
+            -webkit-user-select: none;
         }
 
-        .header p {
-            margin: 8px 0 0;
-            font-size: 0.9rem;
-            color: #8d99ae;
-        }
+        .header p { margin: 8px 0 0; font-size: 0.9rem; color: #8d99ae; }
 
         /* 列表容器 */
         .menu-list {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            width: 100%; max-width: 500px; padding: 20px;
+            box-sizing: border-box; display: flex;
+            flex-direction: column; gap: 14px;
         }
 
-        /* 行動端橫向卡片 */
+        /* 通用卡片樣式 */
         .menu-item {
-            background: var(--card);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
+            background: var(--card); border-radius: 20px; padding: 18px;
+            display: flex; align-items: center;
+            text-decoration: none; color: inherit;
             box-shadow: 0 4px 6px rgba(0,0,0,0.02);
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid rgba(0,0,0,0.03);
-            -webkit-tap-highlight-color: transparent; /* 移除手機點擊藍框 */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .menu-item:active {
-            transform: scale(0.97);
-            background-color: #f8f9fa;
-        }
+        .menu-item:active { transform: scale(0.97); background-color: #f8f9fa; }
 
-        /* 圖示區 */
         .icon-box {
-            width: 55px;
-            height: 55px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-right: 16px;
-            flex-shrink: 0;
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-right: 16px; flex-shrink: 0;
         }
 
-        /* 內容區 */
-        .info {
-            flex-grow: 1;
-        }
+        .info { flex-grow: 1; }
+        .info h2 { margin: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
+        .info p { margin: 0; font-size: 0.82rem; color: #6d7280; line-height: 1.4; }
+        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; }
 
-        .info h2 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
+        /* --- 側邊顏色與圖示背景定義 --- */
+        .calendar { border-left: 6px solid var(--cal); }
+        .calendar .icon-box { background: #f0f0ff; color: var(--cal); }
 
-        .info p {
-            margin: 0;
-            font-size: 0.85rem;
-            color: #6d7280;
-            line-height: 1.4;
-        }
+        .whisper { border-left: 6px solid var(--whi); }
+        .whisper .icon-box { background: #f9f0ff; color: var(--whi); }
 
-        /* 箭頭 */
-        .arrow {
-            color: #ced4da;
-            font-size: 1.2rem;
-            margin-left: 10px;
-        }
-
-        /* --- 樣式設定區 --- */
-        
-        /* 原有樣式 */
         .seat { border-left: 6px solid var(--p); }
         .seat .icon-box { background: #eef2ff; color: var(--p); }
         
@@ -141,7 +94,6 @@
         .final { border-left: 6px solid var(--a); }
         .final .icon-box { background: #fffaf0; color: var(--a); }
 
-        /* 新增樣式 */
         .timer { border-left: 6px solid var(--t); }
         .timer .icon-box { background: #ffe5e5; color: var(--t); }
 
@@ -149,28 +101,44 @@
         .group .icon-box { background: #f3e5f5; color: var(--g); }
 
         .board { border-left: 6px solid var(--m); }
-        .board .icon-box { background: #fffde7; color: #f59e0b; } /* 稍微調整黃色對比度 */
+        .board .icon-box { background: #fffde7; color: #f59e0b; }
 
         .vote { border-left: 6px solid var(--v); }
         .vote .icon-box { background: #e8f5e9; color: var(--v); }
 
         footer {
-            margin-top: auto;
-            padding: 30px;
-            font-size: 0.8rem;
-            color: #adb5bd;
-            text-align: center;
+            margin: 40px 0 20px; padding: 20px;
+            font-size: 0.75rem; color: #adb5bd; text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>班級數位平台</h1>
-        <p>提供整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
+        <h1 id="adminTrigger">班級數位平台</h1>
+        <p>提供整合班級常用服務 ｜ 導師教學利器</p>
     </div>
 
     <div class="menu-list">
+        <a href="行事曆/index.html" class="menu-item calendar">
+            <div class="icon-box">📅</div>
+            <div class="info">
+                <h2>班級重要行事曆</h2>
+                <p>考試、活動、補課日程不漏接</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
+        <a href="匿名/index.html" class="menu-item whisper">
+            <div class="icon-box">🤫</div>
+            <div class="info">
+                <h2>班級匿名許願池</h2>
+                <p>有什麼想說的？悄悄告訴大家</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
         <a href="seating/index.html" class="menu-item seat">
             <div class="icon-box">🪑</div>
             <div class="info">
@@ -184,7 +152,7 @@
             <div class="icon-box">📝</div>
             <div class="info">
                 <h2>段考成績加權計算</h2>
-                <p>提供學生計算段考加權平均分數</p>
+                <p>計算段考加權平均分數</p>
             </div>
             <div class="arrow">❯</div>
         </a>
@@ -193,7 +161,7 @@
             <div class="icon-box">📊</div>
             <div class="info">
                 <h2>科目學期成績計算</h2>
-                <p>解決煩惱哪一科要被當</p>
+                <p>計算平時、段考與期末加權</p>
             </div>
             <div class="arrow">❯</div>
         </a>
@@ -202,7 +170,7 @@
             <div class="icon-box">⏳</div>
             <div class="info">
                 <h2>大考與日程倒數</h2>
-                <p>統測、段考剩幾天？隨時掌握時間</p>
+                <p>掌握統測、學測倒數時間</p>
             </div>
             <div class="arrow">❯</div>
         </a>
@@ -220,7 +188,7 @@
             <div class="icon-box">💬</div>
             <div class="info">
                 <h2>班級互動留言板</h2>
-                <p>班級事務討論區</p>
+                <p>班級事務公開討論區</p>
             </div>
             <div class="arrow">❯</div>
         </a>
@@ -229,7 +197,7 @@
             <div class="icon-box">🗳️</div>
             <div class="info">
                 <h2>線上投票決策系統</h2>
-                <p>一鍵表決</p>
+                <p>重要班級事務一鍵表決</p>
             </div>
             <div class="arrow">❯</div>
         </a>
@@ -238,7 +206,26 @@
     <footer>
         © 2026 班級數位服務系統
         <br>Designed by 王宥鈞
+        <br>
     </footer>
 
+    <script>
+        // 統一隱藏管理員入口
+        let clickCount = 0;
+        const trigger = document.getElementById('adminTrigger');
+
+        trigger.addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 5) {
+                const pw = prompt("啟動全站管理模式？\n請輸入密碼：");
+                if (pw === "Admin88888") {
+                    sessionStorage.setItem('isClassAdmin', 'true');
+                    alert("管理員模式已啟動。");
+                }
+                clickCount = 0;
+            }
+            setTimeout(() => { clickCount = 0; }, 3000);
+        });
+    </script>
 </body>
 </html>
