@@ -6,65 +6,142 @@
     <title>班級匿名許願池</title>
     <style>
         :root {
-            --ios-blue: #007AFF; --ios-gray: #8E8E93;
-            --bg: #F2F2F7; --bubble-bg: #FFFFFF;
+            /* 淺色模式 (Light) */
+            --bg-color: #F2F2F7;
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --bubble-bg: #FFFFFF;
+            --bubble-text: #000000;
+            --meta-text: #8E8E93;
+            --input-bg: #FFFFFF;
+            --border-color: #C6C6C8;
+            --highlight: #007AFF;
+            --pinned-bg: #FFF8E1;     /* 置頂背景-淺 */
+            --pinned-border: #FFD54F; /* 置頂邊框-淺 */
+            --reaction-bg: #F2F2F7;
         }
+
+        /* 深色模式 (Dark) */
+        [data-theme="dark"] {
+            --bg-color: #000000;
+            --nav-bg: rgba(28, 28, 30, 0.9);
+            --bubble-bg: #2C2C2E;
+            --bubble-text: #FFFFFF;
+            --meta-text: #98989D;
+            --input-bg: #1C1C1E;
+            --border-color: #38383A;
+            --highlight: #0A84FF;
+            --pinned-bg: #3E3008;     /* 置頂背景-深 */
+            --pinned-border: #FFB300; /* 置頂邊框-深 */
+            --reaction-bg: #3A3A3C;
+        }
+
         body { 
-            font-family: -apple-system, sans-serif; background: var(--bg); 
-            margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg-color); color: var(--bubble-text);
+            margin: 0; padding: 0; 
+            display: flex; flex-direction: column; height: 100vh;
+            transition: background 0.3s, color 0.3s;
         }
 
-        /* 頂部標題 */
+        /* 導覽列 */
         .nav-bar {
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(20px);
-            padding: 40px 20px 15px; border-bottom: 0.5px solid #C6C6C8;
-            position: sticky; top: 0; z-index: 10; text-align: center;
+            background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 45px 15px 15px; border-bottom: 0.5px solid var(--border-color);
+            position: sticky; top: 0; z-index: 100; 
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .nav-bar h1 { margin: 0; font-size: 18px; font-weight: 600; }
-        .back-link { position: absolute; left: 15px; bottom: 15px; color: var(--ios-blue); text-decoration: none; font-size: 16px; }
+        .nav-center { flex: 1; text-align: center; }
+        .nav-bar h1 { margin: 0; font-size: 17px; font-weight: 600; cursor: pointer; user-select: none; }
+        .nav-btn { color: var(--highlight); text-decoration: none; font-size: 16px; background: none; border: none; cursor: pointer; padding: 5px; }
 
-        /* 留言顯示區 */
-        #messageContainer {
-            flex: 1; overflow-y: auto; padding: 20px;
-            display: flex; flex-direction: column; gap: 12px;
+        /* 容器 */
+        #messageContainer, #pinnedContainer {
+            padding: 15px; display: flex; flex-direction: column; gap: 15px;
         }
+        #messageContainer { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #pinnedContainer { padding-bottom: 0; display: none; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 5px;}
 
-        /* iOS 氣泡樣式 */
-        .msg-wrapper { 
-            display: flex; flex-direction: column; align-items: flex-start;
-            animation: bubbleUp 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        /* 訊息氣泡 */
+        .msg-wrapper {
+            display: flex; flex-direction: column; align-items: flex-start; 
+            max-width: 88%; animation: popIn 0.3s ease-out; position: relative;
         }
-        .bubble { 
-            background: var(--bubble-bg); padding: 12px 16px; border-radius: 18px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 85%;
-            font-size: 16px; line-height: 1.4; color: #000; position: relative;
-        }
-        .time-tag { font-size: 11px; color: var(--ios-gray); margin: 4px 0 0 5px; }
         
-        /* 刪除按鈕 (僅限老師) */
-        .del-btn { 
-            color: #FF3B30; font-size: 11px; margin-left: 8px; cursor: pointer; 
-            border: 1px solid #FF3B30; border-radius: 4px; padding: 1px 4px;
+        .bubble {
+            background: var(--bubble-bg); padding: 12px 16px;
+            border-radius: 20px; border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            color: var(--bubble-text); font-size: 16px; line-height: 1.5;
+            word-break: break-word; position: relative;
+            transition: background 0.3s, color 0.3s;
         }
+
+        /* 置頂樣式 */
+        .pinned-bubble {
+            border: 2px solid var(--pinned-border);
+            background: var(--pinned-bg);
+            width: 100%; box-sizing: border-box; /* 置頂時滿寬 */
+        }
+        .pinned-badge {
+            font-size: 11px; font-weight: 800; color: #FF9500;
+            display: block; margin-bottom: 4px; letter-spacing: 0.5px;
+        }
+
+        /* 底部心情回應區 */
+        .reaction-bar {
+            display: flex; gap: 6px; margin-top: 6px; margin-left: 4px;
+        }
+        .react-btn {
+            background: var(--reaction-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 2px 8px; font-size: 12px; color: var(--meta-text);
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            transition: all 0.2s;
+        }
+        .react-btn:active { transform: scale(0.9); }
+        .react-btn.active { border-color: var(--highlight); color: var(--highlight); background: rgba(0,122,255,0.1); }
+
+        /* 資訊列 (時間/管理員資訊) */
+        .meta-row {
+            margin-top: 4px; margin-left: 6px;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .time-tag { font-size: 11px; color: var(--meta-text); }
+        
+        /* 管理員專屬 */
+        .admin-info {
+            font-size: 10px; color: var(--meta-text); font-family: monospace;
+            background: rgba(128,128,128,0.1); padding: 2px 4px; border-radius: 4px;
+            display: none; width: fit-content; margin-top: 2px;
+        }
+        .admin-actions {
+            display: none; gap: 8px; margin-top: 4px;
+        }
+        .adm-link { font-size: 11px; cursor: pointer; text-decoration: underline; }
+        .adm-del { color: #FF3B30; }
+        .adm-pin { color: #FF9500; }
 
         /* 底部輸入框 */
         .input-area {
-            background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);
+            background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             padding: 10px 15px calc(10px + env(safe-area-inset-bottom));
-            border-top: 0.5px solid #C6C6C8; display: flex; gap: 10px;
+            border-top: 0.5px solid var(--border-color);
+            display: flex; align-items: center; gap: 10px;
         }
         .ios-input {
-            flex: 1; border: 1px solid #C6C6C8; background: #FFF;
-            padding: 8px 15px; border-radius: 20px; font-size: 16px; outline: none;
+            flex: 1; border: 1px solid var(--border-color); background: var(--input-bg);
+            color: var(--bubble-text); padding: 9px 15px; border-radius: 20px; 
+            font-size: 16px; outline: none; transition: background 0.3s;
         }
         .send-btn {
-            background: var(--ios-blue); color: #FFF; border: none;
-            width: 32px; height: 32px; border-radius: 50%; font-size: 18px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background: var(--highlight); color: #FFF; border: none;
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 18px; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
+        .send-btn:disabled { opacity: 0.5; }
 
-        @keyframes bubbleUp {
-            from { opacity: 0; transform: translateY(15px) scale(0.9); }
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
     </style>
@@ -72,23 +149,27 @@
 <body>
 
     <div class="nav-bar">
-        <a href="../index.html" class="back-link">ㄑ 返回</a>
-        <h1>班級許願池</h1>
+        <a href="../index.html" class="nav-btn">ㄑ 返回</a>
+        <div class="nav-center">
+            <h1 id="secretTitle">班級許願池</h1>
+        </div>
+        <button class="nav-btn" onclick="toggleTheme()" id="themeBtn">🌑</button>
     </div>
 
-    <div id="messageContainer">
-        </div>
+    <div id="pinnedContainer"></div>
+
+    <div id="messageContainer"></div>
 
     <div class="input-area">
-        <input type="text" id="msgInput" class="ios-input" placeholder="匿名留言...">
-        <button class="send-btn" onclick="sendMessage()">↑</button>
+        <input type="text" id="msgInput" class="ios-input" placeholder="匿名說點什麼..." autocomplete="off">
+        <button id="sendBtn" class="send-btn" onclick="sendMessage()">↑</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
     <script>
-        // 請確保這裡的 Config 與您行事曆的一致
+        // === 1. Firebase 設定 ===
         const firebaseConfig = {
             apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
             authDomain: "vote-6668.firebaseapp.com",
@@ -100,68 +181,233 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 偵測是否從主頁傳遞了管理權限
-        const isAdmin = sessionStorage.getItem('isClassAdmin') === 'true';
+        // === 2. 狀態變數 ===
+        let isAdmin = sessionStorage.getItem('isClassAdmin') === 'true';
+        let clickCount = 0;
+        let clientIP = "未知 IP"; // 預設
 
-        // 1. 發送留言
-        async function sendMessage() {
-            const input = document.getElementById('msgInput');
-            const text = input.value.trim();
-            if (!text) return;
+        // === 3. 初始化 ===
+        function init() {
+            // 讀取主題設定
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                document.getElementById('themeBtn').innerText = '☀️';
+            }
 
-            try {
-                await db.collection("anonymous_messages").add({
-                    content: text,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                input.value = ""; // 清空輸入框
-            } catch (e) {
-                alert("發送失敗，請檢查網路連接");
+            // 取得使用者 IP (非強制，僅供參考)
+            fetch('https://api.ipify.org?format=json')
+                .then(r => r.json())
+                .then(d => clientIP = d.ip)
+                .catch(e => console.log('IP fetch failed'));
+
+            // 監聽 Enter 鍵
+            document.getElementById('msgInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // 啟動管理員隱藏入口
+            setupAdminTrigger();
+            
+            // 開始監聽留言
+            listenToMessages();
+        }
+
+        // === 4. 功能邏輯 ===
+
+        // 切換主題
+        function toggleTheme() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('themeBtn').innerText = '🌑';
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('themeBtn').innerText = '☀️';
             }
         }
 
-        // 2. 監聽資料庫 (這就是「顯示結果」的關鍵)
-        function loadMessages() {
-            db.collection("anonymous_messages").orderBy("timestamp", "asc")
-              .onSnapshot((snapshot) => {
-                const container = document.getElementById('messageContainer');
-                container.innerHTML = ""; // 重新渲染前清空
+        // 發送訊息
+        async function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const btn = document.getElementById('sendBtn');
+            const text = input.value.trim();
 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "傳送中...";
-                    
-                    const msgHtml = `
-                        <div class="msg-wrapper">
-                            <div class="bubble">
-                                ${data.content}
-                                ${isAdmin ? `<span class="del-btn" onclick="deleteMsg('${doc.id}')">刪除</span>` : ''}
-                            </div>
-                            <span class="time-tag">${time}</span>
-                        </div>
-                    `;
-                    container.innerHTML += msgHtml;
+            if (!text) return;
+
+            btn.disabled = true;
+
+            try {
+                // 取得簡易裝置資訊
+                const device = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) 
+                    ? (navigator.userAgent.match(/(iPhone|iPad|iPod|Android)/i)[0]) 
+                    : "PC/Desktop";
+
+                await db.collection("anonymous_messages").add({
+                    content: text,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isPinned: false,
+                    ip: clientIP,        // 存 IP
+                    device: device,      // 存裝置
+                    reactions: {         // 預設心情欄位
+                        love: 0,
+                        haha: 0,
+                        sad: 0,
+                        wow: 0
+                    }
                 });
-                
-                // 自動滾動到底部
-                container.scrollTop = container.scrollHeight;
-            });
+                input.value = "";
+            } catch (e) {
+                alert("發送失敗！請確認 Rules 是否已開啟 write 權限。");
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                input.focus();
+            }
         }
 
-        // 3. 刪除功能
+        // 監聽並渲染留言
+        function listenToMessages() {
+            db.collection("anonymous_messages")
+              .orderBy("timestamp", "asc")
+              .onSnapshot(snap => {
+                  const normalList = document.getElementById('messageContainer');
+                  const pinnedList = document.getElementById('pinnedContainer');
+                  
+                  normalList.innerHTML = "";
+                  pinnedList.innerHTML = "";
+                  let hasPinned = false;
+
+                  snap.forEach(doc => {
+                      const data = doc.data();
+                      const id = doc.id;
+                      const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "傳送中...";
+                      
+                      // 處理心情回應 (避免 undefined)
+                      const r = data.reactions || { love: 0, haha: 0, sad: 0, wow: 0 };
+                      
+                      // 建立 HTML
+                      const html = `
+                          <div class="msg-wrapper" style="${data.isPinned ? 'max-width: 100%;' : ''}">
+                              <div class="bubble ${data.isPinned ? 'pinned-bubble' : ''}">
+                                  ${data.isPinned ? '<span class="pinned-badge">📌 置頂公告</span>' : ''}
+                                  ${escapeHtml(data.content)}
+                              </div>
+                              
+                              <div class="reaction-bar">
+                                  <div class="react-btn" onclick="react('${id}', 'love')">❤️ ${r.love || 0}</div>
+                                  <div class="react-btn" onclick="react('${id}', 'haha')">😂 ${r.haha || 0}</div>
+                                  <div class="react-btn" onclick="react('${id}', 'wow')">😮 ${r.wow || 0}</div>
+                                  <div class="react-btn" onclick="react('${id}', 'sad')">😢 ${r.sad || 0}</div>
+                              </div>
+
+                              <div class="meta-row">
+                                  <span class="time-tag">${time}</span>
+                                  
+                                  ${isAdmin ? `
+                                      <div class="admin-info">IP: ${data.ip || 'Hidden'} | ${data.device || 'Unknown'}</div>
+                                      <div class="admin-actions" style="display:flex;">
+                                          <span class="adm-link adm-pin" onclick="togglePin('${id}', ${data.isPinned})">${data.isPinned ? '取消置頂' : '置頂'}</span>
+                                          <span class="adm-link adm-del" onclick="deleteMsg('${id}')">刪除</span>
+                                      </div>
+                                  ` : ''}
+                              </div>
+                          </div>
+                      `;
+
+                      if (data.isPinned) {
+                          pinnedList.innerHTML += html;
+                          hasPinned = true;
+                      } else {
+                          normalList.innerHTML += html;
+                      }
+                  });
+
+                  // 控制置頂區顯示
+                  pinnedList.style.display = hasPinned ? 'flex' : 'none';
+                  
+                  // 只有一般留言區需要自動捲動
+                  normalList.scrollTop = normalList.scrollHeight;
+              });
+        }
+
+        // === 5. 互動功能 ===
+
+        // 心情點讚 (使用 Transaction 確保計數正確)
+        async function react(docId, type) {
+            // 簡單防刷: 存在 localStorage (重整會重置，若要嚴格需綁定 user ID)
+            const key = `reacted_${docId}_${type}`;
+            if (localStorage.getItem(key)) return; // 已經按過該表情
+
+            const docRef = db.collection("anonymous_messages").doc(docId);
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(docRef);
+                    if (!doc.exists) return;
+
+                    const newReactions = doc.data().reactions || { love: 0, haha: 0, sad: 0, wow: 0 };
+                    newReactions[type] = (newReactions[type] || 0) + 1;
+                    
+                    transaction.update(docRef, { reactions: newReactions });
+                });
+                localStorage.setItem(key, 'true'); // 標記已按
+            } catch (e) {
+                console.error("Reaction failed:", e);
+            }
+        }
+
+        // 管理員：置頂切換
+        async function togglePin(id, currentStatus) {
+            if(!isAdmin) return;
+            try {
+                await db.collection("anonymous_messages").doc(id).update({
+                    isPinned: !currentStatus
+                });
+            } catch(e) { alert("更新失敗"); }
+        }
+
+        // 管理員：刪除
         async function deleteMsg(id) {
-            if (confirm("老師，確定要移除這條學生留言嗎？")) {
+            if(!isAdmin) return;
+            if(confirm("確定刪除？")) {
                 await db.collection("anonymous_messages").doc(id).delete();
             }
         }
 
-        // 啟動監聽
-        loadMessages();
+        // 管理員入口設定 (點標題5下)
+        function setupAdminTrigger() {
+            const title = document.getElementById('secretTitle');
+            title.addEventListener('click', () => {
+                clickCount++;
+                if (clickCount === 5) {
+                    const pwd = prompt("請輸入管理密碼：");
+                    if (pwd === "Admin88888") {
+                        sessionStorage.setItem('isClassAdmin', 'true');
+                        isAdmin = true;
+                        alert("管理模式已開啟！\n現在您可以看到 IP 與操作按鈕。");
+                        location.reload(); // 重新整理以載入管理介面
+                    }
+                    clickCount = 0;
+                }
+                setTimeout(() => clickCount = 0, 3000);
+            });
+        }
 
-        // 支援 Enter 鍵發送
-        document.getElementById('msgInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
+        // XSS 防護
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 啟動
+        init();
     </script>
 </body>
 </html>
