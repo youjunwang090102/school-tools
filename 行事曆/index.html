@@ -3,78 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級行事曆 - 2026 管理版</title>
+    <title>班級智慧行事曆</title>
     <style>
-        :root { --primary: #4361ee; --warn: #f39c12; --danger: #e74c3c; --bg: #f8faff; }
-        body { font-family: "PingFang TC", sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        :root {
+            --bg-考試: #fee2e2; --text-考試: #dc2626;
+            --bg-提醒: #dbeafe; --text-提醒: #2563eb;
+            --bg-集會: #dcfce7; --text-集會: #16a34a;
+            --bg-補課: #ffedd5; --text-補課: #ea580c;
+            --bg-社團: #fef9c3; --text-社團: #ca8a04;
+            --primary: #4361ee;
+        }
+        body { font-family: sans-serif; background: #f8fafc; margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; }
         
-        /* 頂部卡片區 */
-        .summary-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .info-card { background: white; border-radius: 16px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); }
-        .info-card.urgent { border-top-color: var(--danger); }
-        .info-card h3 { margin: 0 0 10px 0; font-size: 1rem; color: #64748b; }
-        .event-item { font-size: 0.9rem; padding: 5px 0; border-bottom: 1px dashed #edf2f7; display: flex; justify-content: space-between; }
-        .event-item:last-child { border: none; }
-
         /* 月曆樣式 */
-        .calendar-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .cal-day-name { text-align: center; font-weight: bold; color: #94a3b8; font-size: 0.8rem; padding-bottom: 10px; }
-        .cal-cell { aspect-ratio: 1; border: 1px solid #f1f5f9; border-radius: 8px; padding: 5px; position: relative; cursor: pointer; transition: 0.2s; }
-        .cal-cell:hover { background: #f1f5f9; }
-        .cal-cell.today { border: 2px solid var(--primary); background: #eff6ff; }
-        .cal-cell .day-num { font-size: 0.8rem; font-weight: 600; }
-        .dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; margin: 2px auto; }
+        .calendar-card { background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .weekday { text-align: center; font-size: 12px; color: #94a3b8; padding: 5px 0; }
+        
+        .day-cell { 
+            min-height: 70px; border: 1px solid #f1f5f9; padding: 4px; 
+            display: flex; flex-direction: column; gap: 2px; cursor: pointer;
+        }
+        .day-num { font-size: 12px; font-weight: bold; color: #64748b; }
+        .today { background: #f0f4ff; border: 2px solid var(--primary); }
 
-        /* 彈窗樣式 */
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; backdrop-filter: blur(4px); }
-        .modal-content { background:white; width:90%; max-width:400px; margin: 100px auto; padding:25px; border-radius:20px; }
-        .visual-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; }
+        /* 行程色塊標籤 */
+        .event-tag {
+            font-size: 10px; padding: 2px 4px; border-radius: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            line-height: 1.2; font-weight: 500;
+        }
+        .tag-考試 { background: var(--bg-考試); color: var(--text-考試); }
+        .tag-提醒 { background: var(--bg-提醒); color: var(--text-提醒); }
+        .tag-集會 { background: var(--bg-集會); color: var(--text-集會); }
+        .tag-補課 { background: var(--bg-補課); color: var(--text-補課); }
+        .tag-社團 { background: var(--bg-社團); color: var(--text-社團); }
+
+        /* 彈窗 */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; padding: 20px; }
+        .modal-content { background: white; border-radius: 15px; padding: 20px; max-width: 400px; margin: auto; }
+        .v-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
+        .btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-primary { background: var(--primary); color: white; margin-top: 10px; }
+        .btn-delete { background: #fee2e2; color: #dc2626; margin-top: 5px; }
+        
+        .admin-controls { display: none; margin-top: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 8px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align: center;">📅 班級行動行事曆</h2>
-
-    <div class="summary-container">
-        <div class="info-card" id="thisWeekCard">
-            <h3>📍 本週事項 (Sun-Sat)</h3>
-            <div id="weekList">讀取中...</div>
-        </div>
-        <div class="info-card urgent" id="tenDaysCard">
-            <h3>🚀 10天內預告</h3>
-            <div id="tenDaysList">讀取中...</div>
-        </div>
+    <div class="header">
+        <button onclick="changeMonth(-1)">◀</button>
+        <h2 id="monthTitle"></h2>
+        <button onclick="changeMonth(1)">▶</button>
     </div>
 
     <div class="calendar-card">
-        <div class="cal-header">
-            <button onclick="changeMonth(-1)">◀</button>
-            <h2 id="currentMonthLabel">2026年 2月</h2>
-            <button onclick="changeMonth(1)">▶</button>
-        </div>
-        <div class="cal-grid" id="calendarGrid">
-            </div>
-        <button onclick="checkAdmin()" style="margin-top:20px; background:none; border:1px dashed #ccc; width:100%; color:#999; padding:10px; border-radius:10px; cursor:pointer;">＋ 新增事項 (權限驗證)</button>
+        <div class="grid" id="calendarGrid"></div>
+        <button id="adminLoginBtn" onclick="loginAdmin()" style="width:100%; background:none; border:none; color:#cbd5e1; margin-top:15px; font-size:12px;">管理員登入</button>
     </div>
 </div>
 
-<div id="addModal" class="modal">
+<div id="eventModal" class="modal">
     <div class="modal-content">
-        <h3>新增班級事項</h3>
-        <input type="text" id="eventTitle" class="visual-input" placeholder="事項名稱 (如：英文單字小考)">
-        <input type="date" id="eventDate" class="visual-input">
-        <select id="eventLevel" class="visual-input">
-            <option value="normal">一般事項</option>
-            <option value="important">重要考試</option>
-            <option value="activity">班級活動</option>
-        </select>
-        <button class="btn" onclick="saveEvent()">確認儲存</button>
-        <button onclick="closeModal()" style="background:none; border:none; color:gray; width:100%; margin-top:10px; cursor:pointer;">取消</button>
+        <h3 id="modalDateTitle"></h3>
+        <div id="existingEvents"></div>
+        
+        <div class="admin-controls" id="adminForm">
+            <hr>
+            <input type="hidden" id="editId">
+            <input type="text" id="evTitle" class="v-input" placeholder="事項名稱">
+            <select id="evType" class="v-input">
+                <option value="考試">🔴 考試</option>
+                <option value="提醒">🔵 提醒</option>
+                <option value="集會">🟢 集會</option>
+                <option value="補課">🟠 補課/輔導</option>
+                <option value="社團">🟡 社團</option>
+            </select>
+            <button class="btn btn-primary" onclick="saveEvent()">確認儲存</button>
+        </div>
+        <button class="btn" onclick="closeModal()" style="background:#eee; margin-top:10px;">關閉</button>
     </div>
 </div>
 
@@ -82,7 +94,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // Firebase 設定 (請沿用您原本的配置)
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -94,118 +105,117 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let currentViewDate = new Date();
+    let currentView = new Date();
     let allEvents = [];
+    let isAdmin = false;
 
-    // 初始化讀取
-    async function init() {
-        db.collection("calendar_events").onSnapshot(snapshot => {
-            allEvents = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-            renderSummary();
-            renderCalendar();
-        });
-    }
+    // 監聽資料
+    db.collection("calendar_events").onSnapshot(snap => {
+        allEvents = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        render();
+    });
 
-    function renderSummary() {
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        
-        // 本週 (計算到本週六)
-        const weekEnd = new Date(now);
-        weekEnd.setDate(now.getDate() + (6 - now.getDay()));
-        
-        // 10天內
-        const tenDaysEnd = new Date(now);
-        tenDaysEnd.setDate(now.getDate() + 10);
-
-        const weekList = allEvents.filter(e => {
-            const d = new Date(e.date);
-            return d >= now && d <= weekEnd;
-        }).sort((a,b) => a.date.localeCompare(b.date));
-
-        const tenDaysList = allEvents.filter(e => {
-            const d = new Date(e.date);
-            return d >= now && d <= tenDaysEnd;
-        }).sort((a,b) => a.date.localeCompare(b.date));
-
-        document.getElementById('weekList').innerHTML = weekList.length ? 
-            weekList.map(e => `<div class="event-item"><span>${e.title}</span><small>${e.date.split('-')[2]}日</small></div>`).join('') : "本週無事 🎉";
-        
-        document.getElementById('tenDaysList').innerHTML = tenDaysList.length ? 
-            tenDaysList.map(e => `<div class="event-item"><span>${e.title}</span><small>${e.date.substring(5)}</small></div>`).join('') : "近期無事";
-    }
-
-    function renderCalendar() {
+    function render() {
         const grid = document.getElementById('calendarGrid');
-        const label = document.getElementById('currentMonthLabel');
+        const title = document.getElementById('monthTitle');
         grid.innerHTML = "";
         
-        const year = currentViewDate.getFullYear();
-        const month = currentViewDate.getMonth();
-        label.innerText = `${year}年 ${month + 1}月`;
+        const year = currentView.getFullYear();
+        const month = currentView.getMonth();
+        title.innerText = `${year}年 ${month + 1}月`;
 
-        // 星期欄位
-        ['日','一','二','三','四','五','六'].forEach(d => {
-            grid.innerHTML += `<div class="cal-day-name">${d}</div>`;
-        });
+        // 星期標頭
+        ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div class="weekday">${d}</div>`);
 
         const firstDay = new Date(year, month, 1).getDay();
-        const lastDate = new Date(year, month + 1, 0).getDate();
+        const totalDays = new Date(year, month + 1, 0).getDate();
 
-        // 補空白格
+        // 填充空格
         for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
 
         // 填充日期
-        for(let d=1; d<=lastDate; d++) {
-            const dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+        for(let d=1; d<=totalDays; d++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const isToday = new Date().toISOString().split('T')[0] === dateStr;
-            const hasEvent = allEvents.some(e => e.date === dateStr);
+            const dayEvents = allEvents.filter(e => e.date === dateStr);
+
+            let eventHtml = dayEvents.map(e => `<div class="event-tag tag-${e.type || '提醒'}">${e.title}</div>`).join('');
             
             grid.innerHTML += `
-                <div class="cal-cell ${isToday?'today':''}" onclick="showDayDetail('${dateStr}')">
+                <div class="day-cell ${isToday?'today':''}" onclick="openDay('${dateStr}')">
                     <span class="day-num">${d}</span>
-                    ${hasEvent ? `<div class="dot"></div>` : ''}
+                    ${eventHtml}
                 </div>`;
         }
     }
 
-    function changeMonth(step) {
-        currentViewDate.setMonth(currentViewDate.getMonth() + step);
-        renderCalendar();
+    function openDay(date) {
+        document.getElementById('modalDateTitle').innerText = date;
+        document.getElementById('editId').value = ""; // 清空編輯 ID
+        document.getElementById('evTitle').value = "";
+        
+        const dayEvents = allEvents.filter(e => e.date === date);
+        const listDiv = document.getElementById('existingEvents');
+        
+        listDiv.innerHTML = dayEvents.map(e => `
+            <div class="item-row">
+                <span>[${e.type}] ${e.title}</span>
+                ${isAdmin ? `<div>
+                    <button onclick="editEvent('${e.id}')" style="color:blue; border:none; background:none; cursor:pointer;">編</button>
+                    <button onclick="deleteEvent('${e.id}')" style="color:red; border:none; background:none; cursor:pointer;">刪</button>
+                </div>` : ''}
+            </div>
+        `).join('') || '本日無行程';
+
+        if(isAdmin) document.getElementById('adminForm').style.display = 'block';
+        document.getElementById('eventModal').style.display = 'block';
     }
 
-    // 管理員權限檢查 (簡單模擬您之前的驗證)
-    function checkAdmin() {
-        const pass = prompt("請輸入管理金鑰以新增事項：");
-        if(pass === "Admin88888") { // 建議改用您原本的 PASSWORDS 邏輯
-            document.getElementById('addModal').style.display = 'block';
+    function loginAdmin() {
+        const pass = prompt("請輸入管理密碼：");
+        if(pass === "Admin88888") {
+            isAdmin = true;
+            document.getElementById('adminLoginBtn').innerText = "✅ 管理員模式已開啟";
+            render();
         } else {
-            alert("權限不足");
+            alert("密碼錯誤");
         }
     }
 
     async function saveEvent() {
-        const title = document.getElementById('eventTitle').value;
-        const date = document.getElementById('eventDate').value;
-        const level = document.getElementById('eventLevel').value;
+        const title = document.getElementById('evTitle').value;
+        const type = document.getElementById('evType').value;
+        const date = document.getElementById('modalDateTitle').innerText;
+        const editId = document.getElementById('editId').value;
 
-        if(!title || !date) return alert("請填寫完整資訊");
+        if(!title) return alert("請輸入內容");
 
-        await db.collection("calendar_events").add({ title, date, level, createdAt: Date.now() });
+        if(editId) {
+            await db.collection("calendar_events").doc(editId).update({ title, type });
+        } else {
+            await db.collection("calendar_events").add({ title, type, date, createdAt: Date.now() });
+        }
         closeModal();
-        alert("新增成功！");
     }
 
-    function closeModal() { document.getElementById('addModal').style.display = 'none'; }
-    
-    function showDayDetail(dateStr) {
-        const dayEvents = allEvents.filter(e => e.date === dateStr);
-        if(dayEvents.length > 0) {
-            alert(`${dateStr} 事項：\n` + dayEvents.map(e => `· ${e.title}`).join('\n'));
+    async function editEvent(id) {
+        const ev = allEvents.find(e => e.id === id);
+        document.getElementById('evTitle').value = ev.title;
+        document.getElementById('evType').value = ev.type || '提醒';
+        document.getElementById('editId').value = id;
+    }
+
+    async function deleteEvent(id) {
+        if(confirm("確定要刪除嗎？")) {
+            await db.collection("calendar_events").doc(id).delete();
+            closeModal();
         }
     }
 
-    init();
+    function closeModal() { document.getElementById('eventModal').style.display = 'none'; }
+    function changeMonth(n) { currentView.setMonth(currentView.getMonth() + n); render(); }
+
+    render();
 </script>
 </body>
 </html>
