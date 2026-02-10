@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>校園成績加權計算系統</title>
+    <title>校園成績加權系統</title>
     <style>
         :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; --red: #ff4d4d; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
@@ -11,11 +11,10 @@
         .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
         h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin: 0 0 15px; }
 
-        /* 三段連動選單區 */
+        /* 選單與輸入區 */
         .config-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; }
         .select-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .c-select, .c-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; background: white; }
-        .c-select:focus, .c-input:focus { border-color: var(--p); }
 
         /* 表格樣式 */
         .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
@@ -34,16 +33,42 @@
         .result-card { margin-top: 15px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
         .result-val { font-size: 2.2rem; font-weight: 800; }
 
-        /* 成績單彈窗 (方案 C) */
+        /* 成績單彈窗 (方案 C 優化) */
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; }
-        .report-paper { width: 90%; max-width: 360px; background: #fff; padding: 25px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; }
-        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin: 0 0 10px; font-size: 1.4rem; }
-        .report-header h3 { text-align: center; margin: 0 0 10px; font-size: 1rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
-        .student-info { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.85rem; margin-bottom: 10px; line-height: 1.6; }
-        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.85rem; }
-        .report-table th, .report-table td { border: 1px solid #000; padding: 5px; text-align: center; }
-        .report-summary { text-align: right; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; }
-        .official-seal { position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 3px solid var(--red); border-radius: 50%; color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; transform: rotate(-15deg); opacity: 0.7; text-align: center; }
+        .report-paper { width: 92%; max-width: 360px; background: #fff; padding: 25px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; overflow: hidden; }
+        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin: 0 0 10px; font-size: 1.3rem; }
+        .report-header h3 { text-align: center; margin: 0 0 10px; font-size: 0.95rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .student-info { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.8rem; margin-bottom: 10px; line-height: 1.6; border-bottom: 1px solid #eee; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.8rem; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 4px; text-align: center; }
+        
+        .report-summary { position: relative; text-align: right; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
+        .final-avg { font-size: 1.5rem; color: #000; z-index: 1; position: relative; }
+
+        /* 壓印核訖章 */
+        .official-seal { 
+            position: absolute; 
+            bottom: -5px; 
+            right: 15px; 
+            width: 75px; 
+            height: 75px; 
+            border: 3px solid var(--red); 
+            border-radius: 50%; 
+            color: var(--red); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            transform: rotate(-20deg); 
+            opacity: 0.6; 
+            text-align: center; 
+            z-index: 10; /* 確保壓在分數上方 */
+            pointer-events: none;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .report-footer { margin-top: 20px; font-size: 0.65rem; color: #666; text-align: center; line-height: 1.5; border-top: 1px solid #eee; padding-top: 10px; }
         .btn-close { margin-top: 15px; background: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; }
     </style>
 </head>
@@ -55,7 +80,7 @@
     <div class="config-section">
         <select id="school-select" class="c-select" onchange="updateClassList()">
             <option value="">-- 選擇學校 --</option>
-            <option value="南大附中">國立台南大學附屬高級中學</option>
+            <option value="國立台南大學附屬高級中學">國立台南大學附屬高級中學</option>
         </select>
         
         <div class="select-group">
@@ -72,7 +97,7 @@
         <div class="select-group">
             <select id="no-select" class="c-select">
                 <option value="">座號</option>
-                </select>
+            </select>
             <input type="text" id="name-input" class="c-input" placeholder="學生姓名">
         </div>
     </div>
@@ -92,7 +117,7 @@
     </div>
 
     <div class="result-card">
-        <div style="font-size: 0.8rem; opacity: 0.9;">加權平均分數</div>
+        <div style="font-size: 0.8rem; opacity: 0.9;">即時計算加權平均</div>
         <div class="result-val" id="average">0.00</div>
     </div>
 </div>
@@ -107,7 +132,7 @@
             <span>班級：<b id="out-class"></b></span>
             <span>座號：<b id="out-no"></b></span>
             <span>姓名：<b id="out-name"></b></span>
-            <span>日期：2026/02/10</span>
+            <span>列印：2026/02/10</span>
         </div>
         <table class="report-table">
             <thead>
@@ -115,31 +140,28 @@
             </thead>
             <tbody id="report-body"></tbody>
         </table>
+        
         <div class="report-summary">
-            平均分數：<span id="res-avg" style="font-size: 1.4rem;"></span>
+            <div class="final-avg">平均分數：<span id="res-avg"></span></div>
+            <div class="official-seal">非正式<br>成績單</div>
         </div>
-        <div class="official-seal">數位教室<br>核訖章</div>
+
+        <div class="report-footer">
+            本成績單為學生自行操作系統列印<br>
+            班級數位服務 ｜ Designed By 王宥鈞
+        </div>
     </div>
     <button class="btn-close" onclick="closeReport()">返回修改資料</button>
 </div>
 
 <script>
     const dataConfig = {
-        "南大附中": {
-            "203資訊": [
-                {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
-                {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
-                {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
-            ],
-            "204資訊": [
-                {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
-                {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
-                {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
-            ]
+        "國立台南大學附屬高級中學": {
+            "203資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}],
+            "204資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}]
         }
     };
 
-    // 初始化座號
     const noSelect = document.getElementById('no-select');
     for(let i=1; i<=60; i++) {
         let opt = document.createElement('option');
@@ -176,12 +198,7 @@
     function addRow(n='', w='') {
         const div = document.createElement('div');
         div.className = 'row';
-        div.innerHTML = `
-            <input type="text" class="input-cell subject" placeholder="科目" value="${n}">
-            <input type="number" class="input-cell score" placeholder="0" inputmode="decimal" oninput="calc()">
-            <input type="number" class="input-cell weight" placeholder="權重" value="${w}" oninput="calc()">
-            <span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>
-        `;
+        div.innerHTML = `<input type="text" class="input-cell subject" placeholder="科目" value="${n}"><input type="number" class="input-cell score" placeholder="0" inputmode="decimal" oninput="calc()"><input type="number" class="input-cell weight" placeholder="權重" value="${w}" oninput="calc()"><span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>`;
         document.getElementById('subject-list').appendChild(div);
     }
 
@@ -199,10 +216,10 @@
 
     function showReport() {
         const res = calc();
-        document.getElementById('out-school').innerText = document.getElementById('school-select').value || "未設定學校";
+        document.getElementById('out-school').innerText = document.getElementById('school-select').value || "自定義學校";
         document.getElementById('out-exam').innerText = document.getElementById('exam-select').value;
         document.getElementById('out-class').innerText = document.getElementById('class-select').value || "--";
-        document.getElementById('out-no').innerText = document.getElementById('no-select').value + " 號";
+        document.getElementById('out-no').innerText = document.getElementById('no-select').value ? document.getElementById('no-select').value + " 號" : "--";
         document.getElementById('out-name').innerText = document.getElementById('name-input').value || "學生姓名";
 
         let html = '';
