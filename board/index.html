@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆-終極版</title>
+    <title>班級動態牆</title>
     <style>
         :root { --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; padding-bottom: 80px; }
+        .container { width: 100%; max-width: 600px; padding-bottom: 100px; }
         
-        /* UI 樣式 */
-        h1 { color: #333; text-align: center; cursor: pointer; user-select: none; transition: 0.3s; }
+        h1 { color: #333; text-align: center; cursor: pointer; user-select: none; }
         .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
@@ -23,12 +22,10 @@
         .admin-id { color: #aaa; font-weight: normal; font-size: 0.7rem; }
         .btn-delete { display: none; color: #ff4d4f; cursor: pointer; border: 1px solid #ff4d4f; padding: 2px 5px; border-radius: 4px; margin-left: 10px; }
         
-        /* 🛡️ 管理面板 */
-        #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; z-index: 999; box-sizing: border-box; }
-        #adminPanel button { background: #444; margin: 0 5px; font-size: 0.8rem; padding: 8px 12px; }
-        
-        /* 🕵️ 隱形入口 */
-        #secretZone { position: fixed; bottom: 0; right: 0; width: 40px; height: 40px; background: transparent; z-index: 998; }
+        /* 🛡️ 管理面板樣式 */
+        #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; z-index: 999; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); }
+        #adminPanel button { background: #444; margin: 5px; font-size: 0.8rem; padding: 8px 12px; border: 1px solid #666; }
+        #secretZone { position: fixed; bottom: 0; right: 0; width: 50px; height: 50px; background: transparent; z-index: 998; }
     </style>
 </head>
 <body>
@@ -38,20 +35,21 @@
 
     <div class="input-box">
         <div class="grid">
-            <input type="text" id="msgContent" placeholder="想說什麼？">
+            <input type="text" id="msgContent" placeholder="在此輸入訊息...">
             <button onclick="sendComment()">發佈</button>
         </div>
-        <div id="whoAmI" style="font-size: 0.75rem; color: #999; margin-top: 10px;">正在讀取身分...</div>
+        <div id="whoAmI" style="font-size: 0.75rem; color: #999; margin-top: 10px;">身分識別中...</div>
     </div>
 
     <div id="messageList"></div>
 </div>
 
 <div id="adminPanel">
-    <span style="display:block; margin-bottom:10px; color:#ffd700;">🛡️ 老師管理模式</span>
-    <button onclick="remoteRename()">強制遠端改名</button>
-    <button onclick="clearAllMessages()" style="background:#d9534f;">一鍵清空</button>
+    <div style="margin-bottom:10px; color:#ffd700; font-size: 0.9rem; font-weight: bold;">🛡️ 老師管理模式</div>
+    <button onclick="remoteRename()" style="background:#8e44ad;">強制遠端改名</button>
+    <button onclick="clearAllMessages()" style="background:#d9534f;">一鍵清空全班</button>
     <button onclick="exitAdmin()">登出管理</button>
+    <div style="font-size:10px; color:#777; margin-top:5px;">密令提示：於學生手機輸入 reset:name</div>
 </div>
 
 <div id="secretZone" onclick="triggerStep2()"></div>
@@ -60,7 +58,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // 1. 初始化設定 (請替換為你的 config)
+    // --- 1. 設定區 ---
     const firebaseConfig = {
         apiKey: "AIzaSyAS2CLfgTw9RQgVmZroj0O__N7h3M7XoP0",
         authDomain: "school-tools-6668.firebaseapp.com",
@@ -74,7 +72,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 2. 身分與 ID 鎖定
+    // --- 2. 身分識別邏輯 ---
     let myId = localStorage.getItem('chat_device_id');
     if (!myId) {
         myId = Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -84,7 +82,7 @@
     let myName = localStorage.getItem('chat_name');
     function initUser() {
         if (!myName) {
-            let n = prompt("歡迎！請輸入您的姓名以進行身分鎖定：");
+            let n = prompt("請輸入您的姓名（設定後無法自行更改）：");
             if (n && n.trim()) {
                 myName = n.trim();
                 localStorage.setItem('chat_name', myName);
@@ -95,14 +93,18 @@
     }
     initUser();
 
-    // 3. 🛡️ 老師隱藏邏輯 🛡️
+    // --- 3. 老師權限控制 ---
     let clickCount = 0;
     let step1Cleared = false;
     let isAdminMode = false;
 
     document.getElementById('titleSwitch').onclick = () => {
         clickCount++;
-        if (clickCount >= 5) { step1Cleared = true; clickCount = 0; }
+        if (clickCount >= 5) { 
+            step1Cleared = true; 
+            clickCount = 0; 
+            console.log("Stage 1 OK");
+        }
     };
 
     function triggerStep2() {
@@ -111,40 +113,54 @@
             if (pw === ADMIN_PASSWORD) {
                 isAdminMode = true;
                 document.getElementById('adminPanel').style.display = 'block';
-                document.querySelectorAll('.btn-delete').forEach(b => b.style.display = 'inline');
+                renderAdminUI();
                 step1Cleared = false;
             }
         }
     }
 
+    function renderAdminUI() {
+        document.querySelectorAll('.btn-delete').forEach(b => b.style.display = 'inline');
+        document.querySelectorAll('.admin-id').forEach(s => s.style.display = 'inline');
+    }
+
     function exitAdmin() { isAdminMode = false; location.reload(); }
 
-    // 4. 遠端指令監聽 (如：改名)
+    // --- 4. 遠端指令監聽 (防止無限重複修正版) ---
+    let lastResetTime = localStorage.getItem('last_reset_time') || 0;
+
     db.collection("system_cmds").doc("rename_tasks").onSnapshot(doc => {
-        if (doc.exists && doc.data().targetId === myId) {
-            alert("老師要求您重新設定姓名。");
-            localStorage.removeItem('chat_name');
-            location.reload();
+        if (doc.exists) {
+            const data = doc.data();
+            const cmdTime = data.ts ? data.ts.seconds : 0;
+            
+            // 只有當 ID 相符，且該指令是「新的」(時間晚於上次重設) 才會執行
+            if (data.targetId === myId && cmdTime > lastResetTime) {
+                localStorage.setItem('last_reset_time', cmdTime);
+                alert("老師已重設您的姓名權限，請重新輸入。");
+                localStorage.removeItem('chat_name');
+                location.reload();
+            }
         }
     });
 
     async function remoteRename() {
-        const tid = prompt("請輸入要強制改名的 ID (如: A7B2):");
+        const tid = prompt("請輸入該學生的 ID (如: A7B2):");
         if (tid) {
             await db.collection("system_cmds").doc("rename_tasks").set({
                 targetId: tid.toUpperCase(),
                 ts: firebase.firestore.FieldValue.serverTimestamp()
             });
-            alert("指令已送出！");
+            alert("改名指令已發送！");
         }
     }
 
-    // 5. 核心：留言功能
+    // --- 5. 訊息收發功能 ---
     function sendComment() {
         const content = document.getElementById('msgContent').value.trim();
         if (!content) return;
 
-        // 隱藏咒語：直接在學生手機輸入可改名
+        // 密令：老師親自操作時可用
         if (content === "reset:name") {
             localStorage.removeItem('chat_name');
             location.reload();
@@ -164,13 +180,16 @@
     }
 
     async function clearAllMessages() {
-        if(confirm("⚠️ 警告：確定清空全班留言？")) {
+        if(confirm("⚠️ 確定要清空全班留言嗎？此操作無法恢復。")) {
             const snap = await db.collection("messages").get();
-            snap.forEach(doc => doc.ref.delete());
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("已清空所有留言。");
         }
     }
 
-    // 6. 渲染留言
+    // --- 6. 監聽動態牆 ---
     db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snap => {
         const list = document.getElementById('messageList');
         list.innerHTML = "";
@@ -181,8 +200,10 @@
             div.className = 'msg-card';
             div.innerHTML = `
                 <div class="msg-header">
-                    <span><span class="msg-author">${d.author}</span> 
-                    <span class="admin-id" style="display:${isAdminMode?'inline':'none'}">(#${d.deviceId})</span></span>
+                    <span>
+                        <span class="msg-author">${d.author}</span> 
+                        <span class="admin-id" style="display:${isAdminMode?'inline':'none'}">(#${d.deviceId})</span>
+                    </span>
                     <span>${time} <span class="btn-delete" onclick="deleteMsg('${doc.id}')" style="display:${isAdminMode?'inline':'none'}">🗑️</span></span>
                 </div>
                 <div class="msg-content">${d.content}</div>
