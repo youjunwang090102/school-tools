@@ -10,36 +10,36 @@
             --ios-orange: #FF9500; --ios-yellow: #FFCC00; --ios-gray: #8E8E93;
             --bg: #F2F2F7;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #000; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #000; overflow-x: hidden; }
         .container { max-width: 500px; margin: 0 auto; }
 
-        /* iOS Widget 風格卡片 */
-        .widget-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .ios-widget { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .ios-widget h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--ios-gray); letter-spacing: -0.2px; text-transform: uppercase; }
-        .widget-item { font-size: 14px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-        .dot-s { width: 6px; height: 6px; border-radius: 50%; }
+        /* iOS Widget 風格 */
+        .widget-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .ios-widget { background: white; border-radius: 20px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 100px; }
+        .ios-widget h3 { margin: 0 0 8px 0; font-size: 12px; color: var(--ios-gray); letter-spacing: -0.2px; text-transform: uppercase; font-weight: 600; }
+        .widget-item { font-size: 13px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+        .dot-s { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
         /* 月曆主體 */
-        .calendar-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .cal-header h2 { font-size: 20px; font-weight: 700; margin: 0; }
+        .calendar-card { background: white; border-radius: 24px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
+        .cal-header h2 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         .nav-btns button { background: #E9E9EB; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ios-blue); font-weight: bold; }
 
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .weekday { text-align: center; font-size: 11px; font-weight: 600; color: var(--ios-gray); padding-bottom: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #F2F2F7; border-radius: 12px; overflow: hidden; border: 1px solid #F2F2F7; }
+        .weekday { background: white; text-align: center; font-size: 11px; font-weight: 600; color: var(--ios-gray); padding: 8px 0; }
         
         .day-cell { 
-            min-height: 55px; position: relative; padding: 4px; border-radius: 8px;
-            display: flex; flex-direction: column; align-items: center; transition: 0.2s;
+            background: white; min-height: 65px; position: relative; padding: 4px;
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
         }
-        .day-num { font-size: 15px; z-index: 2; }
-        .today .day-num { background: var(--ios-red); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .day-num { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+        .today .day-num { background: var(--ios-red); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
-        /* 色塊邏輯：iOS 藥丸型標籤 */
+        /* 藥丸型色塊標籤 */
         .event-pill {
-            width: 100%; font-size: 9px; padding: 2px 4px; border-radius: 4px; margin-top: 2px;
-            color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+            width: 95%; font-size: 9px; padding: 1px 3px; border-radius: 4px; margin-top: 1px;
+            color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; line-height: 1.2;
         }
         .bg-考試 { background-color: var(--ios-red); }
         .bg-提醒 { background-color: var(--ios-blue); }
@@ -47,27 +47,22 @@
         .bg-補課 { background-color: var(--ios-orange); }
         .bg-社團 { background-color: var(--ios-yellow); color: #000; }
 
-        /* 彈窗樣式 */
-        .ios-modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-            z-index: 999; backdrop-filter: blur(10px); 
-        }
-        .ios-modal-content { 
-            background: rgba(255,255,255,0.9); border-radius: 20px; width: 85%; max-width: 350px; 
-            margin: 100px auto; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        .ios-input { width: 100%; border: none; background: #E9E9EB; padding: 12px; border-radius: 10px; margin: 10px 0; box-sizing: border-box; }
-        .ios-btn { 
-            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; 
-            font-weight: 600; cursor: pointer; margin-top: 10px;
-        }
+        /* iOS 彈窗與毛玻璃 */
+        .ios-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .ios-modal-content { background: rgba(255,255,255,0.92); border-radius: 24px; width: 88%; max-width: 360px; margin: 15vh auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .ios-input { width: 100%; border: none; background: #E9E9EB; padding: 14px; border-radius: 12px; margin: 8px 0; box-sizing: border-box; font-size: 16px; }
+        .ios-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }
+        .ios-btn:active { opacity: 0.6; }
         .btn-blue { background: var(--ios-blue); color: white; }
+        .btn-cancel { background: transparent; color: var(--ios-blue); }
+        
+        .admin-action { font-size: 13px; font-weight: bold; margin-left: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 10px 0 20px 5px;">行事曆</h1>
+    <h1 style="font-size: 32px; font-weight: 800; letter-spacing: -1.5px; margin: 10px 0 20px 5px;">行事曆</h1>
 
     <div class="widget-row">
         <div class="ios-widget">
@@ -82,36 +77,37 @@
 
     <div class="calendar-card">
         <div class="cal-header">
-            <h2 id="monthTitle">Month</h2>
+            <h2 id="monthTitle">2026年 2月</h2>
             <div class="nav-btns">
                 <button onclick="changeMonth(-1)">く</button>
                 <button onclick="changeMonth(1)">〉</button>
             </div>
         </div>
         <div class="grid" id="calendarGrid"></div>
-        <div id="adminLoginArea" style="text-align:center; margin-top:15px;">
-            <span onclick="loginAdmin()" style="color: var(--ios-gray); font-size: 12px; cursor: pointer;">管理員登入</span>
+        <div id="adminLoginArea" style="text-align:center; margin-top:20px;">
+            <span onclick="loginAdmin()" style="color: var(--ios-gray); font-size: 12px; cursor: pointer; letter-spacing: 1px;">ADMIN LOGIN</span>
         </div>
     </div>
 </div>
 
 <div id="iosModal" class="ios-modal">
     <div class="ios-modal-content">
-        <h3 id="modalDate" style="margin:0 0 15px 0;">日期</h3>
-        <div id="dayList"></div>
-        <div id="adminForm" style="display:none; margin-top:15px; border-top: 0.5px solid #ccc; padding-top:15px;">
+        <h3 id="modalDate" style="margin:0 0 15px 0; font-size: 20px; font-weight: 700;">日期</h3>
+        <div id="dayList" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
+        
+        <div id="adminForm" style="display:none; margin-top:15px; border-top: 0.5px solid #D1D1D6; padding-top:15px;">
             <input type="hidden" id="editId">
-            <input type="text" id="evTitle" class="ios-input" placeholder="事項內容">
+            <input type="text" id="evTitle" class="ios-input" placeholder="要做什麼事？">
             <select id="evType" class="ios-input">
-                <option value="考試">考試 (紅)</option>
-                <option value="提醒">提醒 (藍)</option>
-                <option value="集會">集會 (綠)</option>
-                <option value="補課">補課/輔導 (橘)</option>
-                <option value="社團">社團 (黃)</option>
+                <option value="考試">🔴 考試</option>
+                <option value="提醒">🔵 提醒</option>
+                <option value="集會">🟢 集會</option>
+                <option value="補課">🟠 補課/輔導</option>
+                <option value="社團">🟡 社團</option>
             </select>
-            <button class="ios-btn btn-blue" onclick="saveEvent()">完成</button>
+            <button class="ios-btn btn-blue" id="saveBtn" onclick="saveEvent()">加入行程</button>
         </div>
-        <button class="ios-btn" onclick="closeModal()" style="background:none; color:var(--ios-blue);">關閉</button>
+        <button class="ios-btn btn-cancel" onclick="closeModal()">關閉</button>
     </div>
 </div>
 
@@ -134,6 +130,7 @@
     let allEvents = [];
     let isAdmin = false;
 
+    // 監聽 Firebase 資料
     db.collection("calendar_events").onSnapshot(snap => {
         allEvents = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
         render();
@@ -148,45 +145,50 @@
         const now = new Date();
         now.setHours(0,0,0,0);
         
-        // 本週 (Sun-Sat)
-        const sun = new Date(now); sun.setDate(now.getDate() - now.getDay());
-        const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
-        
-        // 10天
-        const tenD = new Date(now); tenD.setDate(now.getDate() + 10);
+        // 本週截止：本週六
+        const sat = new Date(now);
+        sat.setDate(now.getDate() + (6 - now.getDay()));
+        sat.setHours(23,59,59,999);
 
-        const filterSort = (start, end) => allEvents.filter(e => {
-            const d = new Date(e.date);
-            return d >= start && d <= end;
-        }).sort((a,b) => a.date.localeCompare(b.date)).slice(0,3);
+        // 10日預告
+        const tenD = new Date(now);
+        tenD.setDate(now.getDate() + 10);
 
-        const buildList = (list) => list.map(e => `
-            <div class="widget-item">
-                <div class="dot-s bg-${e.type}"></div>
-                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.title}</span>
-            </div>`).join('') || '<span style="color:#C7C7CC; font-size:12px;">無事項</span>';
+        const buildList = (start, end) => {
+            const list = allEvents.filter(e => {
+                const d = new Date(e.date);
+                return d >= start && d <= end;
+            }).sort((a,b) => a.date.localeCompare(b.date));
 
-        document.getElementById('widget-week').innerHTML = buildList(filterSort(sun, sat));
-        document.getElementById('widget-10days').innerHTML = buildList(filterSort(now, tenD));
+            return list.map(e => `
+                <div class="widget-item">
+                    <div class="dot-s bg-${e.type}"></div>
+                    <span style="font-size:10px; color:var(--ios-gray);">${e.date.substring(5).replace('-','/')}</span>
+                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.title}</span>
+                </div>`).join('') || '<span style="color:#C7C7CC; font-size:11px;">無事項</span>';
+        };
+
+        document.getElementById('widget-week').innerHTML = buildList(now, sat);
+        document.getElementById('widget-10days').innerHTML = buildList(now, tenD);
     }
 
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
         grid.innerHTML = "";
-        const year = currentView.getFullYear();
-        const month = currentView.getMonth();
-        document.getElementById('monthTitle').innerText = `${year}年 ${month + 1}月`;
+        const yr = currentView.getFullYear();
+        const mo = currentView.getMonth();
+        document.getElementById('monthTitle').innerText = `${yr}年 ${mo + 1}月`;
 
         ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div class="weekday">${d}</div>`);
 
-        const first = new Date(year, month, 1).getDay();
-        const last = new Date(year, month + 1, 0).getDate();
+        const first = new Date(yr, mo, 1).getDay();
+        const last = new Date(yr, mo + 1, 0).getDate();
 
-        for(let i=0; i<first; i++) grid.innerHTML += `<div></div>`;
+        for(let i=0; i<first; i++) grid.innerHTML += `<div class="day-cell" style="background:#F9F9FB;"></div>`;
 
         for(let d=1; d<=last; d++) {
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const isToday = new Date().toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g,'-') === dateStr;
             const dayEvents = allEvents.filter(e => e.date === dateStr);
 
             grid.innerHTML += `
@@ -199,21 +201,28 @@
 
     function openDay(date) {
         document.getElementById('modalDate').innerText = date;
+        document.getElementById('editId').value = "";
+        document.getElementById('evTitle').value = "";
+        document.getElementById('saveBtn').innerText = "加入行程";
+        
         const dayEvents = allEvents.filter(e => e.date === date);
         document.getElementById('dayList').innerHTML = dayEvents.map(e => `
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:15px;">
-                <span><b style="color:var(--ios-blue)">•</b> ${e.title} (${e.type})</span>
-                ${isAdmin ? `<span onclick="editE('${e.id}')" style="color:blue;margin-right:10px;">編</span><span onclick="delE('${e.id}')" style="color:red;">刪</span>` : ''}
-            </div>`).join('') || '無行程';
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:16px;"><b>•</b> ${e.title} <small style="color:var(--ios-gray)">(${e.type})</small></span>
+                ${isAdmin ? `<div>
+                    <span class="admin-action" style="color:var(--ios-blue)" onclick="editE('${e.id}')">編輯</span>
+                    <span class="admin-action" style="color:var(--ios-red)" onclick="delE('${e.id}')">刪除</span>
+                </div>` : ''}
+            </div>`).join('') || '<p style="color:var(--ios-gray)">本日尚無排定事項</p>';
         
-        if(isAdmin) document.getElementById('adminForm').style.display = 'block';
+        document.getElementById('adminForm').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('iosModal').style.display = 'block';
     }
 
     function loginAdmin() {
-        if(prompt("管理密碼") === "Admin88888") {
+        if(prompt("請輸入管理密碼") === "Admin88888") {
             isAdmin = true;
-            document.getElementById('adminLoginArea').innerHTML = "✅ 已進入管理模式";
+            document.getElementById('adminLoginArea').innerHTML = "✨ <b>ADMIN MODE</b>";
             render();
         }
     }
@@ -223,13 +232,13 @@
         const type = document.getElementById('evType').value;
         const date = document.getElementById('modalDate').innerText;
         const id = document.getElementById('editId').value;
-        if(!title) return;
-        
-        id ? await db.collection("calendar_events").doc(id).update({title, type}) :
-             await db.collection("calendar_events").add({title, type, date, createdAt: Date.now()});
-        
-        document.getElementById('evTitle').value = "";
-        document.getElementById('editId').value = "";
+        if(!title) return alert("請輸入事項內容");
+
+        if(id) {
+            await db.collection("calendar_events").doc(id).update({title, type});
+        } else {
+            await db.collection("calendar_events").add({title, type, date, createdAt: Date.now()});
+        }
         closeModal();
     }
 
@@ -238,11 +247,14 @@
         document.getElementById('evTitle').value = e.title;
         document.getElementById('evType').value = e.type;
         document.getElementById('editId').value = id;
+        document.getElementById('saveBtn').innerText = "更新行程";
     }
 
     async function delE(id) {
-        if(confirm("確定刪除？")) await db.collection("calendar_events").doc(id).delete();
-        closeModal();
+        if(confirm("確定要移除此行程嗎？")) {
+            await db.collection("calendar_events").doc(id).delete();
+            closeModal();
+        }
     }
 
     function closeModal() { document.getElementById('iosModal').style.display = 'none'; }
