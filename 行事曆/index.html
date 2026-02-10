@@ -2,91 +2,116 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級智慧行事曆</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Class Calendar Pro</title>
     <style>
         :root {
-            --bg-考試: #fee2e2; --text-考試: #dc2626;
-            --bg-提醒: #dbeafe; --text-提醒: #2563eb;
-            --bg-集會: #dcfce7; --text-集會: #16a34a;
-            --bg-補課: #ffedd5; --text-補課: #ea580c;
-            --bg-社團: #fef9c3; --text-社團: #ca8a04;
-            --primary: #4361ee;
+            --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-green: #34C759;
+            --ios-orange: #FF9500; --ios-yellow: #FFCC00; --ios-gray: #8E8E93;
+            --bg: #F2F2F7;
         }
-        body { font-family: sans-serif; background: #f8fafc; margin: 0; padding: 10px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        
-        /* 月曆樣式 */
-        .calendar-card { background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 15px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #000; }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* iOS Widget 風格卡片 */
+        .widget-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .ios-widget { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .ios-widget h3 { margin: 0 0 10px 0; font-size: 13px; color: var(--ios-gray); letter-spacing: -0.2px; text-transform: uppercase; }
+        .widget-item { font-size: 14px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .dot-s { width: 6px; height: 6px; border-radius: 50%; }
+
+        /* 月曆主體 */
+        .calendar-card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .cal-header h2 { font-size: 20px; font-weight: 700; margin: 0; }
+        .nav-btns button { background: #E9E9EB; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ios-blue); font-weight: bold; }
+
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .weekday { text-align: center; font-size: 12px; color: #94a3b8; padding: 5px 0; }
+        .weekday { text-align: center; font-size: 11px; font-weight: 600; color: var(--ios-gray); padding-bottom: 12px; }
         
         .day-cell { 
-            min-height: 70px; border: 1px solid #f1f5f9; padding: 4px; 
-            display: flex; flex-direction: column; gap: 2px; cursor: pointer;
+            min-height: 55px; position: relative; padding: 4px; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; transition: 0.2s;
         }
-        .day-num { font-size: 12px; font-weight: bold; color: #64748b; }
-        .today { background: #f0f4ff; border: 2px solid var(--primary); }
+        .day-num { font-size: 15px; z-index: 2; }
+        .today .day-num { background: var(--ios-red); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        /* 行程色塊標籤 */
-        .event-tag {
-            font-size: 10px; padding: 2px 4px; border-radius: 4px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            line-height: 1.2; font-weight: 500;
+        /* 色塊邏輯：iOS 藥丸型標籤 */
+        .event-pill {
+            width: 100%; font-size: 9px; padding: 2px 4px; border-radius: 4px; margin-top: 2px;
+            color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
         }
-        .tag-考試 { background: var(--bg-考試); color: var(--text-考試); }
-        .tag-提醒 { background: var(--bg-提醒); color: var(--text-提醒); }
-        .tag-集會 { background: var(--bg-集會); color: var(--text-集會); }
-        .tag-補課 { background: var(--bg-補課); color: var(--text-補課); }
-        .tag-社團 { background: var(--bg-社團); color: var(--text-社團); }
+        .bg-考試 { background-color: var(--ios-red); }
+        .bg-提醒 { background-color: var(--ios-blue); }
+        .bg-集會 { background-color: var(--ios-green); }
+        .bg-補課 { background-color: var(--ios-orange); }
+        .bg-社團 { background-color: var(--ios-yellow); color: #000; }
 
-        /* 彈窗 */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; padding: 20px; }
-        .modal-content { background: white; border-radius: 15px; padding: 20px; max-width: 400px; margin: auto; }
-        .v-input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; width: 100%; font-weight: bold; }
-        .btn-primary { background: var(--primary); color: white; margin-top: 10px; }
-        .btn-delete { background: #fee2e2; color: #dc2626; margin-top: 5px; }
-        
-        .admin-controls { display: none; margin-top: 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 8px 0; }
+        /* 彈窗樣式 */
+        .ios-modal { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            z-index: 999; backdrop-filter: blur(10px); 
+        }
+        .ios-modal-content { 
+            background: rgba(255,255,255,0.9); border-radius: 20px; width: 85%; max-width: 350px; 
+            margin: 100px auto; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .ios-input { width: 100%; border: none; background: #E9E9EB; padding: 12px; border-radius: 10px; margin: 10px 0; box-sizing: border-box; }
+        .ios-btn { 
+            width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; 
+            font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
+        .btn-blue { background: var(--ios-blue); color: white; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <button onclick="changeMonth(-1)">◀</button>
-        <h2 id="monthTitle"></h2>
-        <button onclick="changeMonth(1)">▶</button>
+    <h1 style="font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 10px 0 20px 5px;">行事曆</h1>
+
+    <div class="widget-row">
+        <div class="ios-widget">
+            <h3>本週待辦</h3>
+            <div id="widget-week"></div>
+        </div>
+        <div class="ios-widget">
+            <h3>10日預告</h3>
+            <div id="widget-10days"></div>
+        </div>
     </div>
 
     <div class="calendar-card">
+        <div class="cal-header">
+            <h2 id="monthTitle">Month</h2>
+            <div class="nav-btns">
+                <button onclick="changeMonth(-1)">く</button>
+                <button onclick="changeMonth(1)">〉</button>
+            </div>
+        </div>
         <div class="grid" id="calendarGrid"></div>
-        <button id="adminLoginBtn" onclick="loginAdmin()" style="width:100%; background:none; border:none; color:#cbd5e1; margin-top:15px; font-size:12px;">管理員登入</button>
+        <div id="adminLoginArea" style="text-align:center; margin-top:15px;">
+            <span onclick="loginAdmin()" style="color: var(--ios-gray); font-size: 12px; cursor: pointer;">管理員登入</span>
+        </div>
     </div>
 </div>
 
-<div id="eventModal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalDateTitle"></h3>
-        <div id="existingEvents"></div>
-        
-        <div class="admin-controls" id="adminForm">
-            <hr>
+<div id="iosModal" class="ios-modal">
+    <div class="ios-modal-content">
+        <h3 id="modalDate" style="margin:0 0 15px 0;">日期</h3>
+        <div id="dayList"></div>
+        <div id="adminForm" style="display:none; margin-top:15px; border-top: 0.5px solid #ccc; padding-top:15px;">
             <input type="hidden" id="editId">
-            <input type="text" id="evTitle" class="v-input" placeholder="事項名稱">
-            <select id="evType" class="v-input">
-                <option value="考試">🔴 考試</option>
-                <option value="提醒">🔵 提醒</option>
-                <option value="集會">🟢 集會</option>
-                <option value="補課">🟠 補課/輔導</option>
-                <option value="社團">🟡 社團</option>
+            <input type="text" id="evTitle" class="ios-input" placeholder="事項內容">
+            <select id="evType" class="ios-input">
+                <option value="考試">考試 (紅)</option>
+                <option value="提醒">提醒 (藍)</option>
+                <option value="集會">集會 (綠)</option>
+                <option value="補課">補課/輔導 (橘)</option>
+                <option value="社團">社團 (黃)</option>
             </select>
-            <button class="btn btn-primary" onclick="saveEvent()">確認儲存</button>
+            <button class="ios-btn btn-blue" onclick="saveEvent()">完成</button>
         </div>
-        <button class="btn" onclick="closeModal()" style="background:#eee; margin-top:10px;">關閉</button>
+        <button class="ios-btn" onclick="closeModal()" style="background:none; color:var(--ios-blue);">關閉</button>
     </div>
 </div>
 
@@ -109,110 +134,118 @@
     let allEvents = [];
     let isAdmin = false;
 
-    // 監聽資料
     db.collection("calendar_events").onSnapshot(snap => {
         allEvents = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
         render();
     });
 
     function render() {
-        const grid = document.getElementById('calendarGrid');
-        const title = document.getElementById('monthTitle');
-        grid.innerHTML = "";
+        renderWidgets();
+        renderCalendar();
+    }
+
+    function renderWidgets() {
+        const now = new Date();
+        now.setHours(0,0,0,0);
         
+        // 本週 (Sun-Sat)
+        const sun = new Date(now); sun.setDate(now.getDate() - now.getDay());
+        const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+        
+        // 10天
+        const tenD = new Date(now); tenD.setDate(now.getDate() + 10);
+
+        const filterSort = (start, end) => allEvents.filter(e => {
+            const d = new Date(e.date);
+            return d >= start && d <= end;
+        }).sort((a,b) => a.date.localeCompare(b.date)).slice(0,3);
+
+        const buildList = (list) => list.map(e => `
+            <div class="widget-item">
+                <div class="dot-s bg-${e.type}"></div>
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.title}</span>
+            </div>`).join('') || '<span style="color:#C7C7CC; font-size:12px;">無事項</span>';
+
+        document.getElementById('widget-week').innerHTML = buildList(filterSort(sun, sat));
+        document.getElementById('widget-10days').innerHTML = buildList(filterSort(now, tenD));
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = "";
         const year = currentView.getFullYear();
         const month = currentView.getMonth();
-        title.innerText = `${year}年 ${month + 1}月`;
+        document.getElementById('monthTitle').innerText = `${year}年 ${month + 1}月`;
 
-        // 星期標頭
         ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div class="weekday">${d}</div>`);
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const totalDays = new Date(year, month + 1, 0).getDate();
+        const first = new Date(year, month, 1).getDay();
+        const last = new Date(year, month + 1, 0).getDate();
 
-        // 填充空格
-        for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
+        for(let i=0; i<first; i++) grid.innerHTML += `<div></div>`;
 
-        // 填充日期
-        for(let d=1; d<=totalDays; d++) {
+        for(let d=1; d<=last; d++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const isToday = new Date().toISOString().split('T')[0] === dateStr;
             const dayEvents = allEvents.filter(e => e.date === dateStr);
 
-            let eventHtml = dayEvents.map(e => `<div class="event-tag tag-${e.type || '提醒'}">${e.title}</div>`).join('');
-            
             grid.innerHTML += `
                 <div class="day-cell ${isToday?'today':''}" onclick="openDay('${dateStr}')">
                     <span class="day-num">${d}</span>
-                    ${eventHtml}
+                    ${dayEvents.map(e => `<div class="event-pill bg-${e.type}">${e.title}</div>`).join('')}
                 </div>`;
         }
     }
 
     function openDay(date) {
-        document.getElementById('modalDateTitle').innerText = date;
-        document.getElementById('editId').value = ""; // 清空編輯 ID
-        document.getElementById('evTitle').value = "";
-        
+        document.getElementById('modalDate').innerText = date;
         const dayEvents = allEvents.filter(e => e.date === date);
-        const listDiv = document.getElementById('existingEvents');
+        document.getElementById('dayList').innerHTML = dayEvents.map(e => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:15px;">
+                <span><b style="color:var(--ios-blue)">•</b> ${e.title} (${e.type})</span>
+                ${isAdmin ? `<span onclick="editE('${e.id}')" style="color:blue;margin-right:10px;">編</span><span onclick="delE('${e.id}')" style="color:red;">刪</span>` : ''}
+            </div>`).join('') || '無行程';
         
-        listDiv.innerHTML = dayEvents.map(e => `
-            <div class="item-row">
-                <span>[${e.type}] ${e.title}</span>
-                ${isAdmin ? `<div>
-                    <button onclick="editEvent('${e.id}')" style="color:blue; border:none; background:none; cursor:pointer;">編</button>
-                    <button onclick="deleteEvent('${e.id}')" style="color:red; border:none; background:none; cursor:pointer;">刪</button>
-                </div>` : ''}
-            </div>
-        `).join('') || '本日無行程';
-
         if(isAdmin) document.getElementById('adminForm').style.display = 'block';
-        document.getElementById('eventModal').style.display = 'block';
+        document.getElementById('iosModal').style.display = 'block';
     }
 
     function loginAdmin() {
-        const pass = prompt("請輸入管理密碼：");
-        if(pass === "Admin88888") {
+        if(prompt("管理密碼") === "Admin88888") {
             isAdmin = true;
-            document.getElementById('adminLoginBtn').innerText = "✅ 管理員模式已開啟";
+            document.getElementById('adminLoginArea').innerHTML = "✅ 已進入管理模式";
             render();
-        } else {
-            alert("密碼錯誤");
         }
     }
 
     async function saveEvent() {
         const title = document.getElementById('evTitle').value;
         const type = document.getElementById('evType').value;
-        const date = document.getElementById('modalDateTitle').innerText;
-        const editId = document.getElementById('editId').value;
-
-        if(!title) return alert("請輸入內容");
-
-        if(editId) {
-            await db.collection("calendar_events").doc(editId).update({ title, type });
-        } else {
-            await db.collection("calendar_events").add({ title, type, date, createdAt: Date.now() });
-        }
+        const date = document.getElementById('modalDate').innerText;
+        const id = document.getElementById('editId').value;
+        if(!title) return;
+        
+        id ? await db.collection("calendar_events").doc(id).update({title, type}) :
+             await db.collection("calendar_events").add({title, type, date, createdAt: Date.now()});
+        
+        document.getElementById('evTitle').value = "";
+        document.getElementById('editId').value = "";
         closeModal();
     }
 
-    async function editEvent(id) {
-        const ev = allEvents.find(e => e.id === id);
-        document.getElementById('evTitle').value = ev.title;
-        document.getElementById('evType').value = ev.type || '提醒';
+    function editE(id) {
+        const e = allEvents.find(x => x.id === id);
+        document.getElementById('evTitle').value = e.title;
+        document.getElementById('evType').value = e.type;
         document.getElementById('editId').value = id;
     }
 
-    async function deleteEvent(id) {
-        if(confirm("確定要刪除嗎？")) {
-            await db.collection("calendar_events").doc(id).delete();
-            closeModal();
-        }
+    async function delE(id) {
+        if(confirm("確定刪除？")) await db.collection("calendar_events").doc(id).delete();
+        closeModal();
     }
 
-    function closeModal() { document.getElementById('eventModal').style.display = 'none'; }
+    function closeModal() { document.getElementById('iosModal').style.display = 'none'; }
     function changeMonth(n) { currentView.setMonth(currentView.getMonth() + n); render(); }
 
     render();
