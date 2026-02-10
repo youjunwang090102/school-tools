@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級管理留言板 - 老師指派版</title>
+    <title>班級分流系統 - 強制驗證版</title>
     <style>
         :root { --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff; --text: #333; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); }
         
-        /* 登入遮罩 */
-        #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000; }
-        .login-btn { padding: 15px 30px; background: #4285F4; color:white; border:none; border-radius:5px; font-size:1.1rem; cursor:pointer; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        /* 1. 登入遮罩 (最上層) */
+        #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; }
+        .login-btn { padding: 15px 30px; background: #4285F4; color:white; border:none; border-radius:5px; font-size:1.1rem; cursor:pointer; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* 尚未綁定提示 */
-        #unboundOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:900; text-align:center; padding: 20px; }
-
-        .container { width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
-        .header { background: var(--primary); color:white; padding: 20px; border-radius: 0 0 20px 20px; display:flex; justify-content:space-between; align-items: center; margin-bottom: 20px; }
+        /* 2. 尚未綁定遮罩 (次上層) */
+        #unboundOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#f8d7da; display:none; flex-direction:column; justify-content:center; align-items:center; z-index:1500; text-align:center; padding: 20px; color: #721c24; }
         
-        /* 老師專用分頁按鈕 */
+        /* 3. 主應用程式 (最底層) */
+        .container { width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 120px; display: none; } /* 預設隱藏 */
+
+        .header { background: var(--primary); color:white; padding: 20px; border-radius: 0 0 20px 20px; display:flex; justify-content:space-between; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* 老師控制台 */
         .teacher-nav { display: flex; gap: 10px; padding: 0 15px; margin-bottom: 15px; }
-        .nav-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #ddd; cursor: pointer; }
-        .nav-btn.active { background: var(--primary); color: white; }
+        .nav-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #e0e0e0; cursor: pointer; transition: 0.2s; }
+        .nav-btn.active { background: var(--primary); color: white; transform: scale(1.05); }
 
         .input-box { background: var(--card); margin: 0 15px 20px 15px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .grid { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
@@ -30,57 +32,59 @@
         #messageList { padding: 0 15px; display: flex; flex-direction: column; gap: 12px; }
         .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 5px solid var(--primary); }
         .msg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-        .msg-author { font-weight: bold; color: #333; }
-
-        /* 老師管理面板 */
-        #adminConsole { display:none; background: #222; color: white; padding: 20px; position: fixed; bottom: 0; left: 0; width: 100%; max-height: 60vh; overflow-y: auto; z-index: 1001; box-sizing: border-box; border-radius: 20px 20px 0 0; }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #444; }
-        .admin-btn { padding: 5px 10px; margin-left: 5px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        
+        /* 老師管理面板 (固定底部) */
+        #adminConsole { display:none; background: #2c3e50; color: white; padding: 20px; position: fixed; bottom: 0; left: 0; width: 100%; max-height: 50vh; overflow-y: auto; z-index: 1001; box-sizing: border-box; border-radius: 20px 20px 0 0; box-shadow: 0 -4px 10px rgba(0,0,0,0.2); }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #444; }
+        .admin-action-btn { padding: 6px 12px; margin-left: 5px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="loginOverlay">
-    <h2 style="margin-bottom:30px;">🏫 班級數位討論牆</h2>
-    <button class="login-btn" onclick="signIn()">使用 Google 帳號登入</button>
+    <h2 style="margin-bottom:20px; color:#333;">🏫 班級討論區</h2>
+    <p style="color:#666; margin-bottom:30px;">請使用 Google 帳號登入</p>
+    <button class="login-btn" onclick="signIn()">Google 登入</button>
 </div>
 
 <div id="unboundOverlay">
-    <h2 style="color: #e63946;">🔒 尚未分配班級</h2>
-    <p id="userEmailTag"></p>
-    <p>請告知老師您的帳號，等待指派班級後<br>重新整頁面即可進入。</p>
-    <button onclick="signOut()" style="margin-top:20px; padding:10px 20px;">登出帳號</button>
+    <h1>⚠️ 尚未分班</h1>
+    <p id="userInfoDisplay" style="font-weight:bold; margin: 10px 0;"></p>
+    <p>您的帳號已登錄，但尚未被分配班級。<br>請舉手告知老師，完成分配後此畫面會自動消失。</p>
+    <button onclick="signOut()" style="margin-top:20px; padding:10px 20px; background:white; border:1px solid #721c24; color:#721c24; border-radius:5px; cursor:pointer;">登出</button>
 </div>
 
-<div class="container" id="mainApp" style="display:none;">
+<div class="container" id="mainApp">
     <div class="header">
-        <h3 id="displayClassName" style="margin:0;">載入中...</h3>
-        <button onclick="signOut()" style="background:none; border:1px solid white; color:white; border-radius:4px; cursor:pointer;">登出</button>
+        <div>
+            <h3 id="displayClassName" style="margin:0;">載入中...</h3>
+            <span id="currentUserTag" style="font-size:0.8rem; opacity:0.8;"></span>
+        </div>
+        <button onclick="signOut()" style="background:rgba(255,255,255,0.2); border:1px solid white; color:white; border-radius:4px; padding:5px 10px; cursor:pointer;">登出</button>
     </div>
 
     <div id="teacherTabs" class="teacher-nav" style="display:none;">
-        <button id="tabA" class="nav-btn" onclick="switchView('ClassA')">查看甲班</button>
-        <button id="tabB" class="nav-btn" onclick="switchView('ClassB')">查看乙班</button>
-        <button class="nav-btn" style="background:#ffd700; color:#000;" onclick="toggleAdminConsole()">管理學生</button>
+        <button id="btnClassA" class="nav-btn" onclick="switchView('ClassA')">甲班</button>
+        <button id="btnClassB" class="nav-btn" onclick="switchView('ClassB')">乙班</button>
+        <button class="nav-btn" style="background:#f1c40f; color:#333;" onclick="toggleAdmin()">👥 管理名單</button>
     </div>
 
     <div class="input-box">
         <div class="grid">
-            <input type="text" id="msgContent" placeholder="說點什麼吧...">
-            <button onclick="sendComment()" style="background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">發佈</button>
+            <input type="text" id="msgContent" placeholder="輸入訊息...">
+            <button onclick="sendComment()" style="background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">發送</button>
         </div>
-        <div id="whoAmI" style="font-size: 0.7rem; color: #999; margin-top: 10px;"></div>
     </div>
 
     <div id="messageList"></div>
 </div>
 
 <div id="adminConsole">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h3 style="margin:0;">👥 學生名單與權限指派</h3>
-        <button onclick="toggleAdminConsole()" style="background:white; border:none; border-radius:5px;">關閉</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0;">👥 學生權限管理</h3>
+        <button onclick="toggleAdmin()" style="background:transparent; border:1px solid white; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;">關閉</button>
     </div>
-    <div id="userList">讀取中...</div>
+    <div id="userList" style="font-size:0.9rem;">載入中...</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -88,17 +92,17 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
 
 <script>
-    // --- ⚠️ 注意：請替換成您自己的 Firebase 配置 ---
+    // --- ⚠️ 請替換您的 Firebase Config ---
     const firebaseConfig = {
         apiKey: "AIzaSyAS2CLfgTw9RQgVmZroj0O__N7h3M7XoP0",
         authDomain: "school-tools-6668.firebaseapp.com",
         projectId: "school-tools-6668",
         storageBucket: "school-tools-6668.firebasestorage.app",
         messagingSenderId: "436587749038",
-        appId: "1:436587749038:web:7153f0699078966530d73f",
+        appId: "1:436587749038:web:7153f0699078966530d73f"
     };
-    
-    const TEACHER_EMAIL = "automail@gmail.com"; 
+
+    const TEACHER_EMAIL = "automail@gmail.com"; // 老師的 Email
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -106,88 +110,102 @@
     const provider = new firebase.auth.GoogleAuthProvider();
 
     let currentUser = null;
-    let currentViewClass = null; // 老師正在看的班級
+    let currentViewClass = null; 
     let unsubMsg = null;
 
-    // --- 登入邏輯 (轉址版) ---
+    // --- 1. 登入流程 ---
     function signIn() { auth.signInWithRedirect(provider); }
     function signOut() { auth.signOut().then(() => location.reload()); }
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            currentUser = user;
+            // 已登入：隱藏登入頁
             document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('whoAmI').innerText = `登入身份：${user.displayName}`;
-            document.getElementById('userEmailTag').innerText = `帳號：${user.email}`;
+            currentUser = user;
+            document.getElementById('currentUserTag').innerText = `${user.displayName}`;
+            document.getElementById('userInfoDisplay').innerText = `${user.displayName} (${user.email})`;
 
-            // 初始化使用者資料
+            // 更新使用者最後上線時間
             await db.collection("users").doc(user.email).set({
                 name: user.displayName,
                 email: user.email,
+                photo: user.photoURL,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
+            // 開始檢查權限 (決定要去哪一頁)
             checkAccess();
         } else {
+            // 未登入：只顯示登入頁
             document.getElementById('loginOverlay').style.display = 'flex';
         }
     });
 
-    // --- 權限與班級檢查 ---
+    // --- 2. 核心權限判斷 (State Machine) ---
     function checkAccess() {
+        // 監聽該使用者的資料變化 (即時反應老師的指派)
         db.collection("users").doc(currentUser.email).onSnapshot(doc => {
             const data = doc.data();
-            
+
+            // 情況 A：我是老師
             if (currentUser.email === TEACHER_EMAIL) {
-                // 老師身份
-                document.getElementById('mainApp').style.display = 'block';
+                showMainApp();
                 document.getElementById('teacherTabs').style.display = 'flex';
-                loadUserList();
+                // 預設先看甲班，並開啟管理名單監聽
                 if (!currentViewClass) switchView('ClassA');
-            } else if (data && data.class) {
-                // 已指派班級的學生
-                document.getElementById('unboundOverlay').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                currentViewClass = data.class;
-                document.getElementById('displayClassName').innerText = (data.class === 'ClassA' ? "🏆 甲班討論牆" : "🚀 乙班討論牆");
-                loadMessages();
-            } else {
-                // 尚未指派
-                document.getElementById('unboundOverlay').style.display = 'flex';
+                loadAllStudents(); 
+            } 
+            // 情況 B：我是學生，且已經有班級 (data.class 存在)
+            else if (data && data.class) {
+                showMainApp();
+                document.getElementById('unboundOverlay').style.display = 'none'; // 隱藏警告
+                
+                // 自動進入被指派的班級
+                if (currentViewClass !== data.class) {
+                    switchView(data.class);
+                }
+                // 學生不能切換班級，隱藏老師控制列
+                document.getElementById('teacherTabs').style.display = 'none';
+            } 
+            // 情況 C：我是學生，但沒有班級 (data.class 不存在或為空)
+            else {
                 document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('unboundOverlay').style.display = 'flex'; // 顯示警告
             }
         });
     }
 
-    // --- 老師功能：切換班級與管理 ---
-    function switchView(className) {
-        currentViewClass = className;
-        document.getElementById('displayClassName').innerText = `管理中：${className === 'ClassA' ? '甲班' : '乙班'}`;
-        document.getElementById('tabA').classList.toggle('active', className === 'ClassA');
-        document.getElementById('tabB').classList.toggle('active', className === 'ClassB');
-        loadMessages();
+    function showMainApp() {
+        document.getElementById('mainApp').style.display = 'block';
+        document.getElementById('loginOverlay').style.display = 'none';
     }
 
-    function toggleAdminConsole() {
-        const console = document.getElementById('adminConsole');
-        console.style.display = (console.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function loadUserList() {
+    // --- 3. 老師功能：管理學生 ---
+    function loadAllStudents() {
         db.collection("users").onSnapshot(snap => {
             const list = document.getElementById('userList');
             list.innerHTML = "";
             snap.forEach(doc => {
                 const u = doc.data();
-                if(u.email === TEACHER_EMAIL) return;
+                if(u.email === TEACHER_EMAIL) return; // 不顯示老師自己
+
                 const div = document.createElement('div');
                 div.className = 'user-row';
+                
+                // 判斷目前班級顏色
+                let statusColor = u.class ? '#2ecc71' : '#e74c3c'; 
+                let statusText = u.class ? (u.class==='ClassA'?'甲班':'乙班') : '未分班';
+
                 div.innerHTML = `
-                    <div><b>${u.name}</b><br><small>${u.email}</small> <br>當前：${u.class || '未分配'}</div>
                     <div>
-                        <button class="admin-btn" style="background:#4caf50;" onclick="assignClass('${u.email}','ClassA')">甲</button>
-                        <button class="admin-btn" style="background:#2196f3;" onclick="assignClass('${u.email}','ClassB')">乙</button>
-                        <button class="admin-btn" style="background:#666;" onclick="assignClass('${u.email}',null)">X</button>
+                        <div style="font-weight:bold;">${u.name}</div>
+                        <div style="font-size:0.8rem; color:#aaa;">${u.email}</div>
+                        <div style="font-size:0.8rem; color:${statusColor};">目前：${statusText}</div>
+                    </div>
+                    <div>
+                        <button class="admin-action-btn" style="background:#3498db;" onclick="assignClass('${u.email}','ClassA')">甲</button>
+                        <button class="admin-action-btn" style="background:#9b59b6;" onclick="assignClass('${u.email}','ClassB')">乙</button>
+                        <button class="admin-action-btn" style="background:#555;" onclick="assignClass('${u.email}', null)">重置</button>
                     </div>
                 `;
                 list.appendChild(div);
@@ -196,10 +214,37 @@
     }
 
     function assignClass(email, className) {
-        db.collection("users").doc(email).update({ class: className });
+        // 更新該學生的 class 欄位
+        // 如果 className 是 null，代表重置 (delete field)
+        if (className) {
+            db.collection("users").doc(email).update({ class: className });
+        } else {
+            db.collection("users").doc(email).update({ class: firebase.firestore.FieldValue.delete() });
+        }
     }
 
-    // --- 訊息功能 ---
+    function toggleAdmin() {
+        const p = document.getElementById('adminConsole');
+        p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // --- 4. 視圖切換與訊息讀取 ---
+    function switchView(className) {
+        currentViewClass = className;
+        
+        // 更新標題
+        const titles = { 'ClassA': '🏆 甲班討論區', 'ClassB': '🚀 乙班討論區' };
+        document.getElementById('displayClassName').innerText = titles[className];
+
+        // 老師按鈕變色
+        if(currentUser.email === TEACHER_EMAIL) {
+            document.getElementById('btnClassA').classList.toggle('active', className === 'ClassA');
+            document.getElementById('btnClassB').classList.toggle('active', className === 'ClassB');
+        }
+
+        loadMessages();
+    }
+
     function loadMessages() {
         if (unsubMsg) unsubMsg();
         unsubMsg = db.collection("classes").doc(currentViewClass).collection("messages")
@@ -210,21 +255,30 @@
                 list.innerHTML = "";
                 snap.forEach(doc => {
                     const d = doc.data();
-                    const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+                    const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+                    
                     const div = document.createElement('div');
                     div.className = 'msg-card';
+                    
+                    // 老師才有刪除按鈕
+                    let delBtn = "";
+                    if (currentUser.email === TEACHER_EMAIL) {
+                        delBtn = `<span style="cursor:pointer; color:#e74c3c; margin-left:10px;" onclick="deleteMsg('${doc.id}')">🗑️</span>`;
+                    }
+
                     div.innerHTML = `
                         <div class="msg-header">
-                            <span class="msg-author">${d.author}</span>
-                            <span>${time} ${currentUser.email === TEACHER_EMAIL ? `<button onclick="deleteMsg('${doc.id}')" style="border:none; background:none; color:red; cursor:pointer;">🗑️</button>` : ''}</span>
+                            <span style="font-weight:bold; color:#333;">${d.author}</span>
+                            <span>${time} ${delBtn}</span>
                         </div>
-                        <div class="msg-content">${d.content}</div>
+                        <div style="margin-top:5px; color:#555;">${d.content}</div>
                     `;
                     list.appendChild(div);
                 });
             });
     }
 
+    // --- 5. 發送與刪除 ---
     function sendComment() {
         const content = document.getElementById('msgContent').value.trim();
         if (!content || !currentViewClass) return;
@@ -234,9 +288,7 @@
             email: currentUser.email,
             content: content,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            document.getElementById('msgContent').value = "";
-        });
+        }).then(() => { document.getElementById('msgContent').value = ""; });
     }
 
     function deleteMsg(id) {
