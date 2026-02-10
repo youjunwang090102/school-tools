@@ -3,34 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>段考成績加權計算</title>
+    <title>段考成績加權計算器</title>
     <style>
-        :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; margin-top: 10px; }
+        :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; --red: #ff4d4d; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
-        h1 { font-size: 1.3rem; text-align: center; color: var(--p); margin: 5px 0 20px; font-weight: 800; }
-        
-        .select-box { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--p); font-size: 1rem; margin-bottom: 20px; outline: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232ec4b6' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E") no-repeat calc(100% - 15px) center; -webkit-appearance: none; }
+        /* 主容器 */
+        .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
+        h1 { font-size: 1.3rem; text-align: center; color: var(--p); margin: 5px 0 15px; font-weight: 800; }
 
+        /* 個人資訊區 */
+        .info-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .info-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; }
+        .info-input:focus { border-color: var(--p); }
+
+        .select-box { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--p); font-size: 1rem; margin-bottom: 15px; outline: none; background: #fff; }
+
+        /* 表格結構 */
         .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
         .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; margin-bottom: 5px; }
-        
-        input { border: 1px solid #ddd; padding: 12px 5px; border-radius: 10px; font-size: 0.95rem; outline: none; box-sizing: border-box; text-align: center; }
-        input:focus { border-color: var(--p); background: #f0fffb; }
-        
-        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 12px; min-width: 0; border: 1px solid transparent; } 
-        .score { width: 75px; border: 2px solid #e2e8f0; font-weight: bold; color: var(--p); } 
-        .weight { width: 50px; background: #f8f9fa; color: #666; font-size: 0.85rem; }
-        .del-btn { width: 30px; color: #ffbcbc; font-size: 1.4rem; cursor: pointer; text-align: center; }
-        
-        .result-card { margin-top: 25px; padding: 20px; background: var(--p); color: white; border-radius: 18px; text-align: center; box-shadow: 0 10px 20px rgba(46, 196, 182, 0.2); }
-        .result-val { font-size: 3rem; font-weight: 800; margin: 0; line-height: 1.2; }
-        
-        .footer-btns { margin-top: 15px; }
-        .btn-add { width: 100%; padding: 12px; border-radius: 12px; border: 2px dashed var(--p); background: #e6fffa; color: var(--p); font-weight: bold; cursor: pointer; font-size: 0.95rem; }
-        
-        footer { margin-top: 30px; font-size: 0.8rem; color: #adb5bd; }
+        .input-cell { border: 1px solid #ddd; padding: 10px 5px; border-radius: 8px; font-size: 0.95rem; outline: none; text-align: center; }
+        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 10px; border: 1px solid transparent; }
+        .score { width: 70px; border: 2px solid #e2e8f0; font-weight: bold; color: var(--p); }
+        .weight { width: 45px; background: #f8f9fa; color: #666; font-size: 0.85rem; }
+        .del-btn { width: 25px; color: #ccc; font-size: 1.2rem; cursor: pointer; text-align: center; }
+
+        /* 結果與按鈕 */
+        .result-card { margin-top: 20px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
+        .result-val { font-size: 2.5rem; font-weight: 800; margin: 0; }
+        .btn-group { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .btn-add { background: #e6fffa; color: var(--p); border: 2px dashed var(--p); }
+        .btn-export { background: var(--text); color: white; margin-top: 5px; }
+
+        /* 方案 C 成績單彈窗 */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; overflow-y: auto; padding: 20px 0; }
+        .report-paper { width: 90%; max-width: 360px; background: #fff; padding: 20px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; }
+        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin: 0 0 10px; }
+        .student-info { display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.85rem; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+        .report-table th { background: #f2f2f2; }
+        .report-summary { text-align: right; border-top: 1px dashed #000; padding-top: 10px; }
+        .final-avg { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
+        .official-seal { position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 3px solid var(--red); border-radius: 50%; color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; transform: rotate(-15deg); opacity: 0.8; text-align: center; }
+        .btn-close { margin-top: 15px; background: white; padding: 10px 25px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -38,11 +55,18 @@
 <div class="container">
     <h1>📝 段考加權計算</h1>
 
+    <div class="info-grid">
+        <input type="text" id="in-exam" class="info-input" placeholder="考試別 (例：第一次段考)">
+        <input type="text" id="in-class" class="info-input" placeholder="班級">
+        <input type="text" id="in-no" class="info-input" placeholder="座號">
+        <input type="text" id="in-name" class="info-input" placeholder="姓名">
+    </div>
+
     <select id="class-select" class="select-box" onchange="loadTemplate()">
         <option value="">-- 自訂科目 --</option>
+        <option value="203">資訊科 203、204</option>
         <option value="201">製圖科 201</option>
         <option value="202">營建科 202</option>
-        <option value="203">資訊科 203、204</option>
         <option value="205">餐飲科 205</option>
         <option value="206">畜產科 206</option>
         <option value="207">園藝科 207</option>
@@ -50,28 +74,50 @@
     </select>
 
     <div class="row row-header">
-        <span style="flex:1; padding-left:12px;">科目</span>
-        <span style="width:75px; text-align: center;">分數</span>
-        <span style="width:50px; text-align: center;">權重</span>
-        <span style="width:30px"></span>
+        <span style="flex:1; padding-left:10px;">科目</span>
+        <span style="width:70px; text-align: center;">分數</span>
+        <span style="width:45px; text-align: center;">權重</span>
+        <span style="width:25px"></span>
     </div>
 
     <div id="subject-list"></div>
 
-    <div class="footer-btns">
-        <button class="btn-add" onclick="addRow()">+ 新增科目</button>
+    <div class="btn-group">
+        <button class="btn btn-add" onclick="addRow()">+ 新增科目</button>
+        <button class="btn btn-export" onclick="showReport()">✨ 生成精美成績單</button>
     </div>
 
     <div class="result-card">
-        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px;">您的加權平均</div>
+        <div style="font-size: 0.9rem; opacity: 0.9;">目前的加權平均</div>
         <div class="result-val" id="average">0.00</div>
-        <div id="total-info" style="font-size: 0.8rem; opacity: 0.8; margin-top: 8px;">請於上方輸入成績</div>
     </div>
 </div>
 
-<footer>
-    © 2026 數位教學助手
-</footer>
+<div id="report-modal" class="modal">
+    <div class="report-paper" id="report-content">
+        <div class="report-header">
+            <h2 id="out-exam">成績報告單</h2>
+        </div>
+        <div class="student-info">
+            <span>班級：<b id="out-class"></b></span>
+            <span>座號：<b id="out-no"></b></span>
+            <span>姓名：<b id="out-name"></b></span>
+        </div>
+        <table class="report-table">
+            <thead>
+                <tr><th>科目</th><th>分數</th><th>權重</th><th>加權</th></tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+        </table>
+        <div class="report-summary">
+            <div id="report-stats" style="font-size: 0.8rem;"></div>
+            <div class="final-avg">平均分數：<span id="res-avg"></span></div>
+        </div>
+        <div class="official-seal">數位教室<br>核訖章</div>
+    </div>
+    <button class="btn-close" onclick="closeReport()">返回修改</button>
+    <p style="color:white; font-size:0.8rem; margin-top:10px;">提示：請直接截圖或長按儲存圖片</p>
+</div>
 
 <script>
     const templates = {
@@ -79,52 +125,67 @@
             {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
             {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
             {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
-        ],
-        // 您可以依照資訊科的格式，繼續在此補充其他班級資料
+        ]
     };
 
     function loadTemplate() {
-        const classVal = document.getElementById('class-select').value;
+        const val = document.getElementById('class-select').value;
         const list = document.getElementById('subject-list');
         list.innerHTML = '';
-        
-        if (templates[classVal]) {
-            templates[classVal].forEach(item => addRow(item.n, item.w));
+        if (templates[val]) {
+            templates[val].forEach(item => addRow(item.n, item.w));
         } else {
-            // 自訂模式下預設給 3 行空的
-            addRow(); addRow(); addRow();
+            for(let i=0; i<3; i++) addRow();
         }
         calc();
     }
 
-    function addRow(name = '', weight = '') {
+    function addRow(n='', w='') {
         const div = document.createElement('div');
         div.className = 'row';
         div.innerHTML = `
-            <input type="text" class="subject" placeholder="科目" value="${name}">
-            <input type="number" class="score" placeholder="0" inputmode="decimal" oninput="calc()">
-            <input type="number" class="weight" placeholder="權" value="${weight}" oninput="calc()">
+            <input type="text" class="input-cell subject" placeholder="科目" value="${n}">
+            <input type="number" class="input-cell score" placeholder="0" inputmode="decimal" oninput="calc()">
+            <input type="number" class="input-cell weight" placeholder="權" value="${w}" oninput="calc()">
             <span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>
         `;
         document.getElementById('subject-list').appendChild(div);
     }
 
     function calc() {
-        let totalWeightedScore = 0;
-        let totalWeights = 0;
+        let tw = 0, ts = 0;
         document.querySelectorAll('#subject-list .row').forEach(row => {
             const s = parseFloat(row.querySelector('.score').value);
             const w = parseFloat(row.querySelector('.weight').value);
-            if (!isNaN(s) && !isNaN(w)) {
-                totalWeightedScore += s * w;
-                totalWeights += w;
-            }
+            if (!isNaN(s) && !isNaN(w)) { tw += w; ts += (s * w); }
         });
-        const avg = totalWeights > 0 ? (totalWeightedScore / totalWeights).toFixed(2) : "0.00";
-        document.getElementById('average').innerText = avg;
-        document.getElementById('total-info').innerText = `總權數: ${totalWeights} | 加權總分: ${totalWeightedScore}`;
+        document.getElementById('average').innerText = tw > 0 ? (ts / tw).toFixed(2) : "0.00";
+        return { tw, ts };
     }
 
+    function showReport() {
+        const data = calc();
+        const exam = document.getElementById('in-exam').value || "成績報告單";
+        document.getElementById('out-exam').innerText = exam;
+        document.getElementById('out-class').innerText = document.getElementById('in-class').value || "--";
+        document.getElementById('out-no').innerText = document.getElementById('in-no').value || "--";
+        document.getElementById('out-name').innerText = document.getElementById('in-name').value || "--";
+
+        let html = '';
+        document.querySelectorAll('#subject-list .row').forEach(row => {
+            const n = row.querySelector('.subject').value || "未命名";
+            const s = row.querySelector('.score').value || "0";
+            const w = row.querySelector('.weight').value || "0";
+            if(w > 0) html += `<tr><td>${n}</td><td>${s}</td><td>${w}</td><td>${s*w}</td></tr>`;
+        });
+
+        document.getElementById('report-body').innerHTML = html;
+        document.getElementById('report-stats').innerText = `總權數：${data.tw} | 加權總分：${data.ts}`;
+        document.getElementById('res-avg').innerText = data.tw > 0 ? (data.ts / data.tw).toFixed(2) : "0.00";
+        document.getElementById('report-modal').style.display = 'flex';
+    }
+
+    function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
     window.onload = loadTemplate;
 </script>
 </body>
