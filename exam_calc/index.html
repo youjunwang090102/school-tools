@@ -2,36 +2,37 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>段考成績加權計算</title>
     <style>
         :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
         
-        h1 { font-size: 1.4rem; text-align: center; color: var(--p); margin-bottom: 20px; }
+        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin: 10px 0 20px; }
         
-        /* 下拉選單樣式 */
-        .select-box { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--p); font-size: 1rem; margin-bottom: 20px; outline: none; background: white; }
+        .select-box { width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--p); font-size: 0.95rem; margin-bottom: 15px; outline: none; background: white; }
 
-        /* 表格樣式 */
-        .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-        .row-header { font-weight: bold; font-size: 0.85rem; color: #8d99ae; margin-bottom: 5px; padding: 0 5px; }
+        /* 表格結構優化 */
+        .row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; margin-bottom: 5px; }
         
-        input { border: 1px solid #ddd; padding: 12px; border-radius: 10px; font-size: 1rem; outline: none; box-sizing: border-box; }
+        input { border: 1px solid #ddd; padding: 10px 5px; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box; text-align: center; }
         input:focus { border-color: var(--p); background: #f0fffb; }
         
-        .subject { flex: 2; background: #f8f9fa; } 
-        .score { flex: 1.2; border: 2px solid #e2e8f0; text-align: center; } 
-        .weight { flex: 0.8; text-align: center; background: #f8f9fa; }
+        /* 比例分配：科目(剩餘空間), 分數(70px), 權重(50px), 刪除(25px) */
+        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 10px; min-width: 0; } 
+        .score { width: 70px; border: 2px solid #e2e8f0; } 
+        .weight { width: 50px; background: #f8f9fa; color: #666; }
+        .del-btn { width: 25px; color: #ccc; font-size: 1.2rem; cursor: pointer; text-align: center; line-height: 1; }
         
-        .result-card { margin-top: 25px; padding: 20px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
-        .result-val { font-size: 2.8rem; font-weight: 800; margin: 5px 0; }
+        .result-card { margin-top: 20px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
+        .result-val { font-size: 2.2rem; font-weight: 800; margin: 0; }
         
-        .footer-btns { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; width: 100%; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; }
-        .btn-add { background: #e6fffa; color: var(--p); border: 2px dashed var(--p); }
-        .btn-back { background: #8d99ae; color: white; font-size: 0.9rem; }
+        .footer-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .btn { padding: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.9rem; }
+        .btn-add { background: #e6fffa; color: var(--p); border: 1px dashed var(--p); }
+        .btn-back { background: #8d99ae; color: white; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -39,9 +40,8 @@
 <div class="container">
     <h1>📝 段考加權計算</h1>
 
-    <label style="font-size: 0.9rem; font-weight: bold; color: #666;">請選擇您的科系班級：</label>
     <select id="class-select" class="select-box" onchange="loadTemplate()">
-        <option value="">-- 手動輸入 --</option>
+        <option value="">-- 自訂科目 --</option>
         <option value="201">製圖科 201</option>
         <option value="202">營建科 202</option>
         <option value="203">資訊科 203、204</option>
@@ -52,39 +52,35 @@
     </select>
 
     <div class="row row-header">
-        <span style="flex:2">科目名稱</span>
-        <span style="flex:1.2; text-align: center;">分數</span>
-        <span style="flex:0.8; text-align: center;">權重</span>
-        <span style="width:20px"></span>
+        <span style="flex:1; padding-left:10px;">科目</span>
+        <span style="width:70px; text-align: center;">分數</span>
+        <span style="width:50px; text-align: center;">權重</span>
+        <span style="width:25px"></span>
     </div>
 
-    <div id="subject-list">
-        </div>
+    <div id="subject-list"></div>
 
     <div class="footer-btns">
-        <button class="btn btn-add" onclick="addRow()">+ 新增自訂科目</button>
+        <button class="btn btn-add" onclick="addRow()">+ 新增科目</button>
     </div>
 
     <div class="result-card">
-        <div>您的加權平均</div>
+        <div style="font-size: 0.85rem; opacity: 0.9;">加權平均</div>
         <div class="result-val" id="average">0.00</div>
-        <div id="total-info" style="font-size: 0.85rem; opacity: 0.9;">請輸入成績</div>
+        <div id="total-info" style="font-size: 0.75rem; opacity: 0.8; margin-top: 5px;">請輸入成績</div>
     </div>
 
-    <a href="index.html" class="btn btn-back">← 返回工具箱首頁</a>
+    <a href="index.html" class="btn btn-back">← 返回工具箱</a>
 </div>
 
 <script>
-    // 設定各班級的範本資料
     const templates = {
-        "201": [ {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3} ], // 範例，可自行補充
         "203": [
             {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
             {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
             {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
         ],
-        "205": [ {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"餐飲概論", w:3} ], // 範例
-        // ... 其他班級資料可以依此類推增加
+        // 其他科系可在此擴充...
     };
 
     function loadTemplate() {
@@ -93,11 +89,9 @@
         list.innerHTML = '';
         
         if (templates[classVal]) {
-            templates[classVal].forEach(item => {
-                addRow(item.n, item.w);
-            });
+            templates[classVal].forEach(item => addRow(item.n, item.w));
         } else {
-            addRow(); // 預設給一行空的
+            addRow(); 
         }
         calc();
     }
@@ -107,9 +101,9 @@
         div.className = 'row';
         div.innerHTML = `
             <input type="text" class="subject" placeholder="科目" value="${name}">
-            <input type="number" class="score" placeholder="0-100" inputmode="decimal" oninput="calc()">
+            <input type="number" class="score" placeholder="分數" inputmode="decimal" oninput="calc()">
             <input type="number" class="weight" placeholder="權" value="${weight}" oninput="calc()">
-            <span style="color:#ccc; cursor:pointer;" onclick="this.parentElement.remove();calc()">×</span>
+            <span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>
         `;
         document.getElementById('subject-list').appendChild(div);
     }
@@ -117,26 +111,20 @@
     function calc() {
         let totalWeightedScore = 0;
         let totalWeights = 0;
-        
-        const rows = document.querySelectorAll('#subject-list .row');
-        rows.forEach(row => {
+        document.querySelectorAll('#subject-list .row').forEach(row => {
             const s = parseFloat(row.querySelector('.score').value);
             const w = parseFloat(row.querySelector('.weight').value);
-
             if (!isNaN(s) && !isNaN(w)) {
                 totalWeightedScore += s * w;
                 totalWeights += w;
             }
         });
-
         const avg = totalWeights > 0 ? (totalWeightedScore / totalWeights).toFixed(2) : "0.00";
         document.getElementById('average').innerText = avg;
         document.getElementById('total-info').innerText = `總權數: ${totalWeights} | 加權總分: ${totalWeightedScore}`;
     }
 
-    // 初始化：預設載入一行
     window.onload = loadTemplate;
 </script>
-
 </body>
 </html>
