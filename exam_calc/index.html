@@ -3,89 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>校園成績加權系統</title>
+    <title>南大附中成績結算系統</title>
     <style>
-        :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; --red: #ff4d4d; }
+        :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; --red: #d90429; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
         .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
-        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin: 0 0 15px; }
+        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin-bottom: 15px; }
 
-        /* 選單與輸入區 */
+        /* 選單區 */
         .config-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; }
         .select-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .c-select, .c-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; background: white; }
+        .c-select, .c-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; }
 
-        /* 表格樣式 */
+        /* 輸入列表 */
         .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
-        .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; margin-bottom: 5px; }
+        .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; }
         .input-cell { border: 1px solid #ddd; padding: 10px 5px; border-radius: 8px; font-size: 0.95rem; outline: none; text-align: center; }
         .subject { flex: 1; text-align: left; }
         .score { width: 70px; border: 2px solid #e2e8f0; font-weight: bold; color: var(--p); }
-        .weight { width: 45px; background: #f1f3f5; color: #666; }
-        .del-btn { width: 25px; color: #ccc; cursor: pointer; text-align: center; font-size: 1.2rem; }
+        .weight { width: 45px; background: #f1f3f5; }
+        .del-btn { width: 25px; color: #ccc; cursor: pointer; text-align: center; }
 
-        /* 按鈕與結果 */
         .btn-group { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .btn-add { background: #e6fffa; color: var(--p); border: 2px dashed var(--p); }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
         .btn-export { background: var(--text); color: white; }
-        .result-card { margin-top: 15px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
-        .result-val { font-size: 2.2rem; font-weight: 800; }
 
-        /* 成績單彈窗 (方案 C 優化) */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; }
-        .report-paper { width: 92%; max-width: 360px; background: #fff; padding: 25px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; overflow: hidden; }
-        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin: 0 0 10px; font-size: 1.3rem; }
-        .report-header h3 { text-align: center; margin: 0 0 10px; font-size: 0.95rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
-        .student-info { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.8rem; margin-bottom: 10px; line-height: 1.6; border-bottom: 1px solid #eee; }
-        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.8rem; }
-        .report-table th, .report-table td { border: 1px solid #000; padding: 4px; text-align: center; }
+        /* --- 方案 C 成績單彈窗 --- */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:100; flex-direction:column; align-items:center; justify-content:center; }
+        .report-paper { width: 92%; max-width: 360px; background: #fff; padding: 25px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; }
         
-        .report-summary { position: relative; text-align: right; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px; }
-        .final-avg { font-size: 1.5rem; color: #000; z-index: 1; position: relative; }
+        .report-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 10px; }
+        .report-header h2 { margin: 0; font-size: 1.25rem; letter-spacing: 1px; }
+        .report-header p { margin: 5px 0; font-size: 0.9rem; font-weight: bold; color: #444; }
+        
+        .print-time { font-size: 0.7rem; color: #666; text-align: right; margin-bottom: 5px; font-family: monospace; }
+        
+        .student-info { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.85rem; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.85rem; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 6px 4px; text-align: center; }
+        .report-table th { background: #f2f2f2; }
+        .fail-text { color: var(--red); font-weight: bold; }
 
-        /* 壓印核訖章 */
+        .report-summary { position: relative; margin-top: 15px; font-size: 0.85rem; line-height: 1.6; }
+        .final-avg { font-size: 1.4rem; font-weight: 900; border-top: 1px solid #000; margin-top: 5px; padding-top: 5px; }
+
+        /* 壓印章改進 */
         .official-seal { 
-            position: absolute; 
-            bottom: -5px; 
-            right: 15px; 
-            width: 75px; 
-            height: 75px; 
-            border: 3px solid var(--red); 
-            border-radius: 50%; 
-            color: var(--red); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            transform: rotate(-20deg); 
-            opacity: 0.6; 
-            text-align: center; 
-            z-index: 10; /* 確保壓在分數上方 */
-            pointer-events: none;
-            background: rgba(255,255,255,0.2);
+            position: absolute; bottom: 0; right: 5px; 
+            width: 80px; height: 80px; border: 3px solid var(--red); 
+            border-radius: 50%; color: var(--red); display: flex; 
+            align-items: center; justify-content: center; font-size: 0.85rem; 
+            font-weight: bold; transform: rotate(-15deg); opacity: 0.65; 
+            text-align: center; z-index: 5; pointer-events: none;
         }
 
-        .report-footer { margin-top: 20px; font-size: 0.65rem; color: #666; text-align: center; line-height: 1.5; border-top: 1px solid #eee; padding-top: 10px; }
-        .btn-close { margin-top: 15px; background: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; }
+        .report-footer { margin-top: 25px; font-size: 0.65rem; color: #666; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        .btn-close { margin-top: 15px; background: #fff; padding: 10px 25px; border-radius: 20px; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏫 校園成績加權系統</h1>
+    <h1>🏫 南大附中成績系統</h1>
 
     <div class="config-section">
-        <select id="school-select" class="c-select" onchange="updateClassList()">
-            <option value="">-- 選擇學校 --</option>
+        <select id="school-select" class="c-select">
             <option value="國立台南大學附屬高級中學">國立台南大學附屬高級中學</option>
         </select>
-        
         <div class="select-group">
             <select id="class-select" class="c-select" onchange="loadTemplate()">
                 <option value="">-- 選擇班級 --</option>
+                <option value="203資訊">203 資訊科</option>
+                <option value="204資訊">204 資訊科</option>
             </select>
             <select id="exam-select" class="c-select">
                 <option value="第一次段考">第一次段考</option>
@@ -93,56 +84,53 @@
                 <option value="期末考試">期末考試</option>
             </select>
         </div>
-
         <div class="select-group">
-            <select id="no-select" class="c-select">
-                <option value="">座號</option>
-            </select>
-            <input type="text" id="name-input" class="c-input" placeholder="學生姓名">
+            <select id="no-select" class="c-select"></select>
+            <input type="text" id="name-input" class="c-input" placeholder="輸入姓名">
         </div>
     </div>
 
     <div class="row row-header">
         <span style="flex:1; padding-left:10px;">科目</span>
-        <span style="width:70px; text-align: center;">分數</span>
-        <span style="width:45px; text-align: center;">權重</span>
+        <span style="width:70px; text-align:center;">分數</span>
+        <span style="width:45px; text-align:center;">權重</span>
         <span style="width:25px"></span>
     </div>
-
     <div id="subject-list"></div>
 
     <div class="btn-group">
-        <button class="btn btn-add" onclick="addRow()">+ 自定義新增科目</button>
-        <button class="btn btn-export" onclick="showReport()">✨ 生成精美成績單</button>
-    </div>
-
-    <div class="result-card">
-        <div style="font-size: 0.8rem; opacity: 0.9;">即時計算加權平均</div>
-        <div class="result-val" id="average">0.00</div>
+        <button class="btn btn-export" onclick="showReport()">✨ 生成正式成績報告單</button>
     </div>
 </div>
 
 <div id="report-modal" class="modal">
     <div class="report-paper">
         <div class="report-header">
-            <h2 id="out-school">學校名稱</h2>
-            <h3 id="out-exam">考試別</h3>
+            <h2 id="out-school">國立台南大學附屬高級中學</h2>
+            <p>段考成績成績單（僅限參考）</p>
         </div>
+        
+        <div class="print-time" id="out-time">列印日期：2026-02-10 12:00:00</div>
+        
         <div class="student-info">
+            <span>考試別：<b id="out-exam"></b></span>
             <span>班級：<b id="out-class"></b></span>
             <span>座號：<b id="out-no"></b></span>
             <span>姓名：<b id="out-name"></b></span>
-            <span>列印：2026/02/10</span>
         </div>
+
         <table class="report-table">
             <thead>
-                <tr><th>科目</th><th>分數</th><th>權重</th><th>加權</th></tr>
+                <tr><th>科目</th><th>分數</th><th>加權</th><th>判定</th></tr>
             </thead>
             <tbody id="report-body"></tbody>
         </table>
         
         <div class="report-summary">
-            <div class="final-avg">平均分數：<span id="res-avg"></span></div>
+            <div>不及格科目數：<span id="res-fail"></span></div>
+            <div>加權總分：<span id="res-total"></span></div>
+            <div class="final-avg">加權平均分數：<span id="res-avg"></span></div>
+            
             <div class="official-seal">非正式<br>成績單</div>
         </div>
 
@@ -156,12 +144,11 @@
 
 <script>
     const dataConfig = {
-        "國立台南大學附屬高級中學": {
-            "203資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}],
-            "204資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}]
-        }
+        "203資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}],
+        "204資訊": [{n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}]
     };
 
+    // 初始化座號
     const noSelect = document.getElementById('no-select');
     for(let i=1; i<=60; i++) {
         let opt = document.createElement('option');
@@ -169,73 +156,62 @@
         noSelect.appendChild(opt);
     }
 
-    function updateClassList() {
-        const school = document.getElementById('school-select').value;
-        const classSelect = document.getElementById('class-select');
-        classSelect.innerHTML = '<option value="">-- 選擇班級 --</option>';
-        if(school && dataConfig[school]) {
-            Object.keys(dataConfig[school]).forEach(cls => {
-                let opt = document.createElement('option');
-                opt.value = cls; opt.innerText = cls;
-                classSelect.appendChild(opt);
-            });
-        }
-    }
-
     function loadTemplate() {
-        const school = document.getElementById('school-select').value;
         const cls = document.getElementById('class-select').value;
         const list = document.getElementById('subject-list');
         list.innerHTML = '';
-        if(school && cls && dataConfig[school][cls]) {
-            dataConfig[school][cls].forEach(item => addRow(item.n, item.w));
+        if(dataConfig[cls]) {
+            dataConfig[cls].forEach(item => addRow(item.n, item.w));
         } else {
-            for(let i=0; i<3; i++) addRow();
+            for(let i=0; i<5; i++) addRow();
         }
-        calc();
     }
 
     function addRow(n='', w='') {
         const div = document.createElement('div');
         div.className = 'row';
-        div.innerHTML = `<input type="text" class="input-cell subject" placeholder="科目" value="${n}"><input type="number" class="input-cell score" placeholder="0" inputmode="decimal" oninput="calc()"><input type="number" class="input-cell weight" placeholder="權重" value="${w}" oninput="calc()"><span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>`;
+        div.innerHTML = `<input type="text" class="input-cell subject" value="${n}"><input type="number" class="input-cell score" placeholder="0" inputmode="decimal"><input type="number" class="input-cell weight" value="${w}"><span class="del-btn" onclick="this.parentElement.remove()">×</span>`;
         document.getElementById('subject-list').appendChild(div);
     }
 
-    function calc() {
-        let tw = 0, ts = 0;
-        document.querySelectorAll('#subject-list .row').forEach(row => {
-            const s = parseFloat(row.querySelector('.score').value);
-            const w = parseFloat(row.querySelector('.weight').value);
-            if (!isNaN(s) && !isNaN(w)) { tw += w; ts += (s * w); }
-        });
-        const avg = tw > 0 ? (ts / tw).toFixed(2) : "0.00";
-        document.getElementById('average').innerText = avg;
-        return { tw, ts, avg };
-    }
-
     function showReport() {
-        const res = calc();
-        document.getElementById('out-school').innerText = document.getElementById('school-select').value || "自定義學校";
+        const now = new Date();
+        const timeStr = `列印日期：${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        
+        document.getElementById('out-time').innerText = timeStr;
         document.getElementById('out-exam').innerText = document.getElementById('exam-select').value;
-        document.getElementById('out-class').innerText = document.getElementById('class-select').value || "--";
-        document.getElementById('out-no').innerText = document.getElementById('no-select').value ? document.getElementById('no-select').value + " 號" : "--";
-        document.getElementById('out-name').innerText = document.getElementById('name-input').value || "學生姓名";
+        document.getElementById('out-class').innerText = document.getElementById('class-select').value || "未設定";
+        document.getElementById('out-no').innerText = document.getElementById('no-select').value + " 號";
+        document.getElementById('out-name').innerText = document.getElementById('name-input').value || "未填寫";
 
-        let html = '';
+        let html = '', tw = 0, ts = 0, failCount = 0;
         document.querySelectorAll('#subject-list .row').forEach(row => {
             const n = row.querySelector('.subject').value || "未命名";
-            const s = row.querySelector('.score').value || "0";
-            const w = row.querySelector('.weight').value || "0";
-            if(w > 0) html += `<tr><td>${n}</td><td>${s}</td><td>${w}</td><td>${s*w}</td></tr>`;
+            const s = parseFloat(row.querySelector('.score').value) || 0;
+            const w = parseFloat(row.querySelector('.weight').value) || 0;
+            
+            if(w > 0) {
+                const isFail = s < 60;
+                if(isFail) failCount++;
+                html += `<tr>
+                    <td>${n}</td>
+                    <td class="${isFail?'fail-text':''}">${s}</td>
+                    <td>${w}</td>
+                    <td class="${isFail?'fail-text':''}">${isFail?'不及格':'及格'}</td>
+                </tr>`;
+                tw += w; ts += (s * w);
+            }
         });
+
         document.getElementById('report-body').innerHTML = html;
-        document.getElementById('res-avg').innerText = res.avg;
+        document.getElementById('res-fail').innerText = failCount + " 科";
+        document.getElementById('res-total').innerText = ts.toFixed(0);
+        document.getElementById('res-avg').innerText = tw > 0 ? (ts / tw).toFixed(2) : "0.00";
         document.getElementById('report-modal').style.display = 'flex';
     }
 
     function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
-    window.onload = () => { for(let i=0; i<3; i++) addRow(); };
+    window.onload = loadTemplate;
 </script>
 </body>
 </html>
