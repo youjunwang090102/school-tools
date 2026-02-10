@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級投票中心 - 視覺化管理版</title>
+    <title>班級投票中心 - v2.1.1</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f4f7fe; --text: #2b2d42; }
@@ -164,7 +164,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // Firebase 配置 (請保留您的原始設定)
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -183,7 +182,6 @@
     function openModal(id) { document.getElementById(id).style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // --- 身分驗證 ---
     function verifyLogin() {
         const role = document.getElementById('userRole').value;
         const pwd = document.getElementById('userPwd').value;
@@ -191,10 +189,9 @@
             currentCreatorRole = role;
             closeModal('loginModal');
             openModal('publishModal');
-        } else { alert("驗證碼錯誤，請重新確認！"); }
+        } else { alert("驗證碼錯誤！"); }
     }
 
-    // --- 發布邏輯 ---
     function addOption() {
         const container = document.getElementById('optionsContainer');
         const div = document.createElement('div');
@@ -220,55 +217,78 @@
         location.reload();
     }
 
-    // --- 投票邏輯與比例揭曉 ---
+    // --- 修正後的投票與顯示邏輯 ---
     async function openVote(id) {
         const snap = await db.collection("votes").doc(id).get();
         const data = snap.data();
-        const hasVoted = localStorage.getItem('v_'+id);
+        
+        // 檢查 localStorage 標記，確認此裝置是否已投過票
+        const localVoted = localStorage.getItem('v_'+id);
         const isExpired = data.endTime < Date.now();
         
-        // 核心邏輯：過期、投過票 或 開啟預覽，才顯示比例
-        const showProportion = isExpired || hasVoted || data.allowPreview;
+        // 核心邏輯：顯示比例的條件為 (截止) OR (本機投過) OR (發起人開啟預覽)
+        const showProportion = isExpired || localVoted === 'true' || data.allowPreview === true;
 
         let html = `<div class="publish-card" style="position:relative;">
             <button onclick="closeModal('voteModal')" style="position:absolute; right:15px; top:10px; border:none; background:none; font-size:1.8rem; cursor:pointer; color:#94a3b8;">&times;</button>
             <h3 style="margin-top:5px; margin-bottom:20px; padding-right:20px;">${data.title}</h3>
-            ${!hasVoted && !isExpired ? `<div class="input-group"><label>填寫真實姓名</label><input type="text" id="vName" class="visual-input" placeholder="投票後無法修改"></div>` : ''}`;
+            ${!localVoted && !isExpired ? `<div class="input-group"><label>填寫真實姓名</label><input type="text" id="vName" class="visual-input" placeholder="輸入姓名解鎖投票"></div>` : ''}`;
         
         data.options.forEach(opt => {
             const count = data.counts[opt] || 0;
-            const total = data.voters.length || 0;
+            const total = data.voters ? data.voters.length : 0;
             const pct = total ? Math.round(count/total*100) : 0;
-            const isDisabled = hasVoted || isExpired;
+            const isDisabled = localVoted || isExpired;
 
             html += `<button class="btn-submit" style="margin-bottom:12px; background:${isDisabled?'#f8fafc':'#4361ee'}; color:${isDisabled?'#475569':'#fff'}; text-align:left; position:relative; overflow:hidden; border: ${isDisabled?'1px solid #e2e8f0':'none'};" 
                      onclick="castVote('${id}','${opt}')" ${isDisabled?'disabled':''}>
-                     ${showProportion ? `<div style="position:absolute; left:0; top:0; height:100%; background:#e2e8f0; width:${pct}%; opacity:0.6; transition: width 1s;"></div>` : ''}
-                     <span style="position:relative; z-index:1;">${opt} ${showProportion ? `<small style="float:right;">${count}票 (${pct}%)</small>` : ''}</span>
+                     ${showProportion ? `<div style="position:absolute; left:0; top:0; height:100%; background:#cbd5e1; width:${pct}%; opacity:0.6; transition: width 0.8s;"></div>` : ''}
+                     <span style="position:relative; z-index:1; display:flex; justify-content:space-between;">
+                        <span>${opt}</span>
+                        ${showProportion ? `<span style="font-weight:bold;">${count}票 (${pct}%)</span>` : ''}
+                     </span>
                      </button>`;
         });
 
         if (!showProportion && !isExpired) {
-            html += `<p style="text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:15px;">🔒 投票後解鎖即時統計比例</p>`;
+            html += `<p style="text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:15px;">🔒 投票完成後將顯示即時統計比例</p>`;
+        } else if (localVoted && !isExpired) {
+            html += `<p style="text-align:center; color:#2ec4b6; font-size:0.8rem; margin-top:15px;">✅ 您已完成投票</p>`;
         }
         document.getElementById('voteContent').innerHTML = html;
         openModal('voteModal');
     }
 
     async function castVote(id, opt) {
-        const name = document.getElementById('vName').value.trim();
-        if(!name) return alert("請輸入姓名後再投票！");
+        const nameInput = document.getElementById('vName');
+        const name = nameInput ? nameInput.value.trim() : "";
+        if(!name) return alert("請輸入真實姓名以利統計！");
+
         const ref = db.collection("votes").doc(id);
         const snap = await ref.get();
-        if(snap.data().voters.some(v => v.name === name)) return alert("此姓名已投過票囉！");
+        const data = snap.data();
+
+        // 防止同名重複投票
+        if(data.voters && data.voters.some(v => v.name === name)) {
+            alert("此姓名已投過票囉！");
+            return;
+        }
         
-        const newCounts = {...snap.data().counts}; newCounts[opt]++;
-        await ref.update({ counts: newCounts, voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt}) });
+        const newCounts = {...data.counts}; 
+        newCounts[opt] = (newCounts[opt] || 0) + 1;
+
+        await ref.update({ 
+            counts: newCounts, 
+            voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt}) 
+        });
+
+        // 關鍵修正：投票後立即在本地存儲標記，並重新渲染彈窗內容
         localStorage.setItem('v_'+id, 'true');
-        openVote(id); // 投完立即刷新顯示比例
+        alert("投票成功！");
+        openVote(id); 
     }
 
-    // --- 隱藏管理功能 ---
+    // --- 隱藏管理功能與數據處理 ---
     let secretClicks = 0;
     function handleSecretClick() {
         secretClicks++;
@@ -291,7 +311,7 @@
         snap.forEach(doc => {
             const d = doc.data();
             listDiv.innerHTML += `<div class="card">
-                <strong>${d.title}</strong> <span style="font-size:0.8rem; color:blue;">(${d.author}發起)</span><br>
+                <strong>${d.title}</strong> <span style="font-size:0.8rem; color:blue;">(${d.author})</span>
                 <div style="margin-top:10px;">
                     <button onclick="exportToExcel('${doc.id}')" style="padding:5px 12px; background:var(--success); color:white; border:none; border-radius:5px; cursor:pointer;">匯出結果</button>
                     <button onclick="deleteVote('${doc.id}')" style="padding:5px 12px; background:var(--danger); color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">刪除</button>
@@ -303,21 +323,22 @@
     async function exportToExcel(id) {
         const snap = await db.collection("votes").doc(id).get();
         const data = snap.data();
+        if(!data.voters || data.voters.length === 0) return alert("目前尚無人投票");
         const rows = data.voters.map((v, i) => ({ "序號": i+1, "姓名": v.name, "選擇": v.choice }));
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "結果");
-        XLSX.writeFile(wb, `${data.title}_結果.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "投票清單");
+        XLSX.writeFile(wb, `${data.title}_詳細名單.xlsx`);
     }
 
     async function deleteVote(id) {
-        if (confirm("確定刪除？這將無法復原。")) { 
+        if (confirm("確定刪除此投票嗎？資料無法復原。")) { 
             await db.collection("votes").doc(id).delete(); 
             renderAdminData(); 
         }
     }
 
-    // --- 首頁清單監聽 ---
+    // 監聽投票清單渲染
     db.collection("votes").orderBy("createdAt", "desc").onSnapshot(snap => {
         const listDiv = document.getElementById('voteList');
         listDiv.innerHTML = "";
@@ -327,7 +348,7 @@
                 <div class="vote-entry" onclick="openVote('${doc.id}')">
                     <span class="author-badge">${data.author}</span>
                     <div style="font-weight:bold; font-size:1.15rem; width:80%; margin-bottom:5px;">${data.title}</div>
-                    <div class="timer-badge countdown-timer" data-time="${data.endTime}">載入中...</div>
+                    <div class="timer-badge countdown-timer" data-time="${data.endTime}">計算中...</div>
                 </div>`;
         });
     });
@@ -335,7 +356,7 @@
     setInterval(() => {
         document.querySelectorAll('.countdown-timer').forEach(el => {
             const diff = parseInt(el.dataset.time) - Date.now();
-            if (diff <= 0) el.innerHTML = "🔴 已截止";
+            if (diff <= 0) el.innerHTML = "🔴 投票已截止";
             else {
                 const h = Math.floor(diff/3600000).toString().padStart(2,'0');
                 const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
