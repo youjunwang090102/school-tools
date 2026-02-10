@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的權限管理系統</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
+        input { width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        #userInfo { margin-top: 20px; padding: 10px; border-top: 1px solid #ddd; display: none; }
+        .admin-box { background: #ffe3e3; padding: 10px; margin-top: 10px; display: none; border: 1px solid red; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>系統登入</h2>
+    <input type="email" id="email" placeholder="電子信箱">
+    <input type="password" id="password" placeholder="密碼">
+    <button id="loginBtn">登入</button>
+
+    <div id="userInfo">
+        <p>歡迎，<span id="nickText"></span>！</p>
+        <p>你的權限是：<b id="roleText"></b></p>
+        
+        <div id="adminBox" class="admin-box">
+            密令：這是只有管理員看得到的按鈕！
+            <button onclick="alert('執行管理員指令')">管理後台</button>
+        </div>
+        
+        <button id="logoutBtn" style="background:#666; margin-top:10px;">登出</button>
+    </div>
+</div>
+
+<script type="module">
+    // 引入 Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+    // 你的 Firebase 設定
+    const firebaseConfig = {
+        apiKey: "AIzaSyAEuqvL-B02xsuqGvrRJ6EYFIF9gVVlY9c",
+        authDomain: "web-6668.firebaseapp.com",
+        projectId: "web-6668",
+        storageBucket: "web-6668.firebasestorage.app",
+        messagingSenderId: "1037826851230",
+        appId: "1:1037826851230:web:40d647a6ae44a55798968f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // 登入邏輯
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // 抓取資料庫裡的暱稱與權限
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                showUI(data.nickname, data.role);
+            } else {
+                alert("找不到您的權限資料，請確認資料庫中已建立對應 UID 的文件。");
+            }
+        } catch (error) {
+            alert("錯誤: " + error.message);
+        }
+    });
+
+    function showUI(nickname, role) {
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('nickText').innerText = nickname;
+        document.getElementById('roleText').innerText = role;
+        
+        // 關鍵：根據權限決定是否顯示管理員區塊
+        if (role === 'admin') {
+            document.getElementById('adminBox').style.display = 'block';
+        }
+    }
+
+    // 登出
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        signOut(auth).then(() => location.reload());
+    });
+</script>
+
+</body>
+</html>
