@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級投票系統 (安全版)</title>
+    <title>班級投票系統 Pro</title>
     <style>
         :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f4f7f6; --gray: #95a5a6; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -25,11 +25,10 @@
         .progress-bar { position: absolute; left: 0; top: 0; height: 100%; background: rgba(67, 97, 238, 0.12); z-index: 0; transition: width 1s cubic-bezier(0.1, 0, 0.3, 1); }
         .opt-content { position: relative; z-index: 1; display: flex; justify-content: space-between; font-weight: 500; }
 
-        /* 姓名輸入 */
-        .name-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px; font-size: 1rem; transition: 0.3s; }
-        .name-input:focus { border-color: var(--primary); outline: none; }
+        /* 輸入框 */
+        .name-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px; font-size: 1rem; box-sizing: border-box; }
 
-        /* 隱藏管理後台 */
+        /* 管理後台 */
         #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; padding: 20px; box-sizing: border-box; }
         .admin-content { background: white; width: 100%; max-width: 450px; margin: 20px auto; border-radius: 20px; padding: 25px; max-height: 90vh; overflow-y: auto; }
         .admin-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
@@ -41,7 +40,10 @@
         .btn-del { background: var(--danger); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
         .btn-publish { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; margin-top: 20px; cursor: pointer; font-size: 1.1rem; font-weight: bold; }
 
-        .voter-log-item { background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
+        /* 歷史紀錄與刪除 */
+        .voter-log-item { background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); position: relative; }
+        .btn-delete-record { background: var(--danger); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; position: absolute; top: 12px; right: 12px; }
+        
         #adminTrigger { position: fixed; bottom: 0; right: 0; width: 40px; height: 40px; cursor: default; opacity: 0; }
     </style>
 </head>
@@ -52,7 +54,7 @@
         <h1 onclick="handleTitleClick()" style="cursor: default; user-select: none; color: #2c3e50;">班級投票大廳</h1>
         <p style="color: #7f8c8d;">點擊選項即可投下一票</p>
     </div>
-    <div id="voteList">正在連線至雲端資料庫...</div>
+    <div id="voteList">連線中...</div>
 </div>
 
 <div id="adminTrigger" onclick="openAdmin()"></div>
@@ -65,30 +67,22 @@
         </div>
 
         <div id="panel1">
-            <div style="margin-bottom:15px;">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">投票主題</label>
-                <input type="text" id="newTitle" class="name-input" placeholder="例如：這週班會要討論什麼？">
+            <input type="text" id="newTitle" class="name-input" placeholder="投票主題">
+            <div id="optionsContainer">
+                <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 1" style="margin:0;"></div>
+                <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 2" style="margin:0;"></div>
             </div>
-            <div style="margin-bottom:15px;">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">自定義選項</label>
-                <div id="optionsContainer">
-                    <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 1" style="margin:0;"></div>
-                    <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 2" style="margin:0;"></div>
-                </div>
-                <button class="btn-add" onclick="addOptionField()">＋ 增加新選項</button>
-            </div>
-            <div style="margin-bottom:15px;">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">截止時間</label>
-                <input type="datetime-local" id="endTime" class="name-input">
-            </div>
+            <button class="btn-add" onclick="addOptionField()">＋ 增加新選項</button>
+            <label style="font-size:0.9rem; font-weight:bold;">截止時間</label>
+            <input type="datetime-local" id="endTime" class="name-input">
             <button class="btn-publish" onclick="publishVote()">發布投票</button>
         </div>
 
         <div id="panel2" style="display:none;">
-            <div id="historyStats">正在整理投票名單...</div>
+            <div id="historyStats">正在讀取紀錄...</div>
         </div>
 
-        <button onclick="closeAdmin()" style="width:100%; background:none; border:none; color:gray; margin-top:25px; cursor:pointer; font-weight:bold;">關閉管理視窗</button>
+        <button onclick="closeAdmin()" style="width:100%; background:none; border:none; color:gray; margin-top:25px; cursor:pointer;">關閉管理視窗</button>
     </div>
 </div>
 
@@ -109,7 +103,7 @@
     const ADMIN_PWD = "888";
     let titleClickCount = 0;
 
-    // --- 核心監聽：抓取所有投票 ---
+    // --- 核心監聽 ---
     db.collection("votes").orderBy("createdAt", "desc").onSnapshot(snap => {
         const listDiv = document.getElementById('voteList');
         const historyStats = document.getElementById('historyStats');
@@ -122,10 +116,9 @@
             const isExpired = data.endTime < Date.now();
             const total = (data.voters || []).length;
 
-            // 1. 渲染學生端
+            // 學生端渲染
             const card = document.createElement('div');
             card.className = `vote-card ${(!isExpired && index === 0) ? 'active-card' : ''} ${isExpired ? 'expired-card' : ''}`;
-            
             let optsHTML = "";
             data.options.forEach(opt => {
                 const count = data.counts[opt] || 0;
@@ -136,59 +129,65 @@
                         <div class="opt-content"><span>${opt}</span><span>${count} 票 (${pct}%)</span></div>
                     </button>`;
             });
-
             card.innerHTML = `
                 <div class="vote-title">${data.title} ${isExpired ? '(已截止)' : ''}</div>
-                <div class="timer" id="t-${id}">載入狀態中...</div>
+                <div class="timer" id="t-${id}"></div>
                 ${!isExpired ? `<input type="text" id="n-${id}" class="name-input" placeholder="請先輸入姓名或座號">` : ''}
                 <div>${optsHTML}</div>
             `;
             listDiv.appendChild(card);
             updateTimerUI(id, data.endTime);
 
-            // 2. 渲染管理端歷史名單
-            const details = (data.voters || []).map(v => `<span style="display:inline-block; background:#fff; padding:2px 8px; margin:2px; border-radius:4px; border:1px solid #ddd;">${v.name}⮕${v.choice}</span>`).join('');
+            // 管理端渲染 (增加刪除按鈕)
+            const details = (data.voters || []).map(v => `<span style="display:inline-block; background:#fff; padding:2px 8px; margin:2px; border-radius:4px; border:1px solid #ddd; font-size:0.8rem;">${v.name}(${v.choice})</span>`).join('');
             historyStats.innerHTML += `
                 <div class="voter-log-item">
-                    <strong style="color:var(--primary); font-size:1.1rem;">${data.title}</strong><br>
-                    <small>總票數：${total} 票</small>
-                    <div style="margin-top:10px; font-size:0.85rem; color:#555;">${details || '尚無投票紀錄'}</div>
+                    <button class="btn-delete-record" onclick="deleteVote('${id}', '${data.title}')">🗑️ 刪除</button>
+                    <strong>${data.title}</strong><br>
+                    <small>總數：${total} 票</small>
+                    <div style="margin-top:8px;">${details || '暫無資料'}</div>
                 </div>
             `;
         });
     });
 
-    // --- 投票邏輯 (含伺服器端校驗) ---
+    // --- 刪除功能 ---
+    async function deleteVote(id, title) {
+        if (confirm(`確定要永久刪除「${title}」這筆投票紀錄嗎？（不可恢復）`)) {
+            try {
+                await db.collection("votes").doc(id).delete();
+                alert("已刪除該筆歷史紀錄。");
+            } catch (e) {
+                alert("刪除失敗，請檢查權限。");
+            }
+        }
+    }
+
+    // --- 投票功能 ---
     async function castVote(id, opt) {
         const ref = db.collection("votes").doc(id);
         const snap = await ref.get();
+        if (!snap.exists) return alert("投票已不存在。");
         const data = snap.data();
-
-        // 【安全鎖】再次檢查伺服器端的時間
-        if (data.endTime < Date.now()) {
-            alert("🛑 投票已截止！下次請早。");
-            return;
-        }
+        if (data.endTime < Date.now()) return alert("🛑 投票已截止！");
 
         const nameInput = document.getElementById('n-'+id);
         const name = nameInput ? nameInput.value.trim() : "";
-        
-        if (!name) { alert("請輸入您的名字再點擊選項！"); return; }
-        if (localStorage.getItem('v_'+id)) { alert("您在此主題已經投過票囉！"); return; }
-        if (data.voters.some(v => v.name === name)) { alert("這個姓名已經在投票名單中了！"); return; }
+        if (!name) return alert("請輸入姓名！");
+        if (localStorage.getItem('v_'+id)) return alert("這題投過囉！");
+        if (data.voters.some(v => v.name === name)) return alert("姓名重複！");
 
         const newCounts = {...data.counts};
         newCounts[opt]++;
-        
         await ref.update({
             counts: newCounts,
-            voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt, time: new Date().getTime()})
+            voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt})
         });
         localStorage.setItem('v_'+id, 'true');
         alert("✅ 投票成功！");
     }
 
-    // --- 管理功能 ---
+    // --- 其他 UI 控制 ---
     function addOptionField() {
         const container = document.getElementById('optionsContainer');
         const div = document.createElement('div');
@@ -202,56 +201,37 @@
         const endTime = new Date(document.getElementById('endTime').value).getTime();
         const optInputs = document.querySelectorAll('.opt-input');
         const options = Array.from(optInputs).map(i => i.value.trim()).filter(v => v !== "");
-        
-        if (!title || options.length < 2 || !endTime) { alert("請填寫完整題目、選項與時間！"); return; }
+        if (!title || options.length < 2 || !endTime) return alert("請填寫完整題目與截止時間！");
 
         const counts = {};
         options.forEach(o => counts[o] = 0);
-
-        await db.collection("votes").add({
-            title, options, counts, voters: [], endTime, createdAt: Date.now()
-        });
-        alert("🚀 投票發布成功！");
+        await db.collection("votes").add({ title, options, counts, voters: [], endTime, createdAt: Date.now() });
+        alert("發布成功！");
         closeAdmin();
-        // 清空表單
-        document.getElementById('newTitle').value = "";
     }
 
-    // --- 介面控制 ---
     function handleTitleClick() {
         titleClickCount++;
         if (titleClickCount >= 5) openAdmin();
         setTimeout(() => { titleClickCount = 0; }, 3000);
     }
-
-    function openAdmin() {
-        if (prompt("請輸入管理員密碼") === ADMIN_PWD) {
-            document.getElementById('adminModal').style.display = 'block';
-        }
-    }
-
+    function openAdmin() { if (prompt("密碼") === ADMIN_PWD) document.getElementById('adminModal').style.display = 'block'; }
     function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
-
     function switchTab(n) {
         document.getElementById('panel1').style.display = n === 1 ? 'block' : 'none';
         document.getElementById('panel2').style.display = n === 2 ? 'block' : 'none';
         document.getElementById('tab1').className = n === 1 ? 'tab active' : 'tab';
         document.getElementById('tab2').className = n === 2 ? 'tab active' : 'tab';
     }
-
     function updateTimerUI(id, end) {
         const el = document.getElementById('t-'+id);
         const timer = setInterval(() => {
             const diff = end - Date.now();
-            if (diff <= 0) {
-                el.innerText = "🛑 投票已截止";
-                el.style.color = "#95a5a6";
-                clearInterval(timer);
-            } else {
-                const h = Math.floor(diff/3600000);
+            if (diff <= 0) { el.innerText = "🛑 投票已截止"; el.style.color = "#95a5a6"; clearInterval(timer); }
+            else {
                 const m = Math.floor((diff%3600000)/60000);
                 const s = Math.floor((diff%60000)/1000);
-                el.innerText = `⏳ 剩餘 ${h > 0 ? h + '時' : ''}${m}分${s}秒`;
+                el.innerText = `⏳ 剩餘 ${m}分${s}秒`;
             }
         }, 1000);
     }
