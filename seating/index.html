@@ -3,80 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數位教室選位系統 | 精準修復版</title>
+    <title>數位教室選位系統 v5.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --p: #4f46e5; --s: #10b981; --a: #f59e0b; --bg: #f8fafc; }
-        body { margin: 0; height: 100vh; font-family: 'PingFang TC', sans-serif; background: var(--bg); overflow: hidden; }
-        main { display: flex; height: 100vh; padding: 20px; gap: 20px; box-sizing: border-box; }
+        :root { --p: #4f46e5; --s: #10b981; --a: #f59e0b; --bg: #f1f5f9; }
+        body { margin: 0; height: 100vh; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); overflow: hidden; }
+        main { display: flex; height: 100vh; padding: 15px; gap: 15px; box-sizing: border-box; }
         
-        #left-panel { width: 380px; display: flex; flex-direction: column; gap: 12px; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        /* 左側控制面板 */
+        #left-panel { width: 380px; display: flex; flex-direction: column; gap: 10px; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .author-box { border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 5px; }
         
         .config-row { display: flex; gap: 8px; }
         .config-row div { flex: 1; }
-        .config-row label { font-size: 11px; color: #64748b; display: block; margin-bottom: 2px; }
-        .config-row input { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        .config-row label { font-size: 11px; color: #64748b; display: block; margin-bottom: 2px; font-weight: bold; }
+        .config-row input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
 
-        .scroll-list { height: 220px; overflow-y: auto; border: 1px solid #f1f5f9; margin: 8px 0; border-radius: 8px; }
-        .student-item { padding: 8px; font-size: 15px; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; gap: 8px; }
+        .scroll-list { height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; margin: 8px 0; border-radius: 8px; background: #f8fafc; }
+        .student-item { padding: 6px 10px; font-size: 14px; border-bottom: 1px solid #fff; display: flex; align-items: center; gap: 8px; }
 
-        #right-panel { flex: 1; background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 1px solid #e2e8f0; padding: 40px; }
+        /* 右側繪製區 */
+        #right-panel { flex: 1; background: white; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 1px solid #e2e8f0; overflow: hidden; padding: 20px; }
         
-        /* 系統時間位置微調 */
-        #clock { position: absolute; top: 15px; right: 15px; text-align: right; color: #475569; font-size: 14px; background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; z-index: 50; line-height: 1.2; font-weight: bold; }
+        #clock { position: absolute; top: 20px; right: 20px; text-align: right; color: #475569; font-size: 14px; background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; z-index: 10; font-family: monospace; font-weight: bold; }
         
-        .grid-container { display: flex; flex-direction: column-reverse; gap: 15px; }
-        .row-wrap { display: flex; gap: 15px; }
+        .grid-container { display: flex; flex-direction: column-reverse; gap: 12px; transition: 0.3s; }
+        .row-wrap { display: flex; gap: 12px; }
         
-        .seat { width: 105px; height: 85px; border: 2px solid #e2e8f0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; transition: 0.2s; background: #fff; }
+        .seat { width: 100px; height: 80px; border: 2px solid #e2e8f0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; background: #fff; transition: 0.2s; }
         .seat.occupied { border-color: var(--p); color: var(--p); font-weight: 900; background: #f5f3ff; }
-        .seat.disabled { background: #fee2e2; border-color: #fecaca; color: #ef4444; }
+        .seat.disabled { background: #fee2e2; border-color: #fecaca; color: #ef4444; cursor: not-allowed; }
         
+        /* 動畫特效 */
         @keyframes spotlight {
             0%, 100% { background: #fff; transform: scale(1); }
-            50% { background: var(--a); transform: scale(1.2); box-shadow: 0 0 30px var(--a); color: white; border-color: #d97706; }
+            50% { background: var(--a); transform: scale(1.15); box-shadow: 0 0 30px var(--a); color: white; border-color: #d97706; }
         }
-        .winner-effect { animation: spotlight 0.4s ease-in-out 5; }
+        .winner-effect { animation: spotlight 0.4s ease-in-out 5; z-index: 50; }
         .animating { background: #e0e7ff !important; border-color: var(--p) !important; transform: scale(1.05); }
 
-        .desk { width: 320px; height: 45px; background: #334155; color: white; border-radius: 0 0 20px 20px; margin-top: 30px; display: flex; align-items: center; justify-content: center; letter-spacing: 10px; font-size: 20px; font-weight: bold; }
+        /* 圓角矩形講桌 */
+        .desk { width: 300px; height: 50px; background: #334155; color: white; border-radius: 12px; margin-top: 30px; display: flex; align-items: center; justify-content: center; letter-spacing: 12px; font-size: 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: 700; width: 100%; padding: 12px; font-size: 16px; }
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: 700; width: 100%; padding: 10px; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
         .btn-p { background: var(--p); color: white; }
-        .btn-s { background: #f1f5f9; color: #475569; }
+        .btn-s { background: #f1f5f9; color: #475569; font-size: 12px; }
+
+        /* PDF 列印隱藏時鐘 */
+        .pdf-mode #clock { display: none !important; }
+        .pdf-mode .grid-container { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
 <main>
     <div id="left-panel">
-        <div class="card">
-            <h2 style="margin:0; font-size:1.3rem; color:var(--p)">教室選位系統</h2>
-            <div style="font-size:0.8rem; color:#94a3b8;">Designed By 王宥鈞</div>
+        <div class="card author-box">
+            <h2 style="margin:0; font-size:1.4rem; color:var(--p)">教室選位系統 <span style="font-size:0.8rem; vertical-align:middle; background:#e0e7ff; padding:2px 6px; border-radius:4px;">v5.5</span></h2>
+            <div style="font-size:0.85rem; color:#94a3b8; font-weight:bold; margin-top:4px;">Designed By 王宥鈞</div>
         </div>
 
         <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span id="import-status" style="font-size:13px; color:red; font-weight:bold;">● 尚未匯入學生名單</span>
+                <button class="btn-s" onclick="downloadTpl()" style="width:auto; padding:4px 8px;">下載 Excel 範本</button>
+            </div>
+            <button class="btn-p" onclick="document.getElementById('fileIn').click()">1. 匯入學生資料 (.xlsx)</button>
             <input type="file" id="fileIn" style="display:none" accept=".xlsx">
-            <button class="btn-p" onclick="document.getElementById('fileIn').click()">匯入名單</button>
+            <p style="font-size:11px; color:#64748b; margin:8px 0 0 0;">* 點擊右側座位可設定「故障損壞」不參與抽籤。</p>
         </div>
 
         <div class="card config-row">
-            <div><label>欄數</label><input type="number" id="gridC" value="6" onchange="makeGrid()"></div>
-            <div><label>列數</label><input type="number" id="gridR" value="6" onchange="makeGrid()"></div>
+            <div><label>欄數 (寬)</label><input type="number" id="gridC" value="6" onchange="makeGrid()"></div>
+            <div><label>列數 (深)</label><input type="number" id="gridR" value="6" onchange="makeGrid()"></div>
             <div><label>起始座號</label><input type="number" id="startNo" value="1"></div>
         </div>
 
         <div class="card" id="main-action-area" style="flex:1; display:flex; flex-direction:column;">
-            <b>前兩排優先 <span id="p-count" style="color:var(--a)">(0/0)</span></b>
-            <div id="stu-list" class="scroll-list"></div>
-            <button onclick="lockAndStart()" class="btn-p">鎖定名單</button>
+            <b style="font-size:15px; margin-bottom:5px;">2. 勾選前兩排優先 <span id="p-count" style="color:var(--a)">(0/0)</span></b>
+            <div id="stu-list" class="scroll-list">
+                <div style="text-align:center; padding:30px; color:#94a3b8; font-size:13px;">請先完成名單匯入</div>
+            </div>
+            <button onclick="lockAndStart()" class="btn-p" style="padding:15px; font-size:18px;">3. 鎖定名單並開始</button>
         </div>
 
-        <div class="card" style="display:flex; gap:8px;">
-            <button onclick="sendMail()" style="background:var(--s); color:white; flex:1;">郵件</button>
-            <button onclick="savePDF()" style="background:#64748b; color:white; flex:1;">PDF</button>
+        <div class="card" style="display:flex; gap:10px;">
+            <button onclick="sendMail()" style="background:var(--s); color:white; flex:1;">郵件通知</button>
+            <button onclick="savePDF()" style="background:#64748b; color:white; flex:1;">下載 PDF 表格</button>
         </div>
     </div>
 
@@ -106,7 +122,7 @@
                 const seat = document.createElement('div'); 
                 seat.className = 'seat';
                 seat.id = `seat-${(i*c)+j+1}`;
-                seat.onclick = function() { if(assigned.size === 0) this.classList.toggle('disabled'); };
+                seat.onclick = function() { if(assigned.size === 0 && !isDrawing) this.classList.toggle('disabled'); };
                 row.appendChild(seat);
             }
             grid.appendChild(row);
@@ -119,6 +135,9 @@
         reader.onload = (ev) => {
             const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
             students = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]).sort((a,b) => a.座號 - b.座號);
+            const status = document.getElementById('import-status');
+            status.innerText = `● 已成功匯入 ${students.length} 人`;
+            status.style.color = "var(--s)";
             renderStudentList();
         };
         reader.readAsArrayBuffer(e.target.files[0]);
@@ -127,22 +146,24 @@
     function renderStudentList() {
         const c = parseInt(document.getElementById('gridC').value);
         document.getElementById('p-count').innerText = `(${prioritySet.size}/${c*2})`;
+        if(!students.length) return;
         document.getElementById('stu-list').innerHTML = students.map((s, i) => `
             <div class="student-item">
                 <input type="checkbox" ${prioritySet.has(i)?'checked':''} onchange="toggleP(${i}, this)"> 
-                ${s.座號} - ${s.姓名}
+                <span style="font-weight:bold">${s.座號}</span> - ${s.姓名}
             </div>
         `).join('');
     }
 
     function toggleP(idx, el) {
         const max = parseInt(document.getElementById('gridC').value) * 2;
-        if(el.checked && prioritySet.size >= max) { el.checked = false; return; }
+        if(el.checked && prioritySet.size >= max) { alert(`前兩排優先區額滿 (${max}人)`); el.checked = false; return; }
         el.checked ? prioritySet.add(idx) : prioritySet.delete(idx);
         renderStudentList();
     }
 
     function lockAndStart() {
+        if(!students.length) return alert("請先匯入名單！");
         const start = parseInt(document.getElementById('startNo').value);
         const pArr = students.map((_,i)=>i).filter(i => prioritySet.has(i));
         const others = students.map((_,i)=>i).filter(i => !prioritySet.has(i))
@@ -153,12 +174,17 @@
 
     function renderDrawUI() {
         const area = document.getElementById('main-action-area');
-        if(!drawQueue.length) { area.innerHTML = "<h2>抽籤完成</h2>"; return; }
+        if(!drawQueue.length) { 
+            area.innerHTML = `<div style="text-align:center; padding:30px;"><h2>🎉 抽籤完畢</h2><button onclick="location.reload()" class="btn-s">重新開始</button></div>`;
+            return; 
+        }
         const s = students[drawQueue[0]];
+        const isP = prioritySet.has(drawQueue[0]);
         area.innerHTML = `
-            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f5f3ff; border-radius:10px;">
-                <div style="font-size:2.5rem; font-weight:900; color:var(--p);">${s.姓名}</div>
-                <button onclick="doDraw(${drawQueue[0]}, ${prioritySet.has(drawQueue[0])})" class="btn-p" style="width:80%; margin-top:15px;">開始抽籤</button>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f8fafc; border:2px dashed var(--p); border-radius:12px;">
+                <span style="font-size:12px; color:white; background:${isP? 'var(--a)' : '#64748b'}; padding:2px 10px; border-radius:10px; margin-bottom:10px;">${isP?'優先區':'一般區'}</span>
+                <div style="font-size:2.8rem; font-weight:900; color:var(--p);">${s.姓名}</div>
+                <button onclick="doDraw(${drawQueue[0]}, ${isP})" class="btn-p" style="width:80%; margin-top:20px; font-size:18px;">開始抽籤</button>
             </div>
         `;
     }
@@ -169,18 +195,15 @@
         const allSeats = Array.from(document.querySelectorAll('.seat:not(.disabled)'));
         const avail = allSeats.filter(s => !s.classList.contains('occupied')).map(s => parseInt(s.id.split('-')[1]));
         
-        // 核心修正：動畫範圍與目標範圍
         let targetPool = isP ? avail.filter(id => id <= c*2) : avail;
         if(!targetPool.length && isP) targetPool = avail;
 
         let timer = 0, aniInt = setInterval(() => {
-            // 動畫跳動範圍同樣受限於 isP
             const jumpable = allSeats.filter(s => {
                 const id = parseInt(s.id.split('-')[1]);
                 const isOccupied = s.classList.contains('occupied');
                 return isP ? (id <= c*2 && !isOccupied) : !isOccupied;
             });
-            
             const rnd = jumpable[Math.floor(Math.random()*jumpable.length)];
             if(rnd) {
                 rnd.classList.add('animating');
@@ -204,16 +227,29 @@
 
     function sendMail() {
         const mailList = students.map(s => s.教育信箱).filter(m => m).join(',');
-        window.location.href = `mailto:?bcc=${mailList}&subject=座位表&body=抽籤完畢`;
+        window.location.href = `mailto:?bcc=${mailList}&subject=教室座位表通知&body=附件為最新抽籤座位結果。`;
     }
 
     function savePDF() {
         const element = document.getElementById('right-panel');
-        html2pdf().set({
-            margin: 10,
-            filename: '座位表.pdf',
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } // 直向設定
-        }).from(element).save();
+        element.classList.add('pdf-mode'); // 進入 PDF 模式隱藏時鐘
+        const opt = {
+            margin: 5,
+            filename: '教室座位表.pdf',
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.classList.remove('pdf-mode');
+        });
+    }
+
+    function downloadTpl() {
+        const data = [["座號","姓名","學號","教育信箱"],[1,"王小明","S001","xiaoming@mail.edu.tw"],[2,"李小華","S002","xiaohua@mail.edu.tw"]];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        XLSX.writeFile(wb, "教室名單範本.xlsx");
     }
 
     makeGrid();
