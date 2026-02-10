@@ -6,56 +6,74 @@
     <title>心聲求助箱</title>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
-        :root {
-            --primary-soft: #7C98B3; /* 柔和藍灰色 */
-            --emergency-red: #FF3B30;
-            --bg-color: #F8F9FA;
-        }
-        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        :root { --primary: #7C98B3; --emergency: #FF3B30; --bg: #F8F9FA; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         
-        h2 { color: var(--primary-soft); text-align: center; margin-bottom: 10px; }
-        .intro { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 20px; text-align: center; }
+        /* 實名/匿名 切換按鈕樣式 */
+        .type-selector { display: flex; background: #E5E5EA; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+        .type-btn { flex: 1; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: none; color: #8E8E93; }
+        .type-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; color: #444; }
+        .form-group { margin-bottom: 15px; display: none; } /* 預設隱藏，由 JS 控制 */
+        .form-group.show { display: block; }
+
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #E5E5EA; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        textarea { height: 150px; resize: none; }
         
-        textarea { width: 100%; height: 180px; padding: 15px; border: 1.5px solid #E5E5EA; border-radius: 12px; font-size: 16px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        textarea:focus { border-color: var(--primary-soft); }
-
-        select, .checkbox-group { width: 100%; padding: 12px; border: 1.5px solid #E5E5EA; border-radius: 12px; font-size: 16px; background: white; }
+        .checkbox-group { border: 1.5px solid #E5E5EA; padding: 10px; border-radius: 10px; }
+        .checkbox-item { display: flex; align-items: center; margin: 5px 0; }
         
-        .checkbox-item { display: flex; align-items: center; margin: 8px 0; font-size: 15px; }
-        .checkbox-item input { margin-right: 10px; width: 18px; height: 18px; }
-
-        button { width: 100%; background: var(--primary-soft); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:disabled { background: #D1D1D6; }
-
+        button#sendBtn { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer; }
         .success { display: none; text-align: center; padding: 40px 0; }
     </style>
 </head>
 <body>
 
-<div class="container" id="mainBox">
+<div class="container">
     <div id="inputUI">
-        <h2>🌱 老師的心聲箱</h2>
-        <p class="intro">這裡只有老師看得到。不管發生什麼事，寫下來，我們一起面對。這封信會直接寄到老師的電子信箱。</p>
+        <h2 style="text-align:center; color:var(--primary);">🌱 老師的心聲箱</h2>
         
-        <label>緊急程度</label>
-        <select id="level">
-            <option value="一般心聲">一般心聲 (有空再看即可)</option>
-            <option value="稍急，需找時間聊聊">稍急，需找時間聊聊</option>
-            <option value="非常緊急！">非常緊急！(請老師儘速找我)</option>
-        </select>
+        <div class="type-selector">
+            <button class="type-btn active" onclick="setType('anonymous')">匿名求助</button>
+            <button class="type-btn" id="realNameBtn" onclick="setType('realname')">實名求助</button>
+        </div>
 
-        <label>你想說的話</label>
-        <textarea id="helpMsg" placeholder="在這裡寫下你的困難或心情..."></textarea>
+        <div id="realNameFields" class="form-group">
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>座號</label>
+                    <input type="number" id="stuId" placeholder="例：01">
+                </div>
+                <div style="flex: 2;">
+                    <label>姓名</label>
+                    <input type="text" id="stuName" placeholder="請輸入姓名">
+                </div>
+            </div>
+        </div>
 
-        <label>希望老師怎麼聯絡我？ (可多選)</label>
-        <div class="checkbox-group">
-            <div class="checkbox-item"><input type="checkbox" name="contact" value="私下面談"> 私下面談</div>
-            <div class="checkbox-item"><input type="checkbox" name="contact" value="寫紙條回覆"> 寫紙條回覆</div>
-            <div class="checkbox-item"><input type="checkbox" name="contact" value="老師知道就好，不需回覆"> 老師知道就好，不需回覆</div>
+        <div class="form-group show">
+            <label>緊急程度</label>
+            <select id="level">
+                <option value="一般">一般心聲</option>
+                <option value="稍急">稍急，需找時間聊聊</option>
+                <option value="非常緊急">非常緊急！</option>
+            </select>
+        </div>
+
+        <div class="form-group show">
+            <label>你想說的話</label>
+            <textarea id="helpMsg" placeholder="在這裡寫下你的困難..."></textarea>
+        </div>
+
+        <div class="form-group show">
+            <label>希望回覆方式</label>
+            <div class="checkbox-group" id="contactGroup">
+                <div class="checkbox-item"><input type="checkbox" value="面談"> 私下面談</div>
+                <div class="checkbox-item"><input type="checkbox" value="紙條"> 寫紙條回覆</div>
+                <div class="checkbox-item"><input type="checkbox" value="不需回覆"> 老師知道就好</div>
+            </div>
         </div>
 
         <button id="sendBtn" onclick="sendHelp()">交給老師</button>
@@ -64,8 +82,8 @@
     <div id="successUI" class="success">
         <div style="font-size: 60px;">✉️</div>
         <h3>信件已寄出</h3>
-        <p style="color:#666">老師已經收到你的訊息了。<br>給自己一個深呼吸，辛苦了。</p>
-        <button style="background:#8E8E93" onclick="location.reload()">回首頁</button>
+        <p>老師已經收到訊息了，辛苦你了。</p>
+        <button style="background:#8E8E93" onclick="location.reload()">返回</button>
     </div>
 </div>
 
@@ -73,45 +91,67 @@
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // 初始化 EmailJS 與 Firebase (此處維持原設定)
-    emailjs.init("YOUR_PUBLIC_KEY");
+    let currentMode = 'anonymous'; // 預設匿名
+
+    // 初始化 Firebase (請換成您的 Config)
     firebase.initializeApp({ /* YOUR CONFIG */ });
     const db = firebase.firestore();
+    emailjs.init("YOUR_PUBLIC_KEY");
+
+    // 切換模式的邏輯
+    function setType(mode) {
+        currentMode = mode;
+        const btns = document.querySelectorAll('.type-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        if(mode === 'realname') {
+            document.getElementById('realNameFields').classList.add('show');
+            btns[1].classList.add('active');
+        } else {
+            document.getElementById('realNameFields').classList.remove('show');
+            btns[0].classList.add('active');
+        }
+    }
 
     async function sendHelp() {
         const msg = document.getElementById('helpMsg').value.trim();
         const level = document.getElementById('level').value;
+        const sid = document.getElementById('stuId').value;
+        const sname = document.getElementById('stuName').value;
+        const contacts = Array.from(document.querySelectorAll('#contactGroup input:checked')).map(e => e.value);
+
+        if (!msg || contacts.length === 0) { alert("內容與回覆方式不能空白喔！"); return; }
+        if (currentMode === 'realname' && (!sid || !sname)) { alert("請填寫座號與姓名"); return; }
+
         const btn = document.getElementById('sendBtn');
-        
-        // 取得勾選的聯絡方式
-        const contacts = Array.from(document.querySelectorAll('input[name="contact"]:checked')).map(el => el.value);
-        
-        if (!msg) { alert("請寫下一點內容喔！"); return; }
-        if (contacts.length === 0) { alert("請至少選擇一種老師回覆的方式。"); return; }
-
         btn.disabled = true;
-        btn.innerText = "寄送中...";
+        btn.innerText = "傳送中...";
 
-        // 取得裝置與 IP 資訊
+        // 系統資訊
         let ip = "unknown";
-        try { const res = await fetch('https://api.ipify.org?format=json'); ip = (await res.json()).ip; } catch(e) {}
-        const device = navigator.userAgent.match(/\(([^)]+)\)/)[1]; // 簡易抓取裝置描述
+        try { const r = await fetch('https://api.ipify.org?format=json'); ip = (await r.json()).ip; } catch(e){}
+        const device = navigator.userAgent.match(/\(([^)]+)\)/) ? navigator.userAgent.match(/\(([^)]+)\)/)[1] : "未知裝置";
         const time = new Date().toLocaleString('zh-TW');
 
+        const identity = currentMode === 'realname' ? `實名(${sid} ${sname})` : "匿名";
+
         try {
-            // A. 存入 Firebase
+            // 存入 Firebase
             await db.collection("help_box").add({
+                mode: currentMode,
+                stuId: currentMode === 'realname' ? sid : null,
+                stuName: currentMode === 'realname' ? sname : null,
                 content: msg,
                 level: level,
-                contact_method: contacts.join(", "),
+                contact: contacts.join(", "),
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 ip: ip,
                 device: device
             });
 
-            // B. 發送 Email (EmailJS 的變數名稱要對應)
+            // 發送 Email
             await emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-                level: level,
+                mail_title: `【${identity} / ${level}】`,
+                student_info: identity,
                 content: msg,
                 contact_method: contacts.join(", "),
                 time: time,
@@ -121,9 +161,8 @@
 
             document.getElementById('inputUI').style.display = 'none';
             document.getElementById('successUI').style.display = 'block';
-
-        } catch (error) {
-            alert("發送失敗，請稍後再試");
+        } catch (e) {
+            alert("失敗，請稍後再試");
             btn.disabled = false;
         }
     }
