@@ -3,93 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級投票系統 Pro</title>
+    <title>班級投票智慧系統</title>
     <style>
-        :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f4f7f6; --gray: #95a5a6; }
-        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; }
+        :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f0f2f5; --card-bg: #ffffff; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: 0 auto; }
         
-        /* 投票卡片 */
-        .vote-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-top: 6px solid var(--gray); transition: 0.3s; }
-        .active-card { border-top-color: var(--primary); }
-        .expired-card { opacity: 0.8; filter: grayscale(0.3); }
-        
-        .vote-title { font-size: 1.3rem; font-weight: bold; color: #2d3436; margin-bottom: 5px; }
-        .timer { font-size: 0.9rem; color: var(--danger); margin-bottom: 15px; font-weight: 600; min-height: 1.2rem; }
-        
-        /* 選項按鈕 */
-        .opt-btn { background: #fff; border: 2px solid #edf2f7; border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden; transition: 0.2s; width: 100%; text-align: left; font-size: 1rem; }
-        .opt-btn:hover:not(:disabled) { border-color: var(--primary); background: #f8faff; }
-        .opt-btn:disabled { cursor: not-allowed; }
-        
-        .progress-bar { position: absolute; left: 0; top: 0; height: 100%; background: rgba(67, 97, 238, 0.12); z-index: 0; transition: width 1s cubic-bezier(0.1, 0, 0.3, 1); }
-        .opt-content { position: relative; z-index: 1; display: flex; justify-content: space-between; font-weight: 500; }
+        /* 頁面標題與頂部按鈕 */
+        .header { text-align: center; margin-bottom: 20px; }
+        .btn-trigger { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); margin-bottom: 20px; }
 
-        /* 輸入框 */
-        .name-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px; font-size: 1rem; box-sizing: border-box; }
-
-        /* 管理後台 */
-        #adminModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; padding: 20px; box-sizing: border-box; }
-        .admin-content { background: white; width: 100%; max-width: 450px; margin: 20px auto; border-radius: 20px; padding: 25px; max-height: 90vh; overflow-y: auto; }
-        .admin-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
-        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #666; font-weight: bold; }
-        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        /* 卡片通用樣式 */
+        .card { background: var(--card-bg); border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .card-title { font-weight: bold; font-size: 1.1rem; color: #333; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         
-        .opt-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .btn-add { background: var(--success); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin: 10px 0; font-weight: bold; }
-        .btn-del { background: var(--danger); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
-        .btn-publish { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; margin-top: 20px; cursor: pointer; font-size: 1.1rem; font-weight: bold; }
+        /* 輸入元件 */
+        input[type="text"], input[type="datetime-local"], select { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .opt-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .switch-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
-        /* 歷史紀錄與刪除 */
-        .voter-log-item { background: #f8f9fa; border-radius: 8px; padding: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); position: relative; }
-        .btn-delete-record { background: var(--danger); color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; position: absolute; top: 12px; right: 12px; }
-        
-        #adminTrigger { position: fixed; bottom: 0; right: 0; width: 40px; height: 40px; cursor: default; opacity: 0; }
+        /* 學生端投票清單卡片 */
+        .vote-item-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 12px; cursor: pointer; border-left: 5px solid var(--primary); transition: 0.2s; }
+        .vote-item-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* 管理彈窗佈局 */
+        #adminModal, #detailModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto; padding-top: 20px; }
+        .modal-body { width: 90%; max-width: 500px; margin: 0 auto 30px; }
+
+        /* 按鈕樣式 */
+        .btn-add { background: #eef2ff; color: var(--primary); border: 2px dashed var(--primary); width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-close { background: none; border: none; color: white; font-size: 1.5rem; position: absolute; top: 10px; right: 20px; cursor: pointer; }
+        .btn-del { background: #fee2e2; color: var(--danger); border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
+
+        /* 標籤 */
+        .tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; background: #eee; }
+        .tag-active { background: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: center; margin-bottom: 25px;">
-        <h1 onclick="handleTitleClick()" style="cursor: default; user-select: none; color: #2c3e50;">班級投票大廳</h1>
-        <p style="color: #7f8c8d;">點擊選項即可投下一票</p>
+    <div class="header">
+        <h1>班級行動投票</h1>
+        <button class="btn-trigger" onclick="checkIdentity()">✨ 發起投票 / 管理後台</button>
     </div>
-    <div id="voteList">連線中...</div>
+    
+    <div id="voteList">讀取中...</div>
 </div>
 
-<div id="adminTrigger" onclick="openAdmin()"></div>
-
 <div id="adminModal">
-    <div class="admin-content">
-        <div class="admin-tabs">
-            <div class="tab active" id="tab1" onclick="switchTab(1)">新建投票</div>
-            <div class="tab" id="tab2" onclick="switchTab(2)">查閱結果</div>
+    <button class="btn-close" onclick="closeModal('adminModal')">×</button>
+    <div class="modal-body">
+        <h2 style="color:white; text-align:center;">發起新投票</h2>
+        
+        <div class="card">
+            <div class="card-title">📝 投票主題</div>
+            <input type="text" id="newTitle" placeholder="請輸入主題名稱...">
         </div>
 
-        <div id="panel1">
-            <input type="text" id="newTitle" class="name-input" placeholder="投票主題">
+        <div class="card">
+            <div class="card-title">🔘 投票選項</div>
             <div id="optionsContainer">
-                <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 1" style="margin:0;"></div>
-                <div class="opt-input-row"><input type="text" class="opt-input name-input" placeholder="選項 2" style="margin:0;"></div>
+                <div class="opt-row"><input type="text" class="opt-input" placeholder="選項 1"></div>
+                <div class="opt-row"><input type="text" class="opt-input" placeholder="選項 2"></div>
             </div>
-            <button class="btn-add" onclick="addOptionField()">＋ 增加新選項</button>
-            <label style="font-size:0.9rem; font-weight:bold;">截止時間</label>
-            <input type="datetime-local" id="endTime" class="name-input">
-            <button class="btn-publish" onclick="publishVote()">發布投票</button>
+            <button class="btn-add" onclick="addOptionField()">＋ 新增選項</button>
         </div>
 
-        <div id="panel2" style="display:none;">
-            <div id="historyStats">正在讀取紀錄...</div>
+        <div class="card">
+            <div class="card-title">⚙️ 投票模式</div>
+            <div class="switch-row">
+                <span>隱藏目前票數 (投完才顯示)</span>
+                <input type="checkbox" id="hideResults" style="transform: scale(1.3);">
+            </div>
+            <div class="switch-row">
+                <span>實名投票 (大家看的到誰投誰)</span>
+                <select id="isAnonymous" style="width: 120px; padding: 5px;">
+                    <option value="false">實名制</option>
+                    <option value="true">匿名制</option>
+                </select>
+            </div>
         </div>
 
-        <button onclick="closeAdmin()" style="width:100%; background:none; border:none; color:gray; margin-top:25px; cursor:pointer;">關閉管理視窗</button>
+        <div class="card">
+            <div class="card-title">⏰ 截止時間</div>
+            <input type="datetime-local" id="endTime">
+        </div>
+
+        <button class="btn-submit" onclick="publishVote()">確認發布並送出</button>
     </div>
+</div>
+
+<div id="detailModal">
+    <button class="btn-close" onclick="closeModal('detailModal')">×</button>
+    <div class="modal-body" id="detailContent"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
+    // Firebase 設定
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -100,82 +115,131 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const ADMIN_PWD = "888";
-    let titleClickCount = 0;
 
-    // --- 核心監聽 ---
+    // 職稱密碼庫 (隨機碼)
+    const ROLES = {
+        "導師": "T8k2Pq9vR1", "班長": "M5x3Wz7yL0", "副班長": "V1a6Bs4eN8", "管理員": "Admin88888",
+        "學藝股長": "A9b2C3d4E5", "風紀股長": "D1e2F3g4H5", "服務股長": "S1t2U3v4W5", "衛生股長": "H1i2J3k4L5",
+        "環保股長": "E1r2O3p4Q5", "資訊股長": "I1n2F3o4S5", "實習股長": "P1r2A3c4T5", "輔導股長": "G1u2I3d4E5", "體育股長": "S1p2O3r4T5"
+    };
+    const AUTH_ROLES = ["導師", "班長", "副班長", "管理員"];
+
+    // 1. 身份檢查
+    function checkIdentity() {
+        const role = prompt("請選擇您的職稱：\n(導師/班長/副班長/學藝/風紀/服務/衛生/環保/資訊/實習/輔導/體育/管理員)");
+        if (!ROLES[role]) return alert("職稱輸入錯誤！");
+        
+        const pwd = prompt(`請輸入「${role}」的 10 位數驗證碼：`);
+        if (pwd !== ROLES[role]) return alert("驗證碼錯誤！");
+
+        if (!AUTH_ROLES.includes(role)) {
+            alert(`抱歉，${role} 僅限查閱資料，無權發起投票。只有導師、班長、副班長可新增。`);
+            return;
+        }
+        document.getElementById('adminModal').style.display = 'block';
+    }
+
+    // 2. 監聽投票清單 (精簡卡片版)
     db.collection("votes").orderBy("createdAt", "desc").onSnapshot(snap => {
         const listDiv = document.getElementById('voteList');
-        const historyStats = document.getElementById('historyStats');
         listDiv.innerHTML = "";
-        historyStats.innerHTML = "";
-
-        snap.forEach((doc, index) => {
+        snap.forEach(doc => {
             const data = doc.data();
-            const id = doc.id;
             const isExpired = data.endTime < Date.now();
-            const total = (data.voters || []).length;
-
-            // 學生端渲染
             const card = document.createElement('div');
-            card.className = `vote-card ${(!isExpired && index === 0) ? 'active-card' : ''} ${isExpired ? 'expired-card' : ''}`;
-            let optsHTML = "";
-            data.options.forEach(opt => {
-                const count = data.counts[opt] || 0;
-                const pct = total === 0 ? 0 : Math.round(count/total*100);
-                optsHTML += `
-                    <button class="opt-btn" ${isExpired ? 'disabled' : ''} onclick="castVote('${id}', '${opt}')">
-                        <div class="progress-bar" style="width: ${pct}%"></div>
-                        <div class="opt-content"><span>${opt}</span><span>${count} 票 (${pct}%)</span></div>
-                    </button>`;
-            });
+            card.className = "vote-item-card";
+            card.onclick = () => showDetail(doc.id);
             card.innerHTML = `
-                <div class="vote-title">${data.title} ${isExpired ? '(已截止)' : ''}</div>
-                <div class="timer" id="t-${id}"></div>
-                ${!isExpired ? `<input type="text" id="n-${id}" class="name-input" placeholder="請先輸入姓名或座號">` : ''}
-                <div>${optsHTML}</div>
-            `;
-            listDiv.appendChild(card);
-            updateTimerUI(id, data.endTime);
-
-            // 管理端渲染 (增加刪除按鈕)
-            const details = (data.voters || []).map(v => `<span style="display:inline-block; background:#fff; padding:2px 8px; margin:2px; border-radius:4px; border:1px solid #ddd; font-size:0.8rem;">${v.name}(${v.choice})</span>`).join('');
-            historyStats.innerHTML += `
-                <div class="voter-log-item">
-                    <button class="btn-delete-record" onclick="deleteVote('${id}', '${data.title}')">🗑️ 刪除</button>
-                    <strong>${data.title}</strong><br>
-                    <small>總數：${total} 票</small>
-                    <div style="margin-top:8px;">${details || '暫無資料'}</div>
+                <div style="font-size:1.2rem; font-weight:bold; margin-bottom:5px;">${data.title}</div>
+                <div>
+                    <span class="tag ${isExpired ? '' : 'tag-active'}">${isExpired ? '已結束' : '進行中'}</span>
+                    <span class="tag">${data.isAnonymous === 'true' ? '🔒 匿名' : '👤 實名'}</span>
                 </div>
             `;
+            listDiv.appendChild(card);
         });
     });
 
-    // --- 刪除功能 ---
-    async function deleteVote(id, title) {
-        if (confirm(`確定要永久刪除「${title}」這筆投票紀錄嗎？（不可恢復）`)) {
-            try {
-                await db.collection("votes").doc(id).delete();
-                alert("已刪除該筆歷史紀錄。");
-            } catch (e) {
-                alert("刪除失敗，請檢查權限。");
-            }
+    // 3. 顯示詳情與投票
+    async function showDetail(id) {
+        const snap = await db.collection("votes").doc(id).get();
+        const data = snap.data();
+        const detailDiv = document.getElementById('detailContent');
+        const hasVoted = localStorage.getItem('v_'+id);
+        const isExpired = data.endTime < Date.now();
+        const total = data.voters.length;
+
+        let html = `<div class="card">
+            <h3>${data.title}</h3>
+            <p style="color:var(--danger); font-size:0.9rem;">${isExpired ? '此投票已截止' : '剩餘時間計時中...'}</p>
+        `;
+
+        if (!hasVoted && !isExpired) {
+            html += `<input type="text" id="voterName" placeholder="輸入姓名或座號" style="margin-bottom:15px;">`;
         }
+
+        data.options.forEach(opt => {
+            const count = data.counts[opt] || 0;
+            const pct = total === 0 ? 0 : Math.round(count/total*100);
+            const showResult = hasVoted || isExpired || data.hideResults !== true;
+
+            html += `
+                <button class="opt-btn" style="position:relative; width:100%; text-align:left; padding:15px; margin-bottom:10px; border:1px solid #ddd; border-radius:10px; background:white; cursor:pointer;" 
+                    onclick="castVote('${id}', '${opt}')" ${hasVoted || isExpired ? 'disabled' : ''}>
+                    ${showResult ? `<div style="position:absolute; left:0; top:0; height:100%; background:rgba(67,97,238,0.1); width:${pct}%;"></div>` : ''}
+                    <div style="position:relative; display:flex; justify-content:space-between;">
+                        <span>${opt}</span>
+                        ${showResult ? `<span>${count}票 (${pct}%)</span>` : ''}
+                    </div>
+                </button>`;
+        });
+
+        // 實名制名單顯示
+        if (data.isAnonymous === 'false' && (hasVoted || isExpired)) {
+            html += `<div style="margin-top:15px; font-size:0.8rem; color:#666; background:#f9f9f9; padding:10px; border-radius:8px;">
+                <strong>📊 實名投票紀錄：</strong><br>
+                ${data.voters.map(v => `${v.name}(${v.choice})`).join(', ')}
+            </div>`;
+        } else if (data.isAnonymous === 'true' && (hasVoted || isExpired)) {
+            html += `<p style="font-size:0.8rem; color:gray;">🔒 此為匿名投票，名單已隱藏。</p>`;
+        }
+
+        html += `</div>`;
+        detailDiv.innerHTML = html;
+        document.getElementById('detailModal').style.display = 'block';
     }
 
-    // --- 投票功能 ---
+    // 4. 發布投票邏輯
+    async function publishVote() {
+        const title = document.getElementById('newTitle').value.trim();
+        const endTime = new Date(document.getElementById('endTime').value).getTime();
+        const hideResults = document.getElementById('hideResults').checked;
+        const isAnonymous = document.getElementById('isAnonymous').value;
+        const optInputs = document.querySelectorAll('.opt-input');
+        const options = Array.from(optInputs).map(i => i.value.trim()).filter(v => v !== "");
+
+        if (!title || options.length < 2 || !endTime) return alert("資料填寫不完整！");
+
+        const counts = {};
+        options.forEach(o => counts[o] = 0);
+
+        await db.collection("votes").add({
+            title, options, counts, voters: [], endTime, hideResults, isAnonymous, createdAt: Date.now()
+        });
+        alert("🚀 投票發布成功！");
+        closeModal('adminModal');
+    }
+
+    // 投票執行
     async function castVote(id, opt) {
+        const name = document.getElementById('voterName').value.trim();
+        if (!name) return alert("請輸入姓名！");
+        
         const ref = db.collection("votes").doc(id);
         const snap = await ref.get();
-        if (!snap.exists) return alert("投票已不存在。");
         const data = snap.data();
-        if (data.endTime < Date.now()) return alert("🛑 投票已截止！");
 
-        const nameInput = document.getElementById('n-'+id);
-        const name = nameInput ? nameInput.value.trim() : "";
-        if (!name) return alert("請輸入姓名！");
-        if (localStorage.getItem('v_'+id)) return alert("這題投過囉！");
-        if (data.voters.some(v => v.name === name)) return alert("姓名重複！");
+        if (data.voters.some(v => v.name === name)) return alert("此姓名已投過！");
 
         const newCounts = {...data.counts};
         newCounts[opt]++;
@@ -184,57 +248,19 @@
             voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt})
         });
         localStorage.setItem('v_'+id, 'true');
-        alert("✅ 投票成功！");
+        alert("投票完成！");
+        showDetail(id); // 刷新
     }
 
-    // --- 其他 UI 控制 ---
     function addOptionField() {
         const container = document.getElementById('optionsContainer');
         const div = document.createElement('div');
-        div.className = 'opt-input-row';
-        div.innerHTML = `<input type="text" class="opt-input name-input" placeholder="新選項" style="margin:0;"> <button class="btn-del" onclick="this.parentElement.remove()">❌</button>`;
+        div.className = 'opt-row';
+        div.innerHTML = `<input type="text" class="opt-input" placeholder="新選項"> <button class="btn-del" onclick="this.parentElement.remove()">×</button>`;
         container.appendChild(div);
     }
 
-    async function publishVote() {
-        const title = document.getElementById('newTitle').value.trim();
-        const endTime = new Date(document.getElementById('endTime').value).getTime();
-        const optInputs = document.querySelectorAll('.opt-input');
-        const options = Array.from(optInputs).map(i => i.value.trim()).filter(v => v !== "");
-        if (!title || options.length < 2 || !endTime) return alert("請填寫完整題目與截止時間！");
-
-        const counts = {};
-        options.forEach(o => counts[o] = 0);
-        await db.collection("votes").add({ title, options, counts, voters: [], endTime, createdAt: Date.now() });
-        alert("發布成功！");
-        closeAdmin();
-    }
-
-    function handleTitleClick() {
-        titleClickCount++;
-        if (titleClickCount >= 5) openAdmin();
-        setTimeout(() => { titleClickCount = 0; }, 3000);
-    }
-    function openAdmin() { if (prompt("密碼") === ADMIN_PWD) document.getElementById('adminModal').style.display = 'block'; }
-    function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
-    function switchTab(n) {
-        document.getElementById('panel1').style.display = n === 1 ? 'block' : 'none';
-        document.getElementById('panel2').style.display = n === 2 ? 'block' : 'none';
-        document.getElementById('tab1').className = n === 1 ? 'tab active' : 'tab';
-        document.getElementById('tab2').className = n === 2 ? 'tab active' : 'tab';
-    }
-    function updateTimerUI(id, end) {
-        const el = document.getElementById('t-'+id);
-        const timer = setInterval(() => {
-            const diff = end - Date.now();
-            if (diff <= 0) { el.innerText = "🛑 投票已截止"; el.style.color = "#95a5a6"; clearInterval(timer); }
-            else {
-                const m = Math.floor((diff%3600000)/60000);
-                const s = Math.floor((diff%60000)/1000);
-                el.innerText = `⏳ 剩餘 ${m}分${s}秒`;
-            }
-        }, 1000);
-    }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 </script>
 </body>
 </html>
