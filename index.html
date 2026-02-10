@@ -6,7 +6,6 @@
     <title>班級數位平台</title>
     <style>
         :root {
-            /* 擴充配色語意 */
             --p: #4361ee;    /* 座位 - 藍 */
             --s: #2ec4b6;    /* 段考 - 綠 */
             --a: #ff9f1c;    /* 學期 - 橘 */
@@ -16,6 +15,7 @@
             --v: #38b000;    /* 投票 - 草綠 */
             --cal: #5856D6;  /* 行事曆 - 靛藍 */
             --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
+            --help: #ff758c; /* 心聲箱 - 暖粉紅 */
 
             --bg: #f0f2f5;
             --card: #ffffff;
@@ -42,7 +42,6 @@
         .header h1 {
             margin: 0; font-size: 1.8rem; font-weight: 800;
             color: var(--text); cursor: pointer; user-select: none;
-            -webkit-user-select: none;
         }
 
         .header p { margin: 8px 0 0; font-size: 0.9rem; color: #8d99ae; }
@@ -52,6 +51,15 @@
             width: 100%; max-width: 500px; padding: 20px;
             box-sizing: border-box; display: flex;
             flex-direction: column; gap: 14px;
+        }
+
+        /* 分類標題樣式 */
+        .category-label {
+            margin: 15px 0 5px 10px;
+            font-size: 0.85rem;
+            color: #8d99ae;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
 
         /* 通用卡片樣式 */
@@ -78,33 +86,36 @@
         .info p { margin: 0; font-size: 0.82rem; color: #6d7280; line-height: 1.4; }
         .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; }
 
-        /* --- 側邊顏色與圖示背景定義 --- */
+        /* --- 顏色與邊框定義 --- */
         .calendar { border-left: 6px solid var(--cal); }
         .calendar .icon-box { background: #f0f0ff; color: var(--cal); }
+
+        .timer { border-left: 6px solid var(--t); }
+        .timer .icon-box { background: #ffe5e5; color: var(--t); }
+
+        .teacher-help { border-left: 6px solid var(--help); }
+        .teacher-help .icon-box { background: #fff0f2; color: var(--help); }
 
         .whisper { border-left: 6px solid var(--whi); }
         .whisper .icon-box { background: #f9f0ff; color: var(--whi); }
 
+        .board { border-left: 6px solid var(--m); }
+        .board .icon-box { background: #fffde7; color: #f59e0b; }
+
         .seat { border-left: 6px solid var(--p); }
         .seat .icon-box { background: #eef2ff; color: var(--p); }
         
+        .vote { border-left: 6px solid var(--v); }
+        .vote .icon-box { background: #e8f5e9; color: var(--v); }
+
+        .group { border-left: 6px solid var(--g); }
+        .group .icon-box { background: #f3e5f5; color: var(--g); }
+
         .exam { border-left: 6px solid var(--s); }
         .exam .icon-box { background: #e6fffa; color: var(--s); }
         
         .final { border-left: 6px solid var(--a); }
         .final .icon-box { background: #fffaf0; color: var(--a); }
-
-        .timer { border-left: 6px solid var(--t); }
-        .timer .icon-box { background: #ffe5e5; color: var(--t); }
-
-        .group { border-left: 6px solid var(--g); }
-        .group .icon-box { background: #f3e5f5; color: var(--g); }
-
-        .board { border-left: 6px solid var(--m); }
-        .board .icon-box { background: #fffde7; color: #f59e0b; }
-
-        .vote { border-left: 6px solid var(--v); }
-        .vote .icon-box { background: #e8f5e9; color: var(--v); }
 
         footer {
             margin: 40px 0 20px; padding: 20px;
@@ -121,6 +132,8 @@
     </div>
 
     <div class="menu-list">
+        
+        <div class="category-label">🔔 提醒系列</div>
         <a href="行事曆/index.html" class="menu-item calendar">
             <div class="icon-box">📅</div>
             <div class="info">
@@ -129,43 +142,6 @@
             </div>
             <div class="arrow">❯</div>
         </a>
-
-        <a href="匿名/index.html" class="menu-item whisper">
-            <div class="icon-box">🤫</div>
-            <div class="info">
-                <h2>班級匿名許願池</h2>
-                <p>有什麼想說的？悄悄告訴大家</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-        <a href="seating/index.html" class="menu-item seat">
-            <div class="icon-box">🪑</div>
-            <div class="info">
-                <h2>數位教室選位系統</h2>
-                <p>現場超刺激抽籤選位</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-        <a href="exam_calc/index.html" class="menu-item exam">
-            <div class="icon-box">📝</div>
-            <div class="info">
-                <h2>段考成績加權計算</h2>
-                <p>計算段考加權平均分數</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-        <a href="final_calc/index.html" class="menu-item final">
-            <div class="icon-box">📊</div>
-            <div class="info">
-                <h2>科目學期成績計算</h2>
-                <p>計算平時、段考與期末加權</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
         <a href="countdown/index.html" class="menu-item timer">
             <div class="icon-box">⏳</div>
             <div class="info">
@@ -175,15 +151,23 @@
             <div class="arrow">❯</div>
         </a>
 
-        <a href="grouping/index.html" class="menu-item group">
-            <div class="icon-box">🎲</div>
+        <div class="category-label">🤝 互動系列</div>
+        <a href="help/index.html" class="menu-item teacher-help">
+            <div class="icon-box">🌱</div>
             <div class="info">
-                <h2>隨機分組小幫手</h2>
-                <p>輸入名單自動公平分組</p>
+                <h2>導師悄悄話 (心聲箱)</h2>
+                <p>遇到困難了嗎？點這裡私下告訴老師</p>
             </div>
             <div class="arrow">❯</div>
         </a>
-
+        <a href="匿名/index.html" class="menu-item whisper">
+            <div class="icon-box">🤫</div>
+            <div class="info">
+                <h2>班級匿名許願池</h2>
+                <p>有什麼想說的？悄悄告訴大家</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
         <a href="board/index.html" class="menu-item board">
             <div class="icon-box">💬</div>
             <div class="info">
@@ -193,6 +177,15 @@
             <div class="arrow">❯</div>
         </a>
 
+        <div class="category-label">⚙️ 班務處理</div>
+        <a href="seating/index.html" class="menu-item seat">
+            <div class="icon-box">🪑</div>
+            <div class="info">
+                <h2>數位教室選位系統</h2>
+                <p>現場超刺激抽籤選位</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
         <a href="vote/index.html" class="menu-item vote">
             <div class="icon-box">🗳️</div>
             <div class="info">
@@ -201,16 +194,41 @@
             </div>
             <div class="arrow">❯</div>
         </a>
+        <a href="grouping/index.html" class="menu-item group">
+            <div class="icon-box">🎲</div>
+            <div class="info">
+                <h2>隨機分組小幫手</h2>
+                <p>輸入名單自動公平分組</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
+        <div class="category-label">📊 成績系列</div>
+        <a href="exam_calc/index.html" class="menu-item exam">
+            <div class="icon-box">📝</div>
+            <div class="info">
+                <h2>段考成績加權計算</h2>
+                <p>計算段考加權平均分數</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="final_calc/index.html" class="menu-item final">
+            <div class="icon-box">📈</div>
+            <div class="info">
+                <h2>科目學期總成績</h2>
+                <p>計算平時、段考與期末加權</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
     </div>
 
     <footer>
         © 2026 班級數位服務系統
         <br>Designed by 王宥鈞
-        <br>
     </footer>
 
     <script>
-        // 統一隱藏管理員入口
+        // 管理員模式觸發器
         let clickCount = 0;
         const trigger = document.getElementById('adminTrigger');
 
