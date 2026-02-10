@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>南大附中學期總成績結算</title>
+    <style>
+        :root { --p: #4361ee; --bg: #f8f9fa; --text: #2b2d42; --red: #ef233c; --green: #2b9348; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        
+        .container { width: 100%; max-width: 600px; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin-bottom: 15px; }
+
+        /* 比重設定區 */
+        .ratio-settings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; padding: 10px; background: #edf2ff; border-radius: 12px; font-size: 0.75rem; text-align: center; }
+        .ratio-settings input { width: 80%; padding: 4px; border: 1px solid #adc1fd; border-radius: 4px; text-align: center; font-weight: bold; }
+
+        /* 表頭 */
+        .row-header { display: flex; gap: 4px; font-size: 0.7rem; font-weight: bold; color: #8d99ae; padding: 0 5px 5px; border-bottom: 2px solid #eee; margin-bottom: 8px; }
+        
+        /* 科目列：手機優化 */
+        .row { display: flex; gap: 4px; margin-bottom: 8px; align-items: center; background: #fff; }
+        .input-cell { border: 1px solid #ddd; padding: 8px 2px; border-radius: 6px; font-size: 0.8rem; outline: none; text-align: center; }
+        
+        .name { flex: 1.5; text-align: left; padding-left: 5px; font-weight: bold; }
+        .score-input { width: 45px; background: #fff; }
+        .weight { width: 35px; background: #f1f3f5; color: #555; }
+        .final-val { width: 50px; background: #f8f9fa; font-weight: bold; color: var(--p); border: none; }
+        .del-btn { width: 20px; color: #ccc; cursor: pointer; font-size: 1.1rem; }
+
+        .btn-group { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn-add { background: #edf2ff; color: var(--p); }
+        .btn-export { background: var(--p); color: white; }
+
+        /* 成績單預覽 */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; align-items:center; justify-content:center; overflow-y: auto; }
+        .report-paper { width: 95%; max-width: 400px; background: #fff; padding: 20px; border: 1px solid #ddd; box-sizing: border-box; font-size: 0.8rem; }
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .report-table th, .report-table td { border: 1px solid #eee; padding: 8px 4px; text-align: center; }
+        .pass { color: var(--green); font-weight: bold; }
+        .fail { color: var(--red); font-weight: bold; }
+        
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; }
+        .big-avg { font-size: 1.8rem; font-weight: 800; color: var(--p); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🗓️ 學期成績結算系統</h1>
+
+    <div class="ratio-settings">
+        <div>一研<br><input type="number" id="r1" value="20">%</div>
+        <div>二研<br><input type="number" id="r2" value="20">%</div>
+        <div>三研<br><input type="number" id="r3" value="30">%</div>
+        <div>平時<br><input type="number" id="r4" value="30">%</div>
+    </div>
+
+    <div class="row-header">
+        <span style="flex:1.5">科目</span>
+        <span style="width:45px">一</span>
+        <span style="width:45px">二</span>
+        <span style="width:45px">三</span>
+        <span style="width:45px">平</span>
+        <span style="width:35px">學分</span>
+        <span style="width:20px"></span>
+    </div>
+
+    <div id="subject-list"></div>
+
+    <div class="btn-group">
+        <button class="btn btn-add" onclick="addRow()">+ 增加科目</button>
+        <button class="btn btn-export" onclick="showReport()">📊 生成學期報表</button>
+    </div>
+</div>
+
+<div id="report-modal" class="modal">
+    <div class="report-paper">
+        <h2 style="text-align:center; margin:0;">國立台南大學附屬高級中學</h2>
+        <p style="text-align:center; margin:5px 0;">114學年度 第一學期成績預估單</p>
+        
+        <table class="report-table">
+            <thead>
+                <tr><th>科目</th><th>學分</th><th>總成績</th><th>結果</th></tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+        </table>
+
+        <div class="summary-box">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div>應修總學分：<span id="total-w"></span></div>
+                    <div>實得學分：<span id="get-w" class="pass"></span></div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:0.7rem">學期加權平均</div>
+                    <div class="big-avg" id="res-avg">0.0</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-add" style="width:100%; margin-top:15px;" onclick="closeReport()">返回調整分數</button>
+    </div>
+</div>
+
+<script>
+    const subjects = ["國文", "英文", "數學", "經濟", "會計", "程式", "商概", "數科"];
+    const weights = [3, 3, 3, 4, 3, 3, 2, 2];
+
+    function addRow(n='', w=3) {
+        const div = document.createElement('div');
+        div.className = 'row';
+        div.innerHTML = `
+            <input type="text" class="input-cell name" value="${n}">
+            <input type="number" class="input-cell score-input s1" placeholder="0">
+            <input type="number" class="input-cell score-input s2" placeholder="0">
+            <input type="number" class="input-cell score-input s3" placeholder="0">
+            <input type="number" class="input-cell score-input s4" placeholder="0">
+            <input type="number" class="input-cell weight" value="${w}">
+            <span class="del-btn" onclick="this.parentElement.remove()">×</span>
+        `;
+        document.getElementById('subject-list').appendChild(div);
+    }
+
+    function showReport() {
+        const r = [
+            parseFloat(document.getElementById('r1').value)/100,
+            parseFloat(document.getElementById('r2').value)/100,
+            parseFloat(document.getElementById('r3').value)/100,
+            parseFloat(document.getElementById('r4').value)/100
+        ];
+
+        let html = '', totalW = 0, getW = 0, weightedSum = 0;
+
+        document.querySelectorAll('#subject-list .row').forEach(row => {
+            const n = row.querySelector('.name').value;
+            const s1 = parseFloat(row.querySelector('.s1').value) || 0;
+            const s2 = parseFloat(row.querySelector('.s2').value) || 0;
+            const s3 = parseFloat(row.querySelector('.s3').value) || 0;
+            const s4 = parseFloat(row.querySelector('.s4').value) || 0;
+            const w = parseFloat(row.querySelector('.weight').value) || 0;
+
+            const final = Math.round(s1*r[0] + s2*r[1] + s3*r[2] + s4*r[3]);
+            const isPass = final >= 60;
+            
+            totalW += w;
+            if(isPass) getW += w;
+            weightedSum += (final * w);
+
+            html += `<tr>
+                <td>${n}</td>
+                <td>${w}</td>
+                <td class="${isPass?'':'fail'}">${final}</td>
+                <td class="${isPass?'pass':'fail'}">${isPass?'及格':'重修'}</td>
+            </tr>`;
+        });
+
+        document.getElementById('report-body').innerHTML = html;
+        document.getElementById('total-w').innerText = totalW;
+        document.getElementById('get-w').innerText = getW;
+        document.getElementById('res-avg').innerText = totalW > 0 ? (weightedSum / totalW).toFixed(1) : "0.0";
+        document.getElementById('report-modal').style.display = 'flex';
+    }
+
+    function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
+
+    window.onload = () => {
+        subjects.forEach((s, i) => addRow(s, weights[i]));
+    };
+</script>
+</body>
+</html>
