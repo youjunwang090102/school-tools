@@ -3,170 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>南大附中學期總成績結算</title>
+    <title>學期成績預估系統 - 南大附中資訊科</title>
     <style>
-        :root { --p: #4361ee; --bg: #f8f9fa; --text: #2b2d42; --red: #ef233c; --green: #2b9348; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        :root { --p: #1a73e8; --bg: #f1f3f4; --red: #d93025; --orange: #f9ab00; --green: #1e8e3e; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 10px; font-size: 14px; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
         
-        .container { width: 100%; max-width: 600px; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin-bottom: 15px; }
+        /* 基本資料區 */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .info-grid input, .info-grid select { padding: 6px; border: 1px solid #dadce0; border-radius: 4px; font-size: 13px; }
+        .full-width { grid-column: span 2; }
 
-        /* 比重設定區 */
-        .ratio-settings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; padding: 10px; background: #edf2ff; border-radius: 12px; font-size: 0.75rem; text-align: center; }
-        .ratio-settings input { width: 80%; padding: 4px; border: 1px solid #adc1fd; border-radius: 4px; text-align: center; font-weight: bold; }
-
-        /* 表頭 */
-        .row-header { display: flex; gap: 4px; font-size: 0.7rem; font-weight: bold; color: #8d99ae; padding: 0 5px 5px; border-bottom: 2px solid #eee; margin-bottom: 8px; }
+        /* 表格區 */
+        .row-header { display: flex; background: #f8f9fa; font-weight: bold; padding: 5px 0; border-bottom: 2px solid #eee; text-align: center; font-size: 11px; }
+        .row { display: flex; padding: 4px 0; border-bottom: 1px solid #f1f1f1; align-items: center; }
+        .col-name { flex: 2; }
+        .col-score { flex: 1; }
+        .col-w { width: 30px; }
         
-        /* 科目列：手機優化 */
-        .row { display: flex; gap: 4px; margin-bottom: 8px; align-items: center; background: #fff; }
-        .input-cell { border: 1px solid #ddd; padding: 8px 2px; border-radius: 6px; font-size: 0.8rem; outline: none; text-align: center; }
-        
-        .name { flex: 1.5; text-align: left; padding-left: 5px; font-weight: bold; }
-        .score-input { width: 45px; background: #fff; }
-        .weight { width: 35px; background: #f1f3f5; color: #555; }
-        .final-val { width: 50px; background: #f8f9fa; font-weight: bold; color: var(--p); border: none; }
-        .del-btn { width: 20px; color: #ccc; cursor: pointer; font-size: 1.1rem; }
+        input.cell { width: 90%; padding: 4px 0; text-align: center; border: 1px solid #eee; border-radius: 3px; font-size: 13px; outline-color: var(--p); }
+        .name-input { text-align: left !important; padding-left: 5px !important; width: 95% !important; background: #fafafa; }
 
         .btn-group { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-        .btn-add { background: #edf2ff; color: var(--p); }
-        .btn-export { background: var(--p); color: white; }
+        .btn { padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-add { background: #e8f0fe; color: var(--p); }
+        .btn-exp { background: var(--p); color: white; }
 
-        /* 成績單預覽 */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; align-items:center; justify-content:center; overflow-y: auto; }
-        .report-paper { width: 95%; max-width: 400px; background: #fff; padding: 20px; border: 1px solid #ddd; box-sizing: border-box; font-size: 0.8rem; }
-        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .report-table th, .report-table td { border: 1px solid #eee; padding: 8px 4px; text-align: center; }
-        .pass { color: var(--green); font-weight: bold; }
-        .fail { color: var(--red); font-weight: bold; }
+        /* 報表彈窗 */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:1000; overflow-y: auto; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .print-only { font-family: "Courier New", serif; color: #333; }
+        .report-header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .report-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
+        .report-table th, .report-table td { border: 1px solid #333; padding: 6px; text-align: center; }
         
-        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; }
-        .big-avg { font-size: 1.8rem; font-weight: 800; color: var(--p); }
+        .footer-note { font-size: 11px; color: #666; margin-top: 20px; line-height: 1.6; border-top: 1px dashed #ccc; padding-top: 10px; }
+        .status-pass { color: var(--green); }
+        .status-re { color: var(--orange); }
+        .status-fail { color: var(--red); font-weight: bold; }
+
+        @media print { .no-print { display: none; } .modal { position: relative; display: block; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🗓️ 學期成績結算系統</h1>
+<div class="container no-print">
+    <div style="text-align: center; margin-bottom: 15px;">
+        <h2 style="margin:0; color:var(--p)">學期總成績預估</h2>
+        <small>南大附中資訊科專用版</small>
+    </div>
 
-    <div class="ratio-settings">
-        <div>一研<br><input type="number" id="r1" value="20">%</div>
-        <div>二研<br><input type="number" id="r2" value="20">%</div>
-        <div>三研<br><input type="number" id="r3" value="30">%</div>
-        <div>平時<br><input type="number" id="r4" value="30">%</div>
+    <div class="info-grid">
+        <input type="text" id="school" value="國立南大附中" class="full-width">
+        <input type="text" id="year" placeholder="114學年度">
+        <select id="term">
+            <option>第1學期</option>
+            <option>第2學期</option>
+        </select>
+        <input type="text" id="class" placeholder="資一甲">
+        <input type="number" id="no" placeholder="座號">
+        <input type="text" id="name" placeholder="學生姓名" class="full-width">
     </div>
 
     <div class="row-header">
-        <span style="flex:1.5">科目</span>
-        <span style="width:45px">一</span>
-        <span style="width:45px">二</span>
-        <span style="width:45px">三</span>
-        <span style="width:45px">平</span>
-        <span style="width:35px">學分</span>
-        <span style="width:20px"></span>
+        <div class="col-name">科目</div>
+        <div class="col-score">一研</div>
+        <div class="col-score">二研</div>
+        <div class="col-score">期末</div>
+        <div class="col-score">平時</div>
+        <div class="col-w">學分</div>
     </div>
 
-    <div id="subject-list"></div>
+    <div id="list-container"></div>
 
     <div class="btn-group">
         <button class="btn btn-add" onclick="addRow()">+ 增加科目</button>
-        <button class="btn btn-export" onclick="showReport()">📊 生成學期報表</button>
+        <button class="btn btn-exp" onclick="generateReport()">🖨️ 生成結算報表</button>
     </div>
 </div>
 
 <div id="report-modal" class="modal">
-    <div class="report-paper">
-        <h2 style="text-align:center; margin:0;">國立台南大學附屬高級中學</h2>
-        <p style="text-align:center; margin:5px 0;">114學年度 第一學期成績預估單</p>
-        
+    <div class="print-only">
+        <div class="report-header">
+            <div style="float: right; font-size: 10px;" id="print-time"></div>
+            <h2 id="rpt-school" style="margin:0"></h2>
+            <div id="rpt-info" style="margin-top:5px"></div>
+        </div>
+
         <table class="report-table">
             <thead>
-                <tr><th>科目</th><th>學分</th><th>總成績</th><th>結果</th></tr>
+                <tr><th>科目</th><th>學分</th><th>總分</th><th>判定結果</th></tr>
             </thead>
-            <tbody id="report-body"></tbody>
+            <tbody id="rpt-body"></tbody>
         </table>
 
-        <div class="summary-box">
-            <div style="display:flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div>應修總學分：<span id="total-w"></span></div>
-                    <div>實得學分：<span id="get-w" class="pass"></span></div>
-                </div>
-                <div style="text-align:right">
-                    <div style="font-size:0.7rem">學期加權平均</div>
-                    <div class="big-avg" id="res-avg">0.0</div>
-                </div>
-            </div>
+        <div style="display: flex; justify-content: space-between;">
+            <div>應修學分：<span id="rpt-total-w"></span></div>
+            <div>實得學分：<span id="rpt-get-w"></span></div>
+            <div style="font-weight: bold;">加權平均：<span id="rpt-avg"></span></div>
         </div>
-        
-        <button class="btn btn-add" style="width:100%; margin-top:15px;" onclick="closeReport()">返回調整分數</button>
+
+        <div class="footer-note">
+            ※ 本報表為學生自行操作列印，非正式官方成績單。<br>
+            ※ 涉及上下學期學分平均制（學年學分制），此結果僅供參考，實際學分取得依註冊組公告為準。<br>
+            <strong>網站開發設計者：宥鈞 (Yujun)</strong> | <span id="site-url">https://scores.yujun.tw</span>
+        </div>
+
+        <div class="no-print" style="margin-top: 30px;">
+            <button class="btn btn-exp" style="width:100%" onclick="window.print()">立即列印 / 另存 PDF</button>
+            <button class="btn btn-add" style="width:100%; margin-top:10px;" onclick="document.getElementById('report-modal').style.display='none'">返回修改</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const subjects = ["國文", "英文", "數學", "經濟", "會計", "程式", "商概", "數科"];
-    const weights = [3, 3, 3, 4, 3, 3, 2, 2];
+    // 南大附中資訊科預設科目 (資訊科高一範例)
+    const infoTechSubjects = [
+        {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3},
+        {n:"基本電學", w:3}, {n:"電子學", w:3}, {n:"程式設計", w:3},
+        {n:"計算機概論", w:2}, {n:"物理", w:2}, {n:"體育", w:2}
+    ];
 
-    function addRow(n='', w=3) {
+    function addRow(n='', w=2) {
         const div = document.createElement('div');
         div.className = 'row';
         div.innerHTML = `
-            <input type="text" class="input-cell name" value="${n}">
-            <input type="number" class="input-cell score-input s1" placeholder="0">
-            <input type="number" class="input-cell score-input s2" placeholder="0">
-            <input type="number" class="input-cell score-input s3" placeholder="0">
-            <input type="number" class="input-cell score-input s4" placeholder="0">
-            <input type="number" class="input-cell weight" value="${w}">
-            <span class="del-btn" onclick="this.parentElement.remove()">×</span>
+            <div class="col-name"><input type="text" class="cell name-input" value="${n}"></div>
+            <div class="col-score"><input type="number" class="cell s1" placeholder="0"></div>
+            <div class="col-score"><input type="number" class="cell s2" placeholder="0"></div>
+            <div class="col-score"><input type="number" class="cell s3" placeholder="0"></div>
+            <div class="col-score"><input type="number" class="cell s4" placeholder="0"></div>
+            <div class="col-w"><input type="number" class="cell w" value="${w}"></div>
         `;
-        document.getElementById('subject-list').appendChild(div);
+        document.getElementById('list-container').appendChild(div);
     }
 
-    function showReport() {
-        const r = [
-            parseFloat(document.getElementById('r1').value)/100,
-            parseFloat(document.getElementById('r2').value)/100,
-            parseFloat(document.getElementById('r3').value)/100,
-            parseFloat(document.getElementById('r4').value)/100
-        ];
+    function generateReport() {
+        const now = new Date();
+        document.getElementById('print-time').innerText = "列印時間：" + now.toLocaleString();
+        document.getElementById('rpt-school').innerText = document.getElementById('school').value;
+        document.getElementById('rpt-info').innerText = `${document.getElementById('year').value} ${document.getElementById('term').value} | ${document.getElementById('class').value} | 座號：${document.getElementById('no').value} | 姓名：${document.getElementById('name').value}`;
 
         let html = '', totalW = 0, getW = 0, weightedSum = 0;
 
-        document.querySelectorAll('#subject-list .row').forEach(row => {
-            const n = row.querySelector('.name').value;
+        document.querySelectorAll('#list-container .row').forEach(row => {
+            const n = row.querySelector('.name-input').value;
             const s1 = parseFloat(row.querySelector('.s1').value) || 0;
             const s2 = parseFloat(row.querySelector('.s2').value) || 0;
             const s3 = parseFloat(row.querySelector('.s3').value) || 0;
             const s4 = parseFloat(row.querySelector('.s4').value) || 0;
-            const w = parseFloat(row.querySelector('.weight').value) || 0;
+            const w = parseFloat(row.querySelector('.w').value) || 0;
 
-            const final = Math.round(s1*r[0] + s2*r[1] + s3*r[2] + s4*r[3]);
-            const isPass = final >= 60;
+            // 計算公式 20%, 20%, 20%, 40%
+            const final = Math.round(s1*0.2 + s2*0.2 + s3*0.2 + s4*0.4);
             
+            let status = '', statusClass = '';
+            if (final >= 60) {
+                status = 'Pass';
+                statusClass = 'status-pass';
+                getW += w;
+            } else if (final >= 40) {
+                status = '請參加補考';
+                statusClass = 'status-re';
+            } else {
+                status = '死當';
+                statusClass = 'status-fail';
+            }
+
             totalW += w;
-            if(isPass) getW += w;
             weightedSum += (final * w);
 
             html += `<tr>
                 <td>${n}</td>
                 <td>${w}</td>
-                <td class="${isPass?'':'fail'}">${final}</td>
-                <td class="${isPass?'pass':'fail'}">${isPass?'及格':'重修'}</td>
+                <td>${final}</td>
+                <td class="${statusClass}">${status}</td>
             </tr>`;
         });
 
-        document.getElementById('report-body').innerHTML = html;
-        document.getElementById('total-w').innerText = totalW;
-        document.getElementById('get-w').innerText = getW;
-        document.getElementById('res-avg').innerText = totalW > 0 ? (weightedSum / totalW).toFixed(1) : "0.0";
+        document.getElementById('rpt-body').innerHTML = html;
+        document.getElementById('rpt-total-w').innerText = totalW;
+        document.getElementById('rpt-get-w').innerText = getW;
+        document.getElementById('rpt-avg').innerText = totalW > 0 ? (weightedSum / totalW).toFixed(2) : "0.00";
+        
         document.getElementById('report-modal').style.display = 'flex';
     }
 
-    function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
-
     window.onload = () => {
-        subjects.forEach((s, i) => addRow(s, weights[i]));
+        infoTechSubjects.forEach(s => addRow(s.n, s.w));
     };
 </script>
 </body>
