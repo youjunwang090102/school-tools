@@ -3,59 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級即時留言板</title>
+    <title>班級交流平台</title>
     <style>
-        :root {
-            --primary: #4361ee;
-            --bg: #f0f2f5;
-            --card: #ffffff;
-        }
+        :root { --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; }
-        h1 { color: var(--primary); text-align: center; }
+        .container { width: 100%; max-width: 600px; position: relative; }
         
-        /* 輸入區樣式 */
-        .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: 100px 1fr; gap: 10px; }
+        /* 標題與輸入 */
+        h1 { color: #333; text-align: center; cursor: default; user-select: none; }
+        .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        input:focus { border-color: var(--primary); outline: none; }
-        button { grid-column: span 2; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        button:hover { opacity: 0.9; }
-
-        /* 留言列表樣式 */
-        #messageList { display: flex; flex-direction: column; gap: 15px; }
-        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
-        .msg-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #666; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
+        /* 留言卡片 */
+        #messageList { display: flex; flex-direction: column; gap: 15px; }
+        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease; }
+        .msg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; margin-bottom: 8px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
         .msg-author { font-weight: bold; color: var(--primary); }
-        .msg-content { font-size: 1.05rem; color: #333; line-height: 1.5; word-break: break-all; }
-        .loading { text-align: center; color: #888; margin-top: 50px; }
+        .msg-content { font-size: 1rem; color: #333; line-height: 1.5; word-break: break-all; }
+        
+        /* 管理員樣式 */
+        .btn-delete { display: none; color: #ff4d4f; cursor: pointer; margin-left: 10px; font-weight: bold; }
+        #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; z-index: 9999; }
+        
+        /* 隱藏點 */
+        #secretDot { position: fixed; bottom: 5px; right: 5px; width: 5px; height: 5px; background: transparent; cursor: default; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>💬 班級雲端留言板</h1>
+    <h1 id="titleSwitch">💬 班級留言板</h1>
 
     <div class="input-box">
         <div class="grid">
-            <input type="text" id="msgAuthor" placeholder="你的名字">
             <input type="text" id="msgContent" placeholder="輸入留言內容...">
-            <button onclick="sendComment()">送出留言</button>
+            <button onclick="sendComment()">發佈留言</button>
         </div>
+        <input type="text" id="msgAuthor" style="margin-top:10px; width: 100px; font-size: 0.8rem;" readonly>
     </div>
 
     <div id="messageList">
-        <div class="loading">正在連線至雲端資料庫...</div>
+        <div style="text-align: center; color: #999;">連線中...</div>
     </div>
 </div>
+
+<div id="adminPanel">
+    <span>🛡️ 管理員模式</span>
+    <button onclick="clearAllMessages()" style="background:red; color:white; margin-left:20px;">清空所有</button>
+    <button onclick="exitAdmin()" style="margin-left:10px;">關閉</button>
+</div>
+
+<div id="secretDot" onclick="triggerStep2()">.</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // 你的 Firebase 設定 (已帶入你提供的資料)
+    // --- 1. 你的設定區 ---
     const firebaseConfig = {
         apiKey: "AIzaSyAS2CLfgTw9RQgVmZroj0O__N7h3M7XoP0",
         authDomain: "school-tools-6668.firebaseapp.com",
@@ -64,62 +71,96 @@
         messagingSenderId: "436587749038",
         appId: "1:436587749038:web:7153f0699078966530d73f"
     };
+    const ADMIN_PASSWORD = "6668"; // 你可以改成自訂密碼
 
-    // 初始化
+    // --- 2. 初始化 ---
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    let deviceId = localStorage.getItem('chat_device_id') || Math.random().toString(36).substring(2, 6).toUpperCase();
+    localStorage.setItem('chat_device_id', deviceId);
 
-    // 記憶姓名功能
-    if (localStorage.getItem('chat_name')) {
-        document.getElementById('msgAuthor').value = localStorage.getItem('chat_name');
-    }
+    // --- 3. 姓名鎖定邏輯 ---
+    let myName = localStorage.getItem('chat_name');
+    window.onload = () => {
+        if (!myName) {
+            let n = prompt("請輸入姓名 (設定後不可更改)：");
+            if (n && n.trim()) {
+                myName = n.trim();
+                localStorage.setItem('chat_name', myName);
+            } else { location.reload(); }
+        }
+        document.getElementById('msgAuthor').value = "發言人: " + myName;
+    };
 
-    // 發佈留言
-    function sendComment() {
-        const author = document.getElementById('msgAuthor').value.trim();
-        const content = document.getElementById('msgContent').value.trim();
+    // --- 4. 隱藏入口邏輯 ---
+    let clickCount = 0;
+    let step1Cleared = false;
 
-        if (!author || !content) return alert("姓名與內容都要填寫喔！");
+    // 點擊標題 5 次觸發第一層
+    document.getElementById('titleSwitch').onclick = () => {
+        clickCount++;
+        if (clickCount >= 5) {
+            step1Cleared = true;
+            console.log("Step 1 cleared"); // 這裡可以靜默不顯示任何東西
+            clickCount = 0;
+        }
+    };
 
-        localStorage.setItem('chat_name', author); // 記住名字
-
-        db.collection("messages").add({
-            author: author,
-            content: content,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            document.getElementById('msgContent').value = ""; // 清空輸入框
-        });
-    }
-
-    // 即時監聽更新
-    db.collection("messages")
-        .orderBy("createdAt", "desc") // 最新的在上面
-        .limit(100)
-        .onSnapshot((snapshot) => {
-            const list = document.getElementById('messageList');
-            list.innerHTML = ""; 
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const time = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : "傳送中...";
-                
-                const card = document.createElement('div');
-                card.className = 'msg-card';
-                card.innerHTML = `
-                    <div class="msg-header">
-                        <span class="msg-author">👤 ${data.author}</span>
-                        <span>${time}</span>
-                    </div>
-                    <div class="msg-content">${data.content}</div>
-                `;
-                list.appendChild(card);
-            });
-
-            if (snapshot.empty) {
-                list.innerHTML = '<div class="loading">目前還沒有留言，快來搶頭香！</div>';
+    // 點擊右下角微小點觸發第二層
+    function triggerStep2() {
+        if (step1Cleared) {
+            const pw = prompt("請輸入最終授權碼：");
+            if (pw === ADMIN_PASSWORD) {
+                document.getElementById('adminPanel').style.display = 'block';
+                document.querySelectorAll('.btn-delete').forEach(b => b.style.display = 'inline');
+                step1Cleared = false; // 重置開關
             }
+        }
+    }
+
+    function exitAdmin() { location.reload(); }
+
+    // --- 5. Firebase 功能 ---
+    function sendComment() {
+        const content = document.getElementById('msgContent').value.trim();
+        if (!content) return;
+        db.collection("messages").add({
+            author: myName,
+            content: content,
+            deviceId: deviceId,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => { document.getElementById('msgContent').value = ""; });
+    }
+
+    function deleteMsg(id) {
+        if(confirm("確定刪除？")) db.collection("messages").doc(id).delete();
+    }
+
+    async function clearAllMessages() {
+        if(confirm("確定清空全班留言？")) {
+            const snap = await db.collection("messages").get();
+            snap.forEach(doc => doc.ref.delete());
+        }
+    }
+
+    db.collection("messages").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+        const list = document.getElementById('messageList');
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString() : "...";
+            const div = document.createElement('div');
+            div.className = 'msg-card';
+            div.innerHTML = `
+                <div class="msg-header">
+                    <span><span class="msg-author">👤 ${d.author}</span> <small>#${d.deviceId}</small></span>
+                    <span>${time} <span class="btn-delete" onclick="deleteMsg('${doc.id}')">🗑️</span></span>
+                </div>
+                <div class="msg-content">${d.content}</div>
+            `;
+            list.appendChild(div);
         });
+    });
 </script>
 
 </body>
