@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>學期成績預估系統 - 專業版</title>
+    <title>學期成績預估系統</title>
     <style>
         :root { --p: #1a73e8; --bg: #f1f3f4; --red: #d93025; --orange: #f9ab00; --green: #1e8e3e; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 10px; font-size: 14px; }
@@ -76,8 +76,8 @@
 
     <div class="row-header">
         <div class="col-name">科目</div>
-        <div class="col-score">一研</div>
-        <div class="col-score">二研</div>
+        <div class="col-score">一段</div>
+        <div class="col-score">二段</div>
         <div class="col-score">期末</div>
         <div class="col-score">平時</div>
         <div class="col-w">學分</div>
@@ -88,7 +88,7 @@
 
     <div class="btn-group">
         <button class="btn btn-add" onclick="addRow()">+ 手動新增科目</button>
-        <button class="btn btn-exp" onclick="generateReport()">📊 生成結算報表</button>
+        <button class="btn btn-exp" onclick="generateReport()">生成結算報表</button>
     </div>
 </div>
 
@@ -113,9 +113,9 @@
     </div>
 
     <div class="footer-note">
-        ※ 本報表為學生自行操作列印，非正式官方成績單。<br>
+        ※ 本報表為學生自行操作列印，非學校正式成績單。<br>
         ※ 涉及上下學期學分平均制，結果僅供參考。實際學分取得依註冊組公告為準。<br>
-        <strong>網站開發設計者：宥鈞 (Yujun)</strong>
+        <strong>網站開發設計者：王宥鈞</strong>
     </div>
 
     <div class="no-print" style="margin-top: 30px;">
