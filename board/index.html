@@ -3,62 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆</title>
+    <title>班級留言板</title>
     <style>
         :root { --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff; }
-        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; padding-bottom: 100px; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000; }
+        .login-btn { padding: 15px 30px; background: #4285F4; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
         
-        h1 { color: #333; text-align: center; cursor: pointer; user-select: none; }
-        .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        /* 尚未綁定提示 */
+        #unboundOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:none; flex-direction:column; justify-content:center; align-items:center; z-index:900; text-align:center; }
+
+        .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 150px; }
+        .header { background: var(--primary); color:white; padding: 15px; border-radius: 0 0 15px 15px; margin-bottom: 20px; display:flex; justify-content:space-between; }
+        
+        .input-box { background: var(--card); padding: 15px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
         
-        #messageList { display: flex; flex-direction: column; gap: 12px; }
-        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 5px solid #ddd; }
-        .msg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-        .msg-author { font-weight: bold; color: var(--primary); }
-        .admin-id { color: #aaa; font-weight: normal; font-size: 0.7rem; }
-        .btn-delete { display: none; color: #ff4d4f; cursor: pointer; border: 1px solid #ff4d4f; padding: 2px 5px; border-radius: 4px; margin-left: 10px; }
-        
-        /* 🛡️ 管理面板樣式 */
-        #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; z-index: 999; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); }
-        #adminPanel button { background: #444; margin: 5px; font-size: 0.8rem; padding: 8px 12px; border: 1px solid #666; }
-        #secretZone { position: fixed; bottom: 0; right: 0; width: 50px; height: 50px; background: transparent; z-index: 998; }
+        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+        .msg-header { font-size: 0.8rem; color: #888; display:flex; justify-content:space-between; }
+
+        /* 🛡️ 老師專屬後台樣式 */
+        #adminConsole { display:none; background: #333; color: white; padding: 20px; border-radius: 15px; margin-top: 20px; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; font-size: 0.9rem; }
+        .admin-btn { padding: 5px 10px; margin-left: 5px; cursor:pointer; border:none; border-radius:4px; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1 id="titleSwitch">💬 班級留言板</h1>
+<div id="loginOverlay">
+    <h2>💬 班級動態牆</h2>
+    <button class="login-btn" onclick="signIn()">使用 Google 登入</button>
+</div>
+
+<div id="unboundOverlay">
+    <h2 style="color: #e63946;">⚠️ 尚未進行班級綁定</h2>
+    <p>您的帳號 (${currentUser?.email}) 已登錄系統，<br>請告知老師為您設定班級。</p>
+    <button onclick="signOut()">登出</button>
+</div>
+
+<div class="container" id="mainApp" style="display:none;">
+    <div class="header">
+        <span id="displayClassName">載入中...</span>
+        <button onclick="signOut()" style="background:none; border:1px solid white; color:white; border-radius:4px; font-size:0.7rem;">登出</button>
+    </div>
+
+    <div id="teacherTabs" style="display:none; margin-bottom:15px; text-align:center;">
+        <button onclick="switchView('ClassA')">看甲班</button>
+        <button onclick="switchView('ClassB')">看乙班</button>
+        <button onclick="document.getElementById('adminConsole').style.display='block'" style="background:#ffd700;">管理學生名單</button>
+    </div>
+
+    <div id="adminConsole">
+        <h3>👥 學生權限指派</h3>
+        <div id="userList">載入名單中...</div>
+        <button onclick="this.parentElement.style.display='none'" style="margin-top:10px; width:100%;">關閉面板</button>
+    </div>
 
     <div class="input-box">
         <div class="grid">
             <input type="text" id="msgContent" placeholder="在此輸入訊息...">
-            <button onclick="sendComment()">發佈</button>
+            <button onclick="sendComment()" style="background:var(--primary); color:white; border:none; border-radius:8px;">送出</button>
         </div>
-        <div id="whoAmI" style="font-size: 0.75rem; color: #999; margin-top: 10px;">身分識別中...</div>
     </div>
 
     <div id="messageList"></div>
 </div>
 
-<div id="adminPanel">
-    <div style="margin-bottom:10px; color:#ffd700; font-size: 0.9rem; font-weight: bold;">🛡️ 老師管理模式</div>
-    <button onclick="remoteRename()" style="background:#8e44ad;">強制遠端改名</button>
-    <button onclick="clearAllMessages()" style="background:#d9534f;">一鍵清空全班</button>
-    <button onclick="exitAdmin()">登出管理</button>
-    <div style="font-size:10px; color:#777; margin-top:5px;">密令提示：於學生手機輸入 reset:name</div>
-</div>
-
-<div id="secretZone" onclick="triggerStep2()"></div>
-
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
 
 <script>
-    // --- 1. 設定區 ---
     const firebaseConfig = {
         apiKey: "AIzaSyAS2CLfgTw9RQgVmZroj0O__N7h3M7XoP0",
         authDomain: "school-tools-6668.firebaseapp.com",
@@ -67,150 +83,130 @@
         messagingSenderId: "436587749038",
         appId: "1:436587749038:web:7153f0699078966530d73f"
     };
-    const ADMIN_PASSWORD = "6668"; 
+    const TEACHER_EMAIL = "你的Email@gmail.com"; 
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
 
-    // --- 2. 身分識別邏輯 ---
-    let myId = localStorage.getItem('chat_device_id');
-    if (!myId) {
-        myId = Math.random().toString(36).substr(2, 4).toUpperCase();
-        localStorage.setItem('chat_device_id', myId);
-    }
+    let currentUser = null;
+    let userClass = null; // 學生的班級
+    let viewClass = null; // 老師正在看的班級
+    let unsubMsg = null;
 
-    let myName = localStorage.getItem('chat_name');
-    function initUser() {
-        if (!myName) {
-            let n = prompt("請輸入您的姓名（設定後無法自行更改）：");
-            if (n && n.trim()) {
-                myName = n.trim();
-                localStorage.setItem('chat_name', myName);
-                location.reload();
-            } else { initUser(); }
-        }
-        document.getElementById('whoAmI').innerText = `我的身分：${myName} (#${myId})`;
-    }
-    initUser();
+    function signIn() { auth.signInWithPopup(provider); }
+    function signOut() { auth.signOut(); location.reload(); }
 
-    // --- 3. 老師權限控制 ---
-    let clickCount = 0;
-    let step1Cleared = false;
-    let isAdminMode = false;
-
-    document.getElementById('titleSwitch').onclick = () => {
-        clickCount++;
-        if (clickCount >= 5) { 
-            step1Cleared = true; 
-            clickCount = 0; 
-            console.log("Stage 1 OK");
-        }
-    };
-
-    function triggerStep2() {
-        if (step1Cleared) {
-            const pw = prompt("請輸入老師管理密碼：");
-            if (pw === ADMIN_PASSWORD) {
-                isAdminMode = true;
-                document.getElementById('adminPanel').style.display = 'block';
-                renderAdminUI();
-                step1Cleared = false;
-            }
-        }
-    }
-
-    function renderAdminUI() {
-        document.querySelectorAll('.btn-delete').forEach(b => b.style.display = 'inline');
-        document.querySelectorAll('.admin-id').forEach(s => s.style.display = 'inline');
-    }
-
-    function exitAdmin() { isAdminMode = false; location.reload(); }
-
-    // --- 4. 遠端指令監聽 (防止無限重複修正版) ---
-    let lastResetTime = localStorage.getItem('last_reset_time') || 0;
-
-    db.collection("system_cmds").doc("rename_tasks").onSnapshot(doc => {
-        if (doc.exists) {
-            const data = doc.data();
-            const cmdTime = data.ts ? data.ts.seconds : 0;
+    // 監聽登入狀態
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('loginOverlay').style.display = 'none';
             
-            // 只有當 ID 相符，且該指令是「新的」(時間晚於上次重設) 才會執行
-            if (data.targetId === myId && cmdTime > lastResetTime) {
-                localStorage.setItem('last_reset_time', cmdTime);
-                alert("老師已重設您的姓名權限，請重新輸入。");
-                localStorage.removeItem('chat_name');
-                location.reload();
-            }
+            // 1. 在 users 集合記錄此人（如果不存在）
+            await db.collection("users").doc(user.email).set({
+                name: user.displayName,
+                email: user.email,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            checkUserClass();
+        } else {
+            document.getElementById('loginOverlay').style.display = 'flex';
         }
     });
 
-    async function remoteRename() {
-        const tid = prompt("請輸入該學生的 ID (如: A7B2):");
-        if (tid) {
-            await db.collection("system_cmds").doc("rename_tasks").set({
-                targetId: tid.toUpperCase(),
-                ts: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            alert("改名指令已發送！");
-        }
+    // 檢查班級權限
+    function checkUserClass() {
+        db.collection("users").doc(currentUser.email).onSnapshot(doc => {
+            const data = doc.data();
+            if (currentUser.email === TEACHER_EMAIL) {
+                // 是老師
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('teacherTabs').style.display = 'block';
+                loadUserList();
+                if(!viewClass) switchView('ClassA');
+            } else if (data && data.class) {
+                // 是一般學生，且已有班級
+                userClass = data.class;
+                viewClass = data.class;
+                document.getElementById('unboundOverlay').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('displayClassName').innerText = (userClass === 'ClassA' ? "🏆 甲班" : "🚀 乙班");
+                loadMessages();
+            } else {
+                // 尚未綁定的學生
+                document.getElementById('unboundOverlay').style.display = 'flex';
+            }
+        });
     }
 
-    // --- 5. 訊息收發功能 ---
+    // 老師切換視角
+    function switchView(c) {
+        viewClass = c;
+        document.getElementById('displayClassName').innerText = `老師正在查看：${c==='ClassA'?'甲班':'乙班'}`;
+        loadMessages();
+    }
+
+    // 老師管理：讀取所有登入過的學生
+    function loadUserList() {
+        db.collection("users").onSnapshot(snap => {
+            const list = document.getElementById('userList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const u = doc.data();
+                if(u.email === TEACHER_EMAIL) return;
+                const div = document.createElement('div');
+                div.className = 'user-row';
+                div.innerHTML = `
+                    <span>${u.name} <br><small>${u.email}</small> [${u.class || '未分配'}]</span>
+                    <div>
+                        <button class="admin-btn" style="background:#4caf50;color:white;" onclick="assignClass('${u.email}','ClassA')">甲班</button>
+                        <button class="admin-btn" style="background:#2196f3;color:white;" onclick="assignClass('${u.email}','ClassB')">乙班</button>
+                        <button class="admin-btn" style="background:#f44336;color:white;" onclick="assignClass('${u.email}',null)">移除</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        });
+    }
+
+    function assignClass(email, className) {
+        db.collection("users").doc(email).update({ class: className });
+    }
+
+    // 訊息系統
+    function loadMessages() {
+        if(unsubMsg) unsubMsg();
+        unsubMsg = db.collection("classes").doc(viewClass).collection("messages")
+            .orderBy("createdAt", "desc")
+            .onSnapshot(snap => {
+                const list = document.getElementById('messageList');
+                list.innerHTML = "";
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'msg-card';
+                    div.innerHTML = `
+                        <div class="msg-header"><span>${d.author}</span> <span>${d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleTimeString():''}</span></div>
+                        <div>${d.content}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+    }
+
     function sendComment() {
         const content = document.getElementById('msgContent').value.trim();
-        if (!content) return;
-
-        // 密令：老師親自操作時可用
-        if (content === "reset:name") {
-            localStorage.removeItem('chat_name');
-            location.reload();
-            return;
-        }
-
-        db.collection("messages").add({
-            author: myName,
+        if(!content || !viewClass) return;
+        db.collection("classes").doc(viewClass).collection("messages").add({
+            author: currentUser.displayName,
+            email: currentUser.email,
             content: content,
-            deviceId: myId,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => { document.getElementById('msgContent').value = ""; });
     }
-
-    function deleteMsg(id) {
-        if(confirm("確定刪除此留言？")) db.collection("messages").doc(id).delete();
-    }
-
-    async function clearAllMessages() {
-        if(confirm("⚠️ 確定要清空全班留言嗎？此操作無法恢復。")) {
-            const snap = await db.collection("messages").get();
-            const batch = db.batch();
-            snap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            alert("已清空所有留言。");
-        }
-    }
-
-    // --- 6. 監聽動態牆 ---
-    db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snap => {
-        const list = document.getElementById('messageList');
-        list.innerHTML = "";
-        snap.forEach(doc => {
-            const d = doc.data();
-            const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
-            const div = document.createElement('div');
-            div.className = 'msg-card';
-            div.innerHTML = `
-                <div class="msg-header">
-                    <span>
-                        <span class="msg-author">${d.author}</span> 
-                        <span class="admin-id" style="display:${isAdminMode?'inline':'none'}">(#${d.deviceId})</span>
-                    </span>
-                    <span>${time} <span class="btn-delete" onclick="deleteMsg('${doc.id}')" style="display:${isAdminMode?'inline':'none'}">🗑️</span></span>
-                </div>
-                <div class="msg-content">${d.content}</div>
-            `;
-            list.appendChild(div);
-        });
-    });
 </script>
 </body>
 </html>
