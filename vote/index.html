@@ -3,117 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級投票系統 - 職務授權版</title>
+    <title>班級投票系統 - 導師管理版</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f8fafc; }
         body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 600px; margin: 0 auto; }
-        
         .header { text-align: center; margin: 20px 0; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
-
-        /* 卡片化 UI */
+        .btn-main { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 50px; font-weight: bold; cursor: pointer; }
         .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
         .card-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; color: #1e293b; border-left: 4px solid var(--primary); padding-left: 10px; }
-        
-        /* 表單元件 */
-        input, select { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
+        input, select { width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; margin-bottom: 10px; }
         .opt-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .switch-group { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
-
-        /* 投票清單 */
-        .vote-entry { background: white; border-radius: 12px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; transition: 0.2s; }
-        .vote-entry:hover { border-color: var(--primary); transform: translateY(-2px); }
-
-        /* 彈窗 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto; padding-top: 20px; }
-        .modal-content { width: 90%; max-width: 500px; margin: 0 auto 50px; }
-        
-        /* 按鈕類別 */
-        .btn-add { background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; width: 100%; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
-        .btn-excel { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-top: 10px; }
-        .btn-del-task { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-top: 10px; margin-left: 5px; }
+        .vote-entry { background: white; border-radius: 12px; padding: 18px; margin-bottom: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; overflow-y: auto; }
+        .modal-content { width: 90%; max-width: 500px; margin: 40px auto; }
+        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .btn-excel { background: var(--success); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-right: 5px; }
+        .btn-delete { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        .admin-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .admin-item:last-child { border: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>🏫 班級行動授權投票</h1>
+        <h1>🏫 班級投票管理系統</h1>
         <button class="btn-main" onclick="openLogin()">🔐 幹部/教師登入</button>
     </div>
-    
     <div id="voteList">讀取中...</div>
 </div>
 
 <div id="loginModal" class="modal">
-    <div class="modal-content">
-        <div class="card">
-            <h2 style="text-align:center;">職務驗證</h2>
-            <select id="loginRole">
-                <option value="">請選擇職稱</option>
-                <option value="導師">導師</option><option value="班長">班長</option>
-                <option value="副班長">副班長</option><option value="學藝股長">學藝股長</option>
-                <option value="風紀股長">風紀股長</option><option value="服務股長">服務股長</option>
-                <option value="衛生股長">衛生股長</option><option value="環保股長">環保股長</option>
-                <option value="資訊股長">資訊股長</option><option value="實習股長">實習股長</option>
-                <option value="輔導股長">輔導股長</option><option value="體育股長">體育股長</option>
-                <option value="管理員">管理員</option>
-            </select>
-            <input type="text" id="loginPwd" placeholder="請輸入 10 位數驗證碼">
-            <button class="btn-submit" onclick="verifyLogin()">確認進入</button>
-            <button onclick="closeModal('loginModal')" style="width:100%; background:none; border:none; color:gray; margin-top:15px; cursor:pointer;">取消</button>
-        </div>
-    </div>
+    <div class="modal-content"><div class="card">
+        <h2 style="text-align:center;">職務驗證</h2>
+        <select id="loginRole">
+            <option value="">請選擇職稱</option>
+            <option value="導師">導師</option><option value="班長">班長</option><option value="副班長">副班長</option>
+            <option value="學藝股長">學藝股長</option><option value="管理員">管理員</option>
+            <option value="風紀股長">風紀股長</option><option value="服務股長">服務股長</option>
+            <option value="衛生股長">衛生股長</option><option value="環保股長">環保股長</option>
+            <option value="資訊股長">資訊股長</option><option value="實習股長">實習股長</option>
+            <option value="輔導股長">輔導股長</option><option value="體育股長">體育股長</option>
+        </select>
+        <input type="password" id="loginPwd" placeholder="請輸入 10 位數驗證碼">
+        <button class="btn-submit" onclick="verifyLogin()">確認進入</button>
+        <button onclick="closeModal('loginModal')" style="width:100%; background:none; border:none; color:gray; margin-top:10px; cursor:pointer;">取消</button>
+    </div></div>
 </div>
 
 <div id="adminModal" class="modal">
     <div class="modal-content">
         <div style="display:flex; justify-content: space-between; color:white; margin-bottom:10px;">
-            <h3 id="roleDisplay">職稱：</h3>
-            <button onclick="closeModal('adminModal')" style="background:none; border:none; color:white; font-size:1.5rem;">×</button>
+            <h3 id="roleDisplay">身份：未登入</h3>
+            <button onclick="closeModal('adminModal')" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">×</button>
         </div>
 
         <div class="card">
-            <div class="card-title">1. 投票主題</div>
-            <input type="text" id="newTitle" placeholder="例如：這週五班會要訂哪間飲料？">
-        </div>
-
-        <div class="card">
-            <div class="card-title">2. 選項設定</div>
+            <div class="card-title">發起新投票</div>
+            <input type="text" id="newTitle" placeholder="主題名稱">
             <div id="optionsContainer">
                 <div class="opt-row"><input type="text" class="opt-input" placeholder="選項 1"></div>
                 <div class="opt-row"><input type="text" class="opt-input" placeholder="選項 2"></div>
             </div>
-            <button class="btn-add" onclick="addOptionField()">＋ 新增選項</button>
+            <button onclick="addOptionField()" style="width:100%; padding:8px; margin-bottom:10px; border:1px dashed #ccc; background:none; cursor:pointer;">+ 新增選項</button>
+            <div style="font-size:0.9rem; margin-bottom:10px;">
+                模式：<select id="isAnonymous" style="display:inline; width:120px; padding:5px; margin:0;"><option value="false">實名</option><option value="true">匿名</option></select>
+                截止：<input type="datetime-local" id="endTime" style="display:inline; width:180px; padding:5px; margin:0;">
+            </div>
+            <button class="btn-submit" onclick="publishVote()">發布投票</button>
         </div>
 
         <div class="card">
-            <div class="card-title">3. 投票模式</div>
-            <div class="switch-group">
-                <span>隱藏票數 (投完才顯示)</span>
-                <input type="checkbox" id="hideResults" style="width:20px; height:20px;">
-            </div>
-            <div class="switch-group" style="border:none;">
-                <span>匿名投票 (僅導師可看名單)</span>
-                <select id="isAnonymous" style="width:120px; margin:0;">
-                    <option value="false">否 (實名)</option>
-                    <option value="true">是 (匿名)</option>
-                </select>
-            </div>
+            <div class="card-title">投票紀錄管理</div>
+            <div id="adminHistoryList">讀取資料中...</div>
         </div>
-
-        <div class="card">
-            <div class="card-title">4. 截止時間</div>
-            <input type="datetime-local" id="endTime">
-        </div>
-
-        <button class="btn-submit" onclick="publishVote()">發布投票</button>
-        
-        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.3); margin:20px 0;">
-        <h3 style="color:white;">歷史結果與管理</h3>
-        <div id="adminHistory"></div>
     </div>
 </div>
 
@@ -121,11 +86,11 @@
     <div class="modal-content" id="voteContent"></div>
 </div>
 
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
+    // Firebase 配置 (與先前一致)
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -138,191 +103,171 @@
     const db = firebase.firestore();
 
     const ROLES = {
-        "導師": "T8k2Pq9vR1", "班長": "M5x3Wz7yL0", "副班長": "V1a6Bs4eN8", "管理員": "Admin88888",
+        "導師": "T8k2Pq9vR1", "管理員": "Admin88888", "班長": "M5x3Wz7yL0", "副班長": "V1a6Bs4eN8",
         "學藝股長": "A9b2C3d4E5", "風紀股長": "D1e2F3g4H5", "服務股長": "S1t2U3v4W5", "衛生股長": "H1i2J3k4L5",
         "環保股長": "E1r2O3p4Q5", "資訊股長": "I1n2F3o4S5", "實習股長": "P1r2A3c4T5", "輔導股長": "G1u2I3d4E5", "體育股長": "S1p2O3r4T5"
     };
-    
-    let currentRole = "";
+
+    let currentUserRole = ""; 
 
     function openLogin() { document.getElementById('loginModal').style.display = 'block'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    // 登入驗證
     function verifyLogin() {
         const role = document.getElementById('loginRole').value;
         const pwd = document.getElementById('loginPwd').value;
         if (!role || pwd !== ROLES[role]) return alert("職稱或驗證碼錯誤！");
         
-        currentRole = role;
+        currentUserRole = role; // 存入全域變數
         document.getElementById('roleDisplay').innerText = `目前身份：${role}`;
         closeModal('loginModal');
+        renderAdminList(); // 登入後立即重新渲染管理清單
         document.getElementById('adminModal').style.display = 'block';
     }
 
-    // 監聽投票清單
+    // 渲染學生端清單
     db.collection("votes").orderBy("createdAt", "desc").onSnapshot(snap => {
         const listDiv = document.getElementById('voteList');
-        const historyDiv = document.getElementById('adminHistory');
         listDiv.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            listDiv.innerHTML += `
+                <div class="vote-entry" onclick="openVote('${doc.id}')">
+                    <div><strong>${data.title}</strong><br><small>${data.endTime < Date.now() ? '🔴 已截止' : '🟢 進行中'}</small></div>
+                    <span>➔</span>
+                </div>`;
+        });
+        if (document.getElementById('adminModal').style.display === 'block') renderAdminList();
+    });
+
+    // 核心：渲染管理後台清單 (根據身份顯示按鈕)
+    async function renderAdminList() {
+        const snap = await db.collection("votes").orderBy("createdAt", "desc").get();
+        const historyDiv = document.getElementById('adminHistoryList');
         historyDiv.innerHTML = "";
+
+        const isSuperUser = (currentUserRole === "導師" || currentUserRole === "管理員");
 
         snap.forEach(doc => {
             const data = doc.data();
             const id = doc.id;
-            const isExpired = data.endTime < Date.now();
-
-            // 學生端清單
-            listDiv.innerHTML += `
-                <div class="vote-entry" onclick="openVote('${id}')">
-                    <div>
-                        <div style="font-weight:bold; font-size:1.1rem;">${data.title}</div>
-                        <small style="color:gray;">${isExpired ? '🔴 已截止' : '🟢 進行中'}</small>
-                    </div>
-                    <span style="color:#4361ee; font-weight:bold;">→</span>
-                </div>
-            `;
-
-            // 管理端清單 (僅導師/管理員有刪除與匯出)
-            const canManage = (currentRole === "導師" || currentRole === "管理員");
-            historyDiv.innerHTML += `
-                <div class="card" style="padding:15px; font-size:0.9rem;">
-                    <strong>${data.title}</strong><br>
-                    參與人數：${data.voters.length} 人
+            
+            let actionButtons = "";
+            if (isSuperUser) {
+                // 只有導師和管理員看得到這兩個按鈕
+                actionButtons = `
                     <div style="margin-top:10px;">
-                        ${canManage ? `<button class="btn-excel" onclick="exportToExcel('${id}')">📥 匯出 Excel</button>` : ''}
-                        ${canManage ? `<button class="btn-del-task" onclick="deleteVote('${id}')">🗑️ 刪除</button>` : ''}
-                        ${!canManage ? '<small style="color:orange;">(僅限導師匯出/刪除)</small>' : ''}
-                    </div>
-                </div>
-            `;
-        });
-    });
+                        <button class="btn-excel" onclick="exportToExcel('${id}')">📥 匯出 Excel</button>
+                        <button class="btn-delete" onclick="deleteVote('${id}')">🗑️ 刪除</button>
+                    </div>`;
+            } else {
+                actionButtons = `<p style="font-size:0.8rem; color:orange; margin-top:10px;">(唯讀：匯出與刪除限導師/管理員)</p>`;
+            }
 
-    // 開啟投票介面 (學生端)
+            historyDiv.innerHTML += `
+                <div class="admin-item">
+                    <strong>${data.title}</strong> (收票：${data.voters.length})
+                    ${actionButtons}
+                </div>`;
+        });
+    }
+
+    // 匯出功能 (使用 SheetJS)
+    async function exportToExcel(id) {
+        const snap = await db.collection("votes").doc(id).get();
+        const data = snap.data();
+        if (data.voters.length === 0) return alert("尚無數據！");
+
+        const rows = data.voters.map((v, i) => ({
+            "編號": i + 1,
+            "姓名/座號": v.name,
+            "選擇": v.choice,
+            "投票時間": new Date().toLocaleDateString(),
+            "備註": data.isAnonymous === 'true' ? "匿名投票" : "實名投票"
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "結果");
+        XLSX.writeFile(wb, `${data.title}_結果.xlsx`);
+    }
+
+    // 刪除功能
+    async function deleteVote(id) {
+        if (!confirm("確定要徹底刪除此投票紀錄嗎？")) return;
+        await db.collection("votes").doc(id).delete();
+        alert("已刪除！");
+        renderAdminList();
+    }
+
+    // --- 以下為基礎功能函數 ---
+    function addOptionField() {
+        const div = document.createElement('div');
+        div.className = 'opt-row';
+        div.innerHTML = `<input type="text" class="opt-input" placeholder="新選項"> <button onclick="this.parentElement.remove()" style="border:none; background:none; color:red; cursor:pointer;">×</button>`;
+        document.getElementById('optionsContainer').appendChild(div);
+    }
+
+    async function publishVote() {
+        const title = document.getElementById('newTitle').value;
+        const endTime = new Date(document.getElementById('endTime').value).getTime();
+        const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value).filter(v => v);
+        if (!title || opts.length < 2 || !endTime) return alert("請填寫完整資訊！");
+
+        const counts = {}; opts.forEach(o => counts[o] = 0);
+        await db.collection("votes").add({
+            title, options: opts, counts, voters: [], 
+            endTime, isAnonymous: document.getElementById('isAnonymous').value, 
+            createdAt: Date.now()
+        });
+        alert("發布成功！");
+        renderAdminList();
+    }
+
     async function openVote(id) {
         const snap = await db.collection("votes").doc(id).get();
         const data = snap.data();
         const hasVoted = localStorage.getItem('v_'+id);
         const isExpired = data.endTime < Date.now();
-        const total = data.voters.length;
-
+        
         let html = `<div class="card" style="position:relative;">
-            <button onclick="closeModal('voteModal')" style="position:absolute; right:15px; top:15px; border:none; background:none; font-size:1.2rem;">×</button>
-            <h3 style="margin-top:0;">${data.title}</h3>
-            <p style="font-size:0.8rem; color:${isExpired?'red':'green'}">${isExpired?'投票已截止':'投票進行中'}</p>
-        `;
-
-        if (!hasVoted && !isExpired) {
-            html += `<input type="text" id="vName" placeholder="請輸入姓名">`;
-        }
-
+            <button onclick="closeModal('voteModal')" style="position:absolute; right:10px; top:10px; border:none; background:none; font-size:1.5rem;">×</button>
+            <h3>${data.title}</h3>
+            ${!hasVoted && !isExpired ? `<input type="text" id="studentName" placeholder="請輸入姓名">` : ''}`;
+        
         data.options.forEach(opt => {
             const count = data.counts[opt] || 0;
-            const pct = total === 0 ? 0 : Math.round(count/total*100);
-            const showResult = hasVoted || isExpired || !data.hideResults;
-
-            html += `
-                <button class="btn-add" style="text-align:left; padding:15px; margin-bottom:10px; border-style:solid; position:relative;" 
-                    onclick="submitVote('${id}', '${opt}')" ${hasVoted || isExpired ? 'disabled' : ''}>
-                    ${showResult ? `<div style="position:absolute; left:0; top:0; height:100%; background:rgba(67,97,238,0.1); width:${pct}%;"></div>` : ''}
-                    <div style="position:relative; display:flex; justify-content:space-between;">
-                        <span>${opt}</span>
-                        ${showResult ? `<span>${count}票</span>` : ''}
-                    </div>
-                </button>`;
+            const pct = data.voters.length ? Math.round(count/data.voters.length*100) : 0;
+            const showRes = hasVoted || isExpired;
+            html += `<button class="btn-main" style="width:100%; margin-bottom:10px; background:${showRes?'#eee':'#4361ee'}; color:${showRes?'#333':'#fff'}; text-align:left; position:relative;" 
+                     onclick="castVote('${id}','${opt}')" ${showRes?'disabled':''}>
+                     ${showRes ? `<div style="position:absolute; background:rgba(67,97,238,0.2); width:${pct}%; height:100%; top:0; left:0;"></div>` : ''}
+                     <span style="position:relative;">${opt} ${showRes?`(${count}票)` : ''}</span>
+                     </button>`;
         });
-        
-        // 實名制名單判斷：只有非匿名且(投完或截止)才顯示給學生看
-        if (data.isAnonymous === 'false' && (hasVoted || isExpired)) {
-            html += `<div style="margin-top:10px; font-size:0.8rem; border-top:1px solid #eee; padding-top:10px;">
-                <strong>📋 投票名單：</strong><br>
-                ${data.voters.map(v => `${v.name}(${v.choice})`).join(', ')}
-            </div>`;
-        } else if (data.isAnonymous === 'true') {
-            html += `<p style="color:gray; font-size:0.8rem;">🔒 匿名投票：學生端隱藏名單，僅老師後台可匯出詳情。</p>`;
-        }
 
-        html += `</div>`;
+        if (data.isAnonymous === 'false' && (hasVoted || isExpired)) {
+            html += `<div style="font-size:0.8rem; color:#666; border-top:1px solid #eee; padding-top:10px;">名單：${data.voters.map(v=>v.name).join(', ')}</div>`;
+        }
         document.getElementById('voteContent').innerHTML = html;
         document.getElementById('voteModal').style.display = 'block';
     }
 
-    // 匯出 Excel 功能 (限導師/管理員)
-    async function exportToExcel(id) {
-        const snap = await db.collection("votes").doc(id).get();
-        const data = snap.data();
-        
-        // 整理數據格式
-        const excelData = data.voters.map((v, index) => ({
-            "序號": index + 1,
-            "姓名": v.name,
-            "選擇選項": v.choice,
-            "投票主題": data.title,
-            "投票模式": data.isAnonymous === 'true' ? "匿名" : "實名"
-        }));
-
-        if (excelData.length === 0) return alert("目前尚無投票數據可匯出。");
-
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "投票結果");
-        XLSX.writeFile(workbook, `${data.title}_投票結果.xlsx`);
-    }
-
-    // 刪除功能 (限導師/管理員)
-    async function deleteVote(id) {
-        if (!confirm("確定要刪除這筆投票嗎？所有數據將永久消失。")) return;
-        await db.collection("votes").doc(id).delete();
-        alert("已刪除。");
-    }
-
-    // 投票動作
-    async function submitVote(id, opt) {
-        const name = document.getElementById('vName').value.trim();
-        if (!name) return alert("請輸入姓名！");
+    async function castVote(id, opt) {
+        const name = document.getElementById('studentName').value;
+        if(!name) return alert("請輸入姓名");
         const ref = db.collection("votes").doc(id);
         const snap = await ref.get();
         const data = snap.data();
-        if (data.voters.some(v => v.name === name)) return alert("此姓名已投過！");
+        if(data.voters.some(v=>v.name === name)) return alert("已投過");
 
-        const newCounts = {...data.counts};
-        newCounts[opt]++;
+        const newCounts = {...data.counts}; newCounts[opt]++;
         await ref.update({
             counts: newCounts,
             voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt})
         });
         localStorage.setItem('v_'+id, 'true');
-        alert("投票成功！");
-        openVote(id); 
-    }
-
-    // 發布與介面輔助
-    function addOptionField() {
-        const container = document.getElementById('optionsContainer');
-        const div = document.createElement('div');
-        div.className = 'opt-row';
-        div.innerHTML = `<input type="text" class="opt-input" placeholder="新選項"> <button class="btn-del-task" onclick="this.parentElement.remove()" style="margin:0;">×</button>`;
-        container.appendChild(div);
-    }
-
-    async function publishVote() {
-        const title = document.getElementById('newTitle').value.trim();
-        const endTime = new Date(document.getElementById('endTime').value).getTime();
-        const hideResults = document.getElementById('hideResults').checked;
-        const isAnonymous = document.getElementById('isAnonymous').value;
-        const optInputs = document.querySelectorAll('.opt-input');
-        const options = Array.from(optInputs).map(i => i.value.trim()).filter(v => v !== "");
-
-        if (!title || options.length < 2 || !endTime) return alert("請填寫完整資訊！");
-
-        const counts = {};
-        options.forEach(o => counts[o] = 0);
-        await db.collection("votes").add({
-            title, options, counts, voters: [], endTime, hideResults, isAnonymous, createdAt: Date.now()
-        });
-        alert("發布成功！");
-        closeModal('adminModal');
+        alert("成功！"); closeModal('voteModal');
     }
 </script>
 </body>
