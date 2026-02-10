@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機分組小幫手 - 班級數位平台</title>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #7209b7;
+            --bg: #f8f9fa;
+        }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; }
+        
+        .setup-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 10px; }
+        .full-width { grid-column: span 2; }
+        
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-download { background: #e9ecef; color: #495057; }
+        .btn-import { background: #4361ee; color: white; }
+        .btn-main { background: var(--primary); color: white; width: 100%; font-size: 1.1rem; margin-top: 10px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        .result-group { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .group-card { border: 2px solid #f0f0f0; border-radius: 10px; padding: 15px; background: #fff; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 10px; padding-bottom: 5px; }
+        .email-btn { background: #2ec4b6; color: white; font-size: 0.8rem; padding: 5px 10px; }
+        
+        .member-list { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+        .member-item { padding: 3px 0; border-bottom: 1px dashed #eee; }
+        .absent { color: #ccc; text-decoration: line-through; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎲 隨機分組小幫手</h1>
+
+    <div class="btn-group">
+        <button class="btn-download" onclick="downloadTemplate()">📥 下載 Excel 範本</button>
+        <button class="btn-import" onclick="document.getElementById('fileInput').click()">📁 匯入學生名單</button>
+        <input type="file" id="fileInput" hidden accept=".xlsx, .xls" onchange="importExcel(this)">
+    </div>
+
+    <div class="setup-section">
+        <div class="full-width">
+            <label>班級名稱</label>
+            <input type="text" id="className" placeholder="例如：資三甲">
+        </div>
+        <div class="full-width">
+            <label>課程名稱</label>
+            <input type="text" id="courseName" placeholder="例如：專題製作">
+        </div>
+        <div>
+            <label>分組方式</label>
+            <select id="mode" onchange="toggleMode()">
+                <option value="perGroup">固定每組人數</option>
+                <option value="totalGroups">固定總組數</option>
+            </select>
+        </div>
+        <div>
+            <label id="modeLabel">每組幾人</label>
+            <input type="number" id="modeValue" value="4" min="1">
+        </div>
+        <div>
+            <label>性別設定</label>
+            <select id="genderMode" disabled title="需匯入含性別之名單">
+                <option value="mixed">男女混合</option>
+                <option value="separate">男女分開</option>
+            </select>
+        </div>
+        <div>
+            <label>目前學生：<span id="studentCount">0</span> 人</label>
+            <button onclick="manageAbsent()" style="font-size: 0.8rem; padding: 5px;">設定缺席</button>
+        </div>
+    </div>
+
+    <button class="btn-main" onclick="startGrouping()">開始分組</button>
+
+    <div id="resultArea" class="result-group">
+        </div>
+</div>
+
+<script>
+    let students = []; // 原始名單
+    let absentList = []; // 缺席座號
+
+    // 1. 下載範本
+    function downloadTemplate() {
+        const data = [
+            ["座號", "姓名", "性別", "教育信箱"],
+            [1, "王小明", "男", "student1@edu.tw"],
+            [2, "李小華", "女", "student2@edu.tw"]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "名單");
+        XLSX.writeFile(wb, "班級分組名單範本.xlsx");
+    }
+
+    // 2. 匯入 Excel
+    function importExcel(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet);
+            
+            students = json;
+            document.getElementById('studentCount').innerText = students.length;
+
+            // 檢查是否有性別欄位
+            const hasGender = students.length > 0 && students[0].hasOwnProperty('性別');
+            const genderSelect = document.getElementById('genderMode');
+            genderSelect.disabled = !hasGender;
+            if(!hasGender) genderSelect.value = "mixed";
+
+            alert("匯入成功！共 " + students.length + " 位學生");
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // 3. 設定缺席 (簡單 Prompt 處理)
+    function manageAbsent() {
+        let input = prompt("請輸入缺席座號 (用逗號隔開，例如: 3,15,22)", absentList.join(","));
+        if (input !== null) {
+            absentList = input.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+            alert("已記錄缺席座號：" + absentList.join(", "));
+        }
+    }
+
+    function toggleMode() {
+        const mode = document.getElementById('mode').value;
+        document.getElementById('modeLabel').innerText = (mode === 'perGroup') ? "每組幾人" : "總共分幾組";
+    }
+
+    // 4. 分組邏輯
+    function startGrouping() {
+        if (students.length === 0) return alert("請先匯入名單");
+        
+        let activeStudents = students.filter(s => !absentList.includes(parseInt(s.座號)));
+        let result = [];
+        const genderMode = document.getElementById('genderMode').value;
+
+        if (genderMode === 'separate') {
+            let boys = shuffle(activeStudents.filter(s => s.性別 === '男'));
+            let girls = shuffle(activeStudents.filter(s => s.性別 === '女'));
+            // 這裡可以根據需求實作男女各自分組或交錯，簡單版我們先分別隨機打亂再合併
+            activeStudents = [...boys, ...girls]; 
+        } else {
+            activeStudents = shuffle(activeStudents);
+        }
+
+        const mode = document.getElementById('mode').value;
+        const val = parseInt(document.getElementById('modeValue').value);
+        
+        let groupCount;
+        if (mode === 'perGroup') {
+            groupCount = Math.ceil(activeStudents.length / val);
+        } else {
+            groupCount = val;
+        }
+
+        // 初始化組別
+        for(let i=0; i<groupCount; i++) result[i] = [];
+
+        // 分配人員
+        activeStudents.forEach((st, index) => {
+            result[index % groupCount].push(st);
+        });
+
+        renderResult(result);
+    }
+
+    // 洗牌演算法
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // 5. 渲染結果與發信功能
+    function renderResult(groups) {
+        const container = document.getElementById('resultArea');
+        const className = document.getElementById('className').value || "班級";
+        const courseName = document.getElementById('courseName').value || "課程";
+        container.innerHTML = "";
+
+        groups.forEach((group, index) => {
+            const emails = group.map(s => s.教育信箱).filter(e => e).join(",");
+            const names = group.map(s => s.姓名).join("、");
+            
+            const card = document.createElement('div');
+            card.className = 'group-card';
+            card.innerHTML = `
+                <div class="group-header">
+                    <strong>第 ${index + 1} 組</strong>
+                    <button class="email-btn" onclick="sendMail('${emails}', ${index+1}, '${className}', '${courseName}', '${names}')">📧 通知全組</button>
+                </div>
+                <ul class="member-list">
+                    ${group.map(s => `<li class="member-item">${s.座號}. ${s.姓名} (${s.性別})</li>`).join("")}
+                </ul>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function sendMail(emails, groupNum, className, course, names) {
+        if(!emails) return alert("名單內無信箱資料");
+        const subject = encodeURIComponent(`[${className}] ${course} - 分組通知`);
+        const body = encodeURIComponent(`同學好：\n\n你在「${course}」課程中被分配到第 ${groupNum} 組。\n同組組員有：${names}\n\n請主動與組員聯繫並展開討論。`);
+        window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+    }
+</script>
+
+</body>
+</html>
