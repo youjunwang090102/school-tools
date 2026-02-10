@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>隨機分組小幫手 - 南大附中專用</title>
+    <title>隨機分組小幫手</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -80,7 +80,7 @@
 <body>
 
 <div class="container">
-    <h1>🎲 班級隨機分組系統</h1>
+    <h1>班級隨機分組系統</h1>
 
     <div class="action-bar">
         <button class="btn-dl" onclick="downloadTemplate()">📥 下載 Excel 範本</button>
@@ -92,11 +92,11 @@
         <div class="grid-box">
             <div>
                 <label>班級名稱</label>
-                <input type="text" id="className" placeholder="例如：資二甲">
+                <input type="text" id="className" placeholder="例如：204班">
             </div>
             <div>
                 <label>課程名稱</label>
-                <input type="text" id="courseName" placeholder="例如：程式設計實習">
+                <input type="text" id="courseName" placeholder="例如：數位科技概論硬體報告">
             </div>
         </div>
 
@@ -357,7 +357,7 @@
 同組組員名單如下：
 ${names}
 
-請主動與組員聯繫並展開討論。`
+請主動與組員聯繫並展開討論，如有問題請儘速告知老師！`
         );
         
         // 使用 window.open 開啟比較保險，或是 location.href
