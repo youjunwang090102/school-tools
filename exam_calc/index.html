@@ -3,75 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>段考成績加權計算器</title>
+    <title>校園成績加權計算系統</title>
     <style>
         :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; --red: #ff4d4d; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         
-        /* 主容器 */
         .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
-        h1 { font-size: 1.3rem; text-align: center; color: var(--p); margin: 5px 0 15px; font-weight: 800; }
+        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin: 0 0 15px; }
 
-        /* 個人資訊區 */
-        .info-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-bottom: 15px; }
-        .info-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; }
-        .info-input:focus { border-color: var(--p); }
+        /* 三段連動選單區 */
+        .config-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; }
+        .select-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .c-select, .c-input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.9rem; outline: none; background: white; }
+        .c-select:focus, .c-input:focus { border-color: var(--p); }
 
-        .select-box { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--p); font-size: 1rem; margin-bottom: 15px; outline: none; background: #fff; }
-
-        /* 表格結構 */
+        /* 表格樣式 */
         .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
         .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; margin-bottom: 5px; }
         .input-cell { border: 1px solid #ddd; padding: 10px 5px; border-radius: 8px; font-size: 0.95rem; outline: none; text-align: center; }
-        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 10px; border: 1px solid transparent; }
+        .subject { flex: 1; text-align: left; }
         .score { width: 70px; border: 2px solid #e2e8f0; font-weight: bold; color: var(--p); }
-        .weight { width: 45px; background: #f8f9fa; color: #666; font-size: 0.85rem; }
-        .del-btn { width: 25px; color: #ccc; font-size: 1.2rem; cursor: pointer; text-align: center; }
+        .weight { width: 45px; background: #f1f3f5; color: #666; }
+        .del-btn { width: 25px; color: #ccc; cursor: pointer; text-align: center; font-size: 1.2rem; }
 
-        /* 結果與按鈕 */
-        .result-card { margin-top: 20px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
-        .result-val { font-size: 2.5rem; font-weight: 800; margin: 0; }
+        /* 按鈕與結果 */
         .btn-group { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .btn-add { background: #e6fffa; color: var(--p); border: 2px dashed var(--p); }
-        .btn-export { background: var(--text); color: white; margin-top: 5px; }
+        .btn-export { background: var(--text); color: white; }
+        .result-card { margin-top: 15px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
+        .result-val { font-size: 2.2rem; font-weight: 800; }
 
-        /* 方案 C 成績單彈窗 */
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; overflow-y: auto; padding: 20px 0; }
-        .report-paper { width: 90%; max-width: 360px; background: #fff; padding: 20px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; }
-        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin: 0 0 10px; }
-        .student-info { display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 0.85rem; }
-        .report-table th, .report-table td { border: 1px solid #000; padding: 6px; text-align: center; }
-        .report-table th { background: #f2f2f2; }
-        .report-summary { text-align: right; border-top: 1px dashed #000; padding-top: 10px; }
-        .final-avg { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
-        .official-seal { position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 3px solid var(--red); border-radius: 50%; color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; transform: rotate(-15deg); opacity: 0.8; text-align: center; }
-        .btn-close { margin-top: 15px; background: white; padding: 10px 25px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
+        /* 成績單彈窗 (方案 C) */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; flex-direction:column; align-items:center; justify-content:center; }
+        .report-paper { width: 90%; max-width: 360px; background: #fff; padding: 25px; border: 4px double #333; position: relative; color: #000; box-sizing: border-box; }
+        .report-header h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin: 0 0 10px; font-size: 1.4rem; }
+        .report-header h3 { text-align: center; margin: 0 0 10px; font-size: 1rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .student-info { display: grid; grid-template-columns: 1fr 1fr; font-size: 0.85rem; margin-bottom: 10px; line-height: 1.6; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.85rem; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 5px; text-align: center; }
+        .report-summary { text-align: right; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; }
+        .official-seal { position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px; border: 3px solid var(--red); border-radius: 50%; color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; transform: rotate(-15deg); opacity: 0.7; text-align: center; }
+        .btn-close { margin-top: 15px; background: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📝 段考加權計算</h1>
+    <h1>🏫 校園成績加權系統</h1>
 
-    <div class="info-grid">
-        <input type="text" id="in-exam" class="info-input" placeholder="考試別 (例：第一次段考)">
-        <input type="text" id="in-class" class="info-input" placeholder="班級">
-        <input type="text" id="in-no" class="info-input" placeholder="座號">
-        <input type="text" id="in-name" class="info-input" placeholder="姓名">
+    <div class="config-section">
+        <select id="school-select" class="c-select" onchange="updateClassList()">
+            <option value="">-- 選擇學校 --</option>
+            <option value="南大附中">國立台南大學附屬高級中學</option>
+        </select>
+        
+        <div class="select-group">
+            <select id="class-select" class="c-select" onchange="loadTemplate()">
+                <option value="">-- 選擇班級 --</option>
+            </select>
+            <select id="exam-select" class="c-select">
+                <option value="第一次段考">第一次段考</option>
+                <option value="第二次段考">第二次段考</option>
+                <option value="期末考試">期末考試</option>
+            </select>
+        </div>
+
+        <div class="select-group">
+            <select id="no-select" class="c-select">
+                <option value="">座號</option>
+                </select>
+            <input type="text" id="name-input" class="c-input" placeholder="學生姓名">
+        </div>
     </div>
-
-    <select id="class-select" class="select-box" onchange="loadTemplate()">
-        <option value="">-- 自訂科目 --</option>
-        <option value="203">資訊科 203、204</option>
-        <option value="201">製圖科 201</option>
-        <option value="202">營建科 202</option>
-        <option value="205">餐飲科 205</option>
-        <option value="206">畜產科 206</option>
-        <option value="207">園藝科 207</option>
-        <option value="208">食品科 208、209</option>
-    </select>
 
     <div class="row row-header">
         <span style="flex:1; padding-left:10px;">科目</span>
@@ -83,25 +87,27 @@
     <div id="subject-list"></div>
 
     <div class="btn-group">
-        <button class="btn btn-add" onclick="addRow()">+ 新增科目</button>
+        <button class="btn btn-add" onclick="addRow()">+ 自定義新增科目</button>
         <button class="btn btn-export" onclick="showReport()">✨ 生成精美成績單</button>
     </div>
 
     <div class="result-card">
-        <div style="font-size: 0.9rem; opacity: 0.9;">目前的加權平均</div>
+        <div style="font-size: 0.8rem; opacity: 0.9;">加權平均分數</div>
         <div class="result-val" id="average">0.00</div>
     </div>
 </div>
 
 <div id="report-modal" class="modal">
-    <div class="report-paper" id="report-content">
+    <div class="report-paper">
         <div class="report-header">
-            <h2 id="out-exam">成績報告單</h2>
+            <h2 id="out-school">學校名稱</h2>
+            <h3 id="out-exam">考試別</h3>
         </div>
         <div class="student-info">
             <span>班級：<b id="out-class"></b></span>
             <span>座號：<b id="out-no"></b></span>
             <span>姓名：<b id="out-name"></b></span>
+            <span>日期：2026/02/10</span>
         </div>
         <table class="report-table">
             <thead>
@@ -110,30 +116,57 @@
             <tbody id="report-body"></tbody>
         </table>
         <div class="report-summary">
-            <div id="report-stats" style="font-size: 0.8rem;"></div>
-            <div class="final-avg">平均分數：<span id="res-avg"></span></div>
+            平均分數：<span id="res-avg" style="font-size: 1.4rem;"></span>
         </div>
         <div class="official-seal">數位教室<br>核訖章</div>
     </div>
-    <button class="btn-close" onclick="closeReport()">返回修改</button>
-    <p style="color:white; font-size:0.8rem; margin-top:10px;">提示：請直接截圖或長按儲存圖片</p>
+    <button class="btn-close" onclick="closeReport()">返回修改資料</button>
 </div>
 
 <script>
-    const templates = {
-        "203": [
-            {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
-            {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
-            {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
-        ]
+    const dataConfig = {
+        "南大附中": {
+            "203資訊": [
+                {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
+                {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
+                {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
+            ],
+            "204資訊": [
+                {n:"國文", w:3}, {n:"英文", w:3}, {n:"數學", w:3}, 
+                {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
+                {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
+            ]
+        }
     };
 
+    // 初始化座號
+    const noSelect = document.getElementById('no-select');
+    for(let i=1; i<=60; i++) {
+        let opt = document.createElement('option');
+        opt.value = i; opt.innerText = i + ' 號';
+        noSelect.appendChild(opt);
+    }
+
+    function updateClassList() {
+        const school = document.getElementById('school-select').value;
+        const classSelect = document.getElementById('class-select');
+        classSelect.innerHTML = '<option value="">-- 選擇班級 --</option>';
+        if(school && dataConfig[school]) {
+            Object.keys(dataConfig[school]).forEach(cls => {
+                let opt = document.createElement('option');
+                opt.value = cls; opt.innerText = cls;
+                classSelect.appendChild(opt);
+            });
+        }
+    }
+
     function loadTemplate() {
-        const val = document.getElementById('class-select').value;
+        const school = document.getElementById('school-select').value;
+        const cls = document.getElementById('class-select').value;
         const list = document.getElementById('subject-list');
         list.innerHTML = '';
-        if (templates[val]) {
-            templates[val].forEach(item => addRow(item.n, item.w));
+        if(school && cls && dataConfig[school][cls]) {
+            dataConfig[school][cls].forEach(item => addRow(item.n, item.w));
         } else {
             for(let i=0; i<3; i++) addRow();
         }
@@ -146,7 +179,7 @@
         div.innerHTML = `
             <input type="text" class="input-cell subject" placeholder="科目" value="${n}">
             <input type="number" class="input-cell score" placeholder="0" inputmode="decimal" oninput="calc()">
-            <input type="number" class="input-cell weight" placeholder="權" value="${w}" oninput="calc()">
+            <input type="number" class="input-cell weight" placeholder="權重" value="${w}" oninput="calc()">
             <span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>
         `;
         document.getElementById('subject-list').appendChild(div);
@@ -159,17 +192,18 @@
             const w = parseFloat(row.querySelector('.weight').value);
             if (!isNaN(s) && !isNaN(w)) { tw += w; ts += (s * w); }
         });
-        document.getElementById('average').innerText = tw > 0 ? (ts / tw).toFixed(2) : "0.00";
-        return { tw, ts };
+        const avg = tw > 0 ? (ts / tw).toFixed(2) : "0.00";
+        document.getElementById('average').innerText = avg;
+        return { tw, ts, avg };
     }
 
     function showReport() {
-        const data = calc();
-        const exam = document.getElementById('in-exam').value || "成績報告單";
-        document.getElementById('out-exam').innerText = exam;
-        document.getElementById('out-class').innerText = document.getElementById('in-class').value || "--";
-        document.getElementById('out-no').innerText = document.getElementById('in-no').value || "--";
-        document.getElementById('out-name').innerText = document.getElementById('in-name').value || "--";
+        const res = calc();
+        document.getElementById('out-school').innerText = document.getElementById('school-select').value || "未設定學校";
+        document.getElementById('out-exam').innerText = document.getElementById('exam-select').value;
+        document.getElementById('out-class').innerText = document.getElementById('class-select').value || "--";
+        document.getElementById('out-no').innerText = document.getElementById('no-select').value + " 號";
+        document.getElementById('out-name').innerText = document.getElementById('name-input').value || "學生姓名";
 
         let html = '';
         document.querySelectorAll('#subject-list .row').forEach(row => {
@@ -178,15 +212,13 @@
             const w = row.querySelector('.weight').value || "0";
             if(w > 0) html += `<tr><td>${n}</td><td>${s}</td><td>${w}</td><td>${s*w}</td></tr>`;
         });
-
         document.getElementById('report-body').innerHTML = html;
-        document.getElementById('report-stats').innerText = `總權數：${data.tw} | 加權總分：${data.ts}`;
-        document.getElementById('res-avg').innerText = data.tw > 0 ? (data.ts / data.tw).toFixed(2) : "0.00";
+        document.getElementById('res-avg').innerText = res.avg;
         document.getElementById('report-modal').style.display = 'flex';
     }
 
     function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
-    window.onload = loadTemplate;
+    window.onload = () => { for(let i=0; i<3; i++) addRow(); };
 </script>
 </body>
 </html>
