@@ -7,32 +7,30 @@
     <style>
         :root { --p: #2ec4b6; --bg: #f0f2f5; --text: #2b2d42; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 450px; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .container { width: 100%; max-width: 450px; background: white; padding: 20px 15px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; margin-top: 10px; }
         
-        h1 { font-size: 1.2rem; text-align: center; color: var(--p); margin: 10px 0 20px; }
+        h1 { font-size: 1.3rem; text-align: center; color: var(--p); margin: 5px 0 20px; font-weight: 800; }
         
-        .select-box { width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--p); font-size: 0.95rem; margin-bottom: 15px; outline: none; background: white; }
+        .select-box { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--p); font-size: 1rem; margin-bottom: 20px; outline: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232ec4b6' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E") no-repeat calc(100% - 15px) center; -webkit-appearance: none; }
 
-        /* 表格結構優化 */
-        .row { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
         .row-header { font-weight: bold; font-size: 0.75rem; color: #8d99ae; margin-bottom: 5px; }
         
-        input { border: 1px solid #ddd; padding: 10px 5px; border-radius: 8px; font-size: 0.9rem; outline: none; box-sizing: border-box; text-align: center; }
+        input { border: 1px solid #ddd; padding: 12px 5px; border-radius: 10px; font-size: 0.95rem; outline: none; box-sizing: border-box; text-align: center; }
         input:focus { border-color: var(--p); background: #f0fffb; }
         
-        /* 比例分配：科目(剩餘空間), 分數(70px), 權重(50px), 刪除(25px) */
-        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 10px; min-width: 0; } 
-        .score { width: 70px; border: 2px solid #e2e8f0; } 
-        .weight { width: 50px; background: #f8f9fa; color: #666; }
-        .del-btn { width: 25px; color: #ccc; font-size: 1.2rem; cursor: pointer; text-align: center; line-height: 1; }
+        .subject { flex: 1; text-align: left; background: #f8f9fa; padding-left: 12px; min-width: 0; border: 1px solid transparent; } 
+        .score { width: 75px; border: 2px solid #e2e8f0; font-weight: bold; color: var(--p); } 
+        .weight { width: 50px; background: #f8f9fa; color: #666; font-size: 0.85rem; }
+        .del-btn { width: 30px; color: #ffbcbc; font-size: 1.4rem; cursor: pointer; text-align: center; }
         
-        .result-card { margin-top: 20px; padding: 15px; background: var(--p); color: white; border-radius: 15px; text-align: center; }
-        .result-val { font-size: 2.2rem; font-weight: 800; margin: 0; }
+        .result-card { margin-top: 25px; padding: 20px; background: var(--p); color: white; border-radius: 18px; text-align: center; box-shadow: 0 10px 20px rgba(46, 196, 182, 0.2); }
+        .result-val { font-size: 3rem; font-weight: 800; margin: 0; line-height: 1.2; }
         
-        .footer-btns { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .btn { padding: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-align: center; text-decoration: none; font-size: 0.9rem; }
-        .btn-add { background: #e6fffa; color: var(--p); border: 1px dashed var(--p); }
-        .btn-back { background: #8d99ae; color: white; margin-top: 5px; }
+        .footer-btns { margin-top: 15px; }
+        .btn-add { width: 100%; padding: 12px; border-radius: 12px; border: 2px dashed var(--p); background: #e6fffa; color: var(--p); font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+        
+        footer { margin-top: 30px; font-size: 0.8rem; color: #adb5bd; }
     </style>
 </head>
 <body>
@@ -52,26 +50,28 @@
     </select>
 
     <div class="row row-header">
-        <span style="flex:1; padding-left:10px;">科目</span>
-        <span style="width:70px; text-align: center;">分數</span>
+        <span style="flex:1; padding-left:12px;">科目</span>
+        <span style="width:75px; text-align: center;">分數</span>
         <span style="width:50px; text-align: center;">權重</span>
-        <span style="width:25px"></span>
+        <span style="width:30px"></span>
     </div>
 
     <div id="subject-list"></div>
 
     <div class="footer-btns">
-        <button class="btn btn-add" onclick="addRow()">+ 新增科目</button>
+        <button class="btn-add" onclick="addRow()">+ 新增科目</button>
     </div>
 
     <div class="result-card">
-        <div style="font-size: 0.85rem; opacity: 0.9;">加權平均</div>
+        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px;">您的加權平均</div>
         <div class="result-val" id="average">0.00</div>
-        <div id="total-info" style="font-size: 0.75rem; opacity: 0.8; margin-top: 5px;">請輸入成績</div>
+        <div id="total-info" style="font-size: 0.8rem; opacity: 0.8; margin-top: 8px;">請於上方輸入成績</div>
     </div>
-
-    <a href="index.html" class="btn btn-back">← 返回工具箱</a>
 </div>
+
+<footer>
+    © 2026 數位教學助手
+</footer>
 
 <script>
     const templates = {
@@ -80,7 +80,7 @@
             {n:"會計學", w:3}, {n:"會計實務", w:3}, {n:"經濟學", w:4}, 
             {n:"數位科技概論", w:2}, {n:"商業概論", w:2}, {n:"程式語言", w:3}
         ],
-        // 其他科系可在此擴充...
+        // 您可以依照資訊科的格式，繼續在此補充其他班級資料
     };
 
     function loadTemplate() {
@@ -91,7 +91,8 @@
         if (templates[classVal]) {
             templates[classVal].forEach(item => addRow(item.n, item.w));
         } else {
-            addRow(); 
+            // 自訂模式下預設給 3 行空的
+            addRow(); addRow(); addRow();
         }
         calc();
     }
@@ -101,7 +102,7 @@
         div.className = 'row';
         div.innerHTML = `
             <input type="text" class="subject" placeholder="科目" value="${name}">
-            <input type="number" class="score" placeholder="分數" inputmode="decimal" oninput="calc()">
+            <input type="number" class="score" placeholder="0" inputmode="decimal" oninput="calc()">
             <input type="number" class="weight" placeholder="權" value="${weight}" oninput="calc()">
             <span class="del-btn" onclick="this.parentElement.remove();calc()">×</span>
         `;
