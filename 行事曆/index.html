@@ -10,7 +10,7 @@
             --ios-orange: #FF9500; --ios-yellow: #FFCC00; --ios-gray: #8E8E93;
             --bg: #F2F2F7;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #000; overflow-x: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #000; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 500px; margin: 0 auto; }
 
         /* iOS Widget 風格 */
@@ -51,8 +51,7 @@
         .ios-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .ios-modal-content { background: rgba(255,255,255,0.92); border-radius: 24px; width: 88%; max-width: 360px; margin: 15vh auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
         .ios-input { width: 100%; border: none; background: #E9E9EB; padding: 14px; border-radius: 12px; margin: 8px 0; box-sizing: border-box; font-size: 16px; }
-        .ios-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }
-        .ios-btn:active { opacity: 0.6; }
+        .ios-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .btn-blue { background: var(--ios-blue); color: white; }
         .btn-cancel { background: transparent; color: var(--ios-blue); }
         
@@ -62,7 +61,7 @@
 <body>
 
 <div class="container">
-    <h1 style="font-size: 32px; font-weight: 800; letter-spacing: -1.5px; margin: 10px 0 20px 5px;">行事曆</h1>
+    <h1 id="secretTitle" onclick="triggerAdmin()" style="font-size: 32px; font-weight: 800; letter-spacing: -1.5px; margin: 10px 0 20px 5px; user-select: none;">行事曆</h1>
 
     <div class="widget-row">
         <div class="ios-widget">
@@ -84,9 +83,6 @@
             </div>
         </div>
         <div class="grid" id="calendarGrid"></div>
-        <div id="adminLoginArea" style="text-align:center; margin-top:20px;">
-            <span onclick="loginAdmin()" style="color: var(--ios-gray); font-size: 12px; cursor: pointer; letter-spacing: 1px;">ADMIN LOGIN</span>
-        </div>
     </div>
 </div>
 
@@ -129,38 +125,45 @@
     let currentView = new Date();
     let allEvents = [];
     let isAdmin = false;
+    let clickCount = 0;
 
-    // 監聽 Firebase 資料
+    // 隱藏入口邏輯：連點標題 5 下
+    function triggerAdmin() {
+        clickCount++;
+        if (clickCount === 5) {
+            const pass = prompt("請輸入權限密碼");
+            if(pass === "Admin88888") {
+                isAdmin = true;
+                alert("管理模式已啟動");
+                render();
+            }
+            clickCount = 0;
+        }
+        // 3秒後重置計數，防止誤觸累積
+        setTimeout(() => clickCount = 0, 3000);
+    }
+
     db.collection("calendar_events").onSnapshot(snap => {
         allEvents = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
         render();
     });
 
     function render() {
-        renderWidgets();
-        renderCalendar();
-    }
-
-    function renderWidgets() {
         const now = new Date();
         now.setHours(0,0,0,0);
         
-        // 本週截止：本週六
+        // Widgets 邏輯
         const sat = new Date(now);
         sat.setDate(now.getDate() + (6 - now.getDay()));
         sat.setHours(23,59,59,999);
-
-        // 10日預告
         const tenD = new Date(now);
         tenD.setDate(now.getDate() + 10);
 
         const buildList = (start, end) => {
-            const list = allEvents.filter(e => {
+            return allEvents.filter(e => {
                 const d = new Date(e.date);
                 return d >= start && d <= end;
-            }).sort((a,b) => a.date.localeCompare(b.date));
-
-            return list.map(e => `
+            }).sort((a,b) => a.date.localeCompare(b.date)).map(e => `
                 <div class="widget-item">
                     <div class="dot-s bg-${e.type}"></div>
                     <span style="font-size:10px; color:var(--ios-gray);">${e.date.substring(5).replace('-','/')}</span>
@@ -170,9 +173,8 @@
 
         document.getElementById('widget-week').innerHTML = buildList(now, sat);
         document.getElementById('widget-10days').innerHTML = buildList(now, tenD);
-    }
 
-    function renderCalendar() {
+        // Calendar 邏輯
         const grid = document.getElementById('calendarGrid');
         grid.innerHTML = "";
         const yr = currentView.getFullYear();
@@ -180,15 +182,14 @@
         document.getElementById('monthTitle').innerText = `${yr}年 ${mo + 1}月`;
 
         ['日','一','二','三','四','五','六'].forEach(d => grid.innerHTML += `<div class="weekday">${d}</div>`);
-
         const first = new Date(yr, mo, 1).getDay();
         const last = new Date(yr, mo + 1, 0).getDate();
 
         for(let i=0; i<first; i++) grid.innerHTML += `<div class="day-cell" style="background:#F9F9FB;"></div>`;
-
         for(let d=1; d<=last; d++) {
             const dateStr = `${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const isToday = new Date().toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g,'-') === dateStr;
+            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const isToday = todayStr === dateStr;
             const dayEvents = allEvents.filter(e => e.date === dateStr);
 
             grid.innerHTML += `
@@ -208,7 +209,7 @@
         const dayEvents = allEvents.filter(e => e.date === date);
         document.getElementById('dayList').innerHTML = dayEvents.map(e => `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-size:16px;"><b>•</b> ${e.title} <small style="color:var(--ios-gray)">(${e.type})</small></span>
+                <span style="font-size:16px;"><b>•</b> ${e.title}</span>
                 ${isAdmin ? `<div>
                     <span class="admin-action" style="color:var(--ios-blue)" onclick="editE('${e.id}')">編輯</span>
                     <span class="admin-action" style="color:var(--ios-red)" onclick="delE('${e.id}')">刪除</span>
@@ -219,26 +220,14 @@
         document.getElementById('iosModal').style.display = 'block';
     }
 
-    function loginAdmin() {
-        if(prompt("請輸入管理密碼") === "Admin88888") {
-            isAdmin = true;
-            document.getElementById('adminLoginArea').innerHTML = "✨ <b>ADMIN MODE</b>";
-            render();
-        }
-    }
-
     async function saveEvent() {
         const title = document.getElementById('evTitle').value;
         const type = document.getElementById('evType').value;
         const date = document.getElementById('modalDate').innerText;
         const id = document.getElementById('editId').value;
-        if(!title) return alert("請輸入事項內容");
-
-        if(id) {
-            await db.collection("calendar_events").doc(id).update({title, type});
-        } else {
-            await db.collection("calendar_events").add({title, type, date, createdAt: Date.now()});
-        }
+        if(!title) return;
+        id ? await db.collection("calendar_events").doc(id).update({title, type}) :
+             await db.collection("calendar_events").add({title, type, date, createdAt: Date.now()});
         closeModal();
     }
 
@@ -251,7 +240,7 @@
     }
 
     async function delE(id) {
-        if(confirm("確定要移除此行程嗎？")) {
+        if(confirm("確定要移除嗎？")) {
             await db.collection("calendar_events").doc(id).delete();
             closeModal();
         }
