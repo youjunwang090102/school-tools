@@ -6,9 +6,17 @@
     <title>班級數位平台</title>
     <style>
         :root {
-            --p: #4361ee; /* 座位系統 - 藍 */
-            --s: #2ec4b6; /* 段考計算 - 綠 */
-            --a: #ff9f1c; /* 學期成績 - 橘 */
+            /* 原有配色 */
+            --p: #4361ee; /* 座位 - 藍 */
+            --s: #2ec4b6; /* 段考 - 綠 */
+            --a: #ff9f1c; /* 學期 - 橘 */
+            
+            /* 新增配色 */
+            --t: #ef233c; /* 倒數 - 紅 */
+            --g: #7209b7; /* 分組 - 紫 */
+            --m: #ffd60a; /* 留言 - 黃 */
+            --v: #38b000; /* 投票 - 草綠 */
+
             --bg: #f0f2f5;
             --card: #ffffff;
             --text: #2b2d42;
@@ -121,7 +129,9 @@
             margin-left: 10px;
         }
 
-        /* 分類顏色樣式 */
+        /* --- 樣式設定區 --- */
+        
+        /* 原有樣式 */
         .seat { border-left: 6px solid var(--p); }
         .seat .icon-box { background: #eef2ff; color: var(--p); }
         
@@ -131,11 +141,25 @@
         .final { border-left: 6px solid var(--a); }
         .final .icon-box { background: #fffaf0; color: var(--a); }
 
+        /* 新增樣式 */
+        .timer { border-left: 6px solid var(--t); }
+        .timer .icon-box { background: #ffe5e5; color: var(--t); }
+
+        .group { border-left: 6px solid var(--g); }
+        .group .icon-box { background: #f3e5f5; color: var(--g); }
+
+        .board { border-left: 6px solid var(--m); }
+        .board .icon-box { background: #fffde7; color: #f59e0b; } /* 稍微調整黃色對比度 */
+
+        .vote { border-left: 6px solid var(--v); }
+        .vote .icon-box { background: #e8f5e9; color: var(--v); }
+
         footer {
             margin-top: auto;
             padding: 30px;
             font-size: 0.8rem;
             color: #adb5bd;
+            text-align: center;
         }
     </style>
 </head>
@@ -173,10 +197,47 @@
             </div>
             <div class="arrow">❯</div>
         </a>
+
+        <a href="countdown/index.html" class="menu-item timer">
+            <div class="icon-box">⏳</div>
+            <div class="info">
+                <h2>大考與日程倒數</h2>
+                <p>統測、段考剩幾天？隨時掌握時間</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
+        <a href="grouping/index.html" class="menu-item group">
+            <div class="icon-box">🎲</div>
+            <div class="info">
+                <h2>隨機分組小幫手</h2>
+                <p>輸入名單自動幫你公平分組</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
+        <a href="board/index.html" class="menu-item board">
+            <div class="icon-box">💬</div>
+            <div class="info">
+                <h2>班級互動留言板</h2>
+                <p>分享心情、班級事務討論區</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+
+        <a href="vote/index.html" class="menu-item vote">
+            <div class="icon-box">🗳️</div>
+            <div class="info">
+                <h2>線上投票決策系統</h2>
+                <p>午餐吃什麼？班服選哪件？一鍵表決</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
     </div>
 
     <footer>
         © 2026 班級數位服務系統
+        <br>Designed by Yujun
     </footer>
 
 </body>
