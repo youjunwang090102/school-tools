@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南大附中考試倒數</title>
+    <style>
+        :root { --p: #1a73e8; --bg: #f8f9fa; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        
+        .timer-container { width: 100%; max-width: 400px; }
+        .timer-card { 
+            background: white; padding: 20px; border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 15px;
+            text-align: center; border-left: 5px solid var(--p);
+        }
+        .timer-title { font-size: 1.1rem; color: #555; margin-bottom: 10px; font-weight: bold; }
+        .countdown { display: flex; justify-content: space-around; font-weight: 800; }
+        .unit { display: flex; flex-direction: column; }
+        .number { font-size: 1.8rem; color: var(--p); }
+        .label { font-size: 0.7rem; color: #999; margin-top: 5px; }
+        
+        .exam-date { font-size: 0.8rem; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="timer-container">
+    <h2 style="text-align: center; color: #333;">📅 重要日程倒數</h2>
+    
+    <div class="timer-card" id="exam-tve">
+        <div class="timer-title">🎯 115學年度四技二專統測</div>
+        <div class="countdown">
+            <div class="unit"><span class="number" id="t-d">00</span><span class="label">DAYS</span></div>
+            <div class="unit"><span class="number" id="t-h">00</span><span class="label">HOURS</span></div>
+            <div class="unit"><span class="number" id="t-m">00</span><span class="label">MINS</span></div>
+            <div class="unit"><span class="number" id="t-s">00</span><span class="label">SECS</span></div>
+        </div>
+        <div class="exam-date">考試日期：2026-05-02 (暫定)</div>
+    </div>
+
+    <div class="timer-card" style="border-left-color: #ef233c;">
+        <div class="timer-title">📝 下一次段考 (第一次段考)</div>
+        <div class="countdown">
+            <div class="unit"><span class="number" id="e-d">00</span><span class="label">天</span></div>
+            <div class="unit"><span class="number" id="e-h">00</span><span class="label">時</span></div>
+            <div class="unit"><span class="number" id="e-m">00</span><span class="label">分</span></div>
+            <div class="unit"><span class="number" id="e-s">00</span><span class="label">秒</span></div>
+        </div>
+        <div class="exam-date">預計日期：2026-03-26</div>
+    </div>
+</div>
+
+<script>
+    // 設定目標日期
+    const targets = [
+        { id: 't', date: new Date('2026-05-02T08:00:00').getTime() }, // 統測
+        { id: 'e', date: new Date('2026-03-26T08:00:00').getTime() }  // 段考
+    ];
+
+    function updateCountdowns() {
+        const now = new Date().getTime();
+
+        targets.forEach(target => {
+            const distance = target.date - now;
+
+            if (distance < 0) {
+                document.getElementById(`${target.id}-d`).innerHTML = "00";
+                // 可以在這裡顯示「考試中」或「已結束」
+                return;
+            }
+
+            // 時間換算公式
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // 更新到網頁上 (補 0 處理)
+            document.getElementById(`${target.id}-d`).innerText = String(days).padStart(2, '0');
+            document.getElementById(`${target.id}-h`).innerText = String(hours).padStart(2, '0');
+            document.getElementById(`${target.id}-m`).innerText = String(minutes).padStart(2, '0');
+            document.getElementById(`${target.id}-s`).innerText = String(seconds).padStart(2, '0');
+        });
+    }
+
+    // 每秒執行一次
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns(); // 先執行一次避免一秒空白
+</script>
+
+</body>
+</html>
