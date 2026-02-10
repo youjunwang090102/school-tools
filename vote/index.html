@@ -56,16 +56,16 @@
 
 <div class="container">
     <div style="text-align: center; margin: 40px 0;">
-        <h1 style="margin-bottom: 8px; font-size: 1.8rem;">🏫 班級行動投票系統</h1>
+        <h1 style="margin-bottom: 8px; font-size: 1.8rem;">🏫 班級投票系統</h1>
         <p style="color: #64748b; margin-bottom: 30px;">Version 2026 Stable</p>
-        <button class="btn-submit" style="width: auto; padding: 12px 40px;" onclick="openModal('loginModal')">🔒 發起投票 (幹部登入)</button>
+        <button class="btn-submit" style="width: auto; padding: 12px 40px;" onclick="openModal('loginModal')">幹部發起投票</button>
     </div>
     
-    <div id="voteList">讀取投票清單中...</div>
+    <div id="voteList">投票清單讀取中...</div>
 
     <div class="footer-secret" onclick="handleSecretClick()">
         &copy; 2026 High School Class Services <br>
-        點擊此處進行系統維護
+        Designed By 王宥鈞
     </div>
 </div>
 
@@ -175,7 +175,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const PASSWORDS = { "導師": "T8k2Pq9vR1", "管理員": "Admin88888", "班長": "M5x3Wz7yL0", "副班長": "V1a6Bs4eN8", "學藝股長": "A9b2C3d4E5", "資訊股長": "I1n2F3o4S5" };
+    const PASSWORDS = { "導師": "jojo100tch", "管理員": "Admin88888", "班長": "ClaLea3232", "副班長": "ViClaLea0101", "學藝股長": "art03210321", "資訊股長": "Info2323yjw" };
     const MASTER_KEY = "Admin88888";
     let currentCreatorRole = "";
 
