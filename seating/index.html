@@ -3,107 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級數位服務 | 選位</title>
+    <title>智慧教室管理系統 | 選位器</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --bg: #f8fafc;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
             --card: #ffffff;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --border: #cbd5e1;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        * { box-sizing: border-box; transition: all 0.2s ease; }
+        * { box-sizing: border-box; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
         body {
             margin: 0; background: var(--bg); color: var(--text-main);
-            font-family: "Inter", "PingFang TC", "Microsoft JhengHei", sans-serif;
+            font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
             height: 100vh; display: flex; flex-direction: column;
         }
 
         header {
-            background: var(--card); padding: 12px 20px;
+            background: var(--card); padding: 15px 25px;
             display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); z-index: 100; gap: 15px;
+            border-bottom: 2px solid var(--border); z-index: 100; gap: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-        .control-group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 11px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; }
+        /* 加大按鈕與輸入框 */
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 13px; font-weight: 700; color: var(--text-sub); }
 
         input, select, button { 
-            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-            background: var(--card); color: var(--text-main); font-size: 14px;
+            padding: 10px 16px; border-radius: 10px; border: 2px solid var(--border);
+            background: var(--card); color: var(--text-main); font-size: 15px; font-weight: 500;
         }
         
         button { 
             cursor: pointer; background: var(--primary); color: white; border: none; 
-            font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;
+            font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 44px; /* 符合人體工學的大小 */
         }
-        button:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow); }
-        .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+        button:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        button:active { transform: translateY(0); }
+
+        .btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
         .btn-outline:hover { background: #eff6ff; }
-        .btn-pdf { background: #475569; }
-        .btn-mail { background: #f59e0b; }
+        .btn-pdf { background: #334155; }
+        .btn-mail { background: var(--warning); }
+        .btn-random { background: var(--success); }
 
-        main { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
-
-        @media (max-width: 850px) {
-            main { flex-direction: column; overflow-y: auto; }
-            #sidebar { width: 100% !important; height: auto !important; }
-            #capture-area { min-height: 500px; }
-        }
+        main { display: flex; flex: 1; overflow: hidden; padding: 20px; gap: 20px; }
 
         #sidebar { 
-            width: 320px; background: var(--card); border-radius: 12px;
-            padding: 20px; display: flex; flex-direction: column;
-            border: 1px solid var(--border); box-shadow: var(--shadow);
+            width: 350px; background: var(--card); border-radius: 16px;
+            padding: 25px; display: flex; flex-direction: column;
+            border: 1px solid var(--border); box-shadow: var(--shadow-lg);
         }
 
         #capture-area { 
             flex: 1; display: flex; flex-direction: column; align-items: center; 
-            overflow: auto; background: white; border-radius: 12px; padding: 30px;
+            overflow: auto; background: white; border-radius: 16px; padding: 40px;
             border: 1px solid var(--border); position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .grid-container { display: flex; flex-direction: column-reverse; gap: 12px; margin-bottom: 30px; }
-        .row-wrap { display: flex; gap: 12px; }
+        .grid-container { display: flex; flex-direction: column-reverse; gap: 15px; margin-bottom: 40px; }
+        .row-wrap { display: flex; gap: 15px; }
         
         .seat {
-            width: 75px; height: 60px; border: 1px solid var(--border); border-radius: 10px;
+            width: 85px; height: 70px; border: 2px solid var(--border); border-radius: 12px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer; position: relative; background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .seat:hover { border-color: var(--primary); background: #f0f9ff; }
-        .seat.disabled { background: #f1f5f9; border-style: dashed; opacity: 0.6; }
-        .seat.occupied { border: 2px solid var(--primary); background: #eff6ff; }
+        .seat:hover { border-color: var(--primary); transform: scale(1.05); z-index: 10; }
+        .seat.disabled { background: #e2e8f0; border-style: dashed; opacity: 0.4; }
+        .seat.occupied { border-color: var(--primary); background: #f0f9ff; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
         
-        .seat-num { position: absolute; top: 4px; left: 6px; font-size: 10px; color: var(--text-sub); font-weight: 600; }
-        .student-name { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+        .seat-num { position: absolute; top: 6px; left: 8px; font-size: 11px; color: var(--text-sub); font-weight: 800; }
+        .student-name { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
 
         .seat-tooltip {
-            visibility: hidden; position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%);
-            background: #1e293b; color: #fff; padding: 10px 14px; border-radius: 8px; 
-            font-size: 12px; white-space: nowrap; z-index: 200; pointer-events: none;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); opacity: 0;
+            visibility: hidden; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            background: #0f172a; color: #fff; padding: 12px 16px; border-radius: 10px; 
+            font-size: 13px; white-space: nowrap; z-index: 200; pointer-events: none;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); opacity: 0; line-height: 1.5;
         }
         .seat.occupied:hover .seat-tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
 
         .teacher-desk { 
-            width: 240px; height: 45px; border: 2px solid var(--border); 
+            width: 300px; height: 55px; border: 3px solid var(--border); 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 1rem; letter-spacing: 8px; color: var(--text-sub); font-weight: 700;
-            background: var(--bg); border-radius: 8px; margin-top: 10px;
+            font-size: 1.2rem; letter-spacing: 12px; color: var(--text-sub); font-weight: 800;
+            background: #f8fafc; border-radius: 12px; margin-top: 20px;
         }
 
-        .scroll-area { overflow-y: auto; flex: 1; margin-top: 15px; }
-        .manual-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--bg); }
-        h3 { font-size: 18px; font-weight: 700; margin: 0; }
+        .scroll-area { overflow-y: auto; flex: 1; margin-top: 15px; padding-right: 5px; }
+        .manual-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--bg); }
+        h3 { font-size: 20px; font-weight: 800; margin: 0 0 10px 0; color: var(--primary); }
+
+        /* 美化捲軸 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -111,68 +121,65 @@
     <header>
         <div class="controls">
             <div class="control-group">
-                <label>1. 名單管理</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="file" id="excel-input" style="width:150px;">
-                    <button class="btn-outline" onclick="downloadTemplate()" title="下載 Excel 範本">📥 範本</button>
+                <label>📂 名單管理</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="file" id="excel-input" style="width:180px;">
+                    <button class="btn-outline" onclick="downloadTemplate()">📥 下載範本</button>
                 </div>
             </div>
             <div class="control-group">
-                <label>2. 佈局設定</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" id="cols" value="6" style="width:45px;"> 
-                    <input type="number" id="rows" value="6" style="width:45px;">
-                    <button onclick="renderGrid()">重置</button>
+                <label>📏 教室佈局</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="cols" value="6" style="width:60px;"> 
+                    <input type="number" id="rows" value="6" style="width:60px;">
+                    <button onclick="renderGrid()" class="btn-outline">重置</button>
                 </div>
             </div>
             <div class="control-group">
-                <label>3. 運作模式</label>
-                <select id="mode-select" onchange="switchMode()">
+                <label>🎮 模式選擇</label>
+                <select id="mode-select" onchange="switchMode()" style="width:160px;">
                     <option value="random">點擊設置障礙</option>
-                    <option value="draw">依序上台抽位</option>
-                    <option value="manual">代號選位名單</option>
+                    <option value="draw">依序抽籤模式</option>
+                    <option value="manual">手動名單模式</option>
                 </select>
             </div>
-            <button id="btn-random-all" onclick="randomAll()">一鍵隨機分配</button>
+            <button id="btn-random-all" class="btn-random" onclick="randomAll()">🎲 一鍵隨機分配</button>
         </div>
         <div class="controls">
-            <button class="btn-mail" onclick="sendEmails()">📧 通知全班</button>
+            <button class="btn-mail" onclick="sendEmails()">📧 郵件通知</button>
             <button class="btn-pdf" onclick="exportPDF()">📄 匯出 PDF</button>
         </div>
     </header>
 
     <main>
         <div id="sidebar">
-            <h3 id="sidebar-title">管理面板</h3>
+            <h3 id="sidebar-title">系統訊息</h3>
             <div id="sidebar-content" class="scroll-area">
-                請先下載範本並填寫後匯入。
+                請先載入學生名單 Excel 檔案。
             </div>
         </div>
 
         <div id="capture-area">
             <div id="grid" class="grid-container"></div>
-            <div class="teacher-desk">講桌</div>
+            <div class="teacher-desk">講桌 / 前方</div>
         </div>
     </main>
 
     <script>
+        // --- 核心逻辑保持完全一致，僅優化顯示 ---
         let students = [];
         let assignedMap = new Map();
         let currentDrawIndex = 0;
 
-        // --- 下載範本功能 ---
         function downloadTemplate() {
             const header = ["座號", "姓名", "學號", "教育信箱", "幹部1", "幹部2", "幹部3", "幹部4", "幹部5", "幹部6", "幹部7", "幹部8", "幹部9", "幹部10"];
-            const data = [
-                [1, "範例學生", "112001", "student@example.edu.tw", "班長", "英文小老師", "", "", "", "", "", "", "", ""]
-            ];
+            const data = [[1, "王小明", "112001", "student@edu.tw", "班長", "", "", "", "", "", "", "", "", ""]];
             const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "學生名單");
-            XLSX.writeFile(wb, "教室座位表名單模板.xlsx");
+            XLSX.utils.book_append_sheet(wb, ws, "名單模板");
+            XLSX.writeFile(wb, "教室座位表模板.xlsx");
         }
 
-        // --- 檔案匯入 ---
         document.getElementById('excel-input').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -180,7 +187,7 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 students = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 students.sort((a,b) => (a.座號 || 0) - (b.座號 || 0));
-                alert(`🎉 成功載入 ${students.length} 位同學`);
+                alert(`✅ 成功載入 ${students.length} 位同學`);
                 switchMode();
             };
             reader.readAsArrayBuffer(e.target.files[0]);
@@ -192,7 +199,6 @@
             const grid = document.getElementById('grid');
             grid.innerHTML = ''; 
             assignedMap.clear();
-
             for (let i = 1; i <= r; i++) {
                 const row = document.createElement('div');
                 row.className = 'row-wrap';
@@ -223,24 +229,19 @@
             seats.forEach(seat => {
                 if (seat.dataset.active === "true") {
                     const student = assignedMap.get(seatCounter);
-                    
-                    // 彙整幹部 1-10
                     let roles = [];
                     if(student) {
-                        for(let i=1; i<=10; i++) {
-                            if(student[`幹部${i}`]) roles.push(student[`幹部${i}`]);
-                        }
+                        for(let i=1; i<=10; i++) { if(student[`幹部${i}`]) roles.push(student[`幹部${i}`]); }
                     }
                     const roleDisplay = roles.length > 0 ? roles.join(' / ') : '學生';
-
                     seat.className = student ? "seat occupied" : "seat";
                     seat.innerHTML = `
                         <span class="seat-num">${seatCounter}</span>
                         <span class="student-name">${student ? student.姓名 : ''}</span>
                         ${student ? `
                             <div class="seat-tooltip">
-                                <b style="font-size:14px">${student.姓名}</b><br>
-                                <span style="opacity:0.8">座號：${student.座號} | 學號：${student.學號 || '無'}</span><br>
+                                <b style="font-size:16px; color:#60a5fa">${student.姓名}</b><br>
+                                <span>座號：${student.座號} | 學號：${student.學號 || '-'}</span><br>
                                 <span style="color:#fbbf24">職稱：${roleDisplay}</span>
                             </div>
                         ` : ''}
@@ -254,14 +255,13 @@
             if(document.getElementById('mode-select').value === 'manual') updateManualSidebar();
         }
 
-        // --- 以下邏輯維持不變 ---
         function switchMode() {
             const mode = document.getElementById('mode-select').value;
             currentDrawIndex = 0;
             document.getElementById('btn-random-all').style.display = (mode === 'random') ? 'flex' : 'none';
             if(mode === 'draw') updateDrawSidebar();
             else if(mode === 'manual') updateManualSidebar();
-            else document.getElementById('sidebar-content').innerHTML = "<p style='color:var(--text-sub)'>隨機模式：<br>1. 點擊座位可設為障礙物<br>2. 按下一鍵隨機分配</p>";
+            else document.getElementById('sidebar-content').innerHTML = "<p><b>隨機模式操作：</b><br>1. 點擊畫面中的座位可將其設為「障礙物」（灰色）。<br>2. 設定完後點擊上方「一鍵隨機分配」。</p>";
         }
 
         function updateDrawSidebar() {
@@ -270,14 +270,14 @@
             if(currentDrawIndex < students.length) {
                 const s = students[currentDrawIndex];
                 content.innerHTML = `
-                    <div style="background:#f0f9ff; padding:20px; border-radius:12px; text-align:center; border:1px solid #bae6fd;">
-                        <p style="font-size:13px; color:var(--text-sub); margin:0;">邀請同學抽籤</p>
-                        <h2 style="color:var(--primary); margin:8px 0;">${s.座號}號 ${s.姓名}</h2>
-                        <button onclick="randomPickOne()" style="width:100%; padding:12px; font-size:16px;">隨機落座</button>
+                    <div style="background:#f0f9ff; padding:25px; border-radius:15px; text-align:center; border:2px solid #bae6fd;">
+                        <p style="font-size:14px; color:var(--text-sub); margin:0;">下一位抽籤同學</p>
+                        <h1 style="color:var(--primary); margin:15px 0; font-size:32px;">${s.座號} ${s.姓名}</h1>
+                        <button onclick="randomPickOne()" style="width:100%; padding:15px; font-size:18px;">🎲 隨機落座</button>
                     </div>
                 `;
             } else {
-                content.innerHTML = "<h3>✨ 抽籤已完成</h3>";
+                content.innerHTML = "<div style='text-align:center; padding:20px;'><h3>🎊 抽籤完畢！</h3><button class='btn-outline' onclick='currentDrawIndex=0; assignedMap.clear(); switchMode();' style='width:100%'>重新開始</button></div>";
             }
         }
 
@@ -296,14 +296,14 @@
             const content = document.getElementById('sidebar-content');
             if(!students.length) return;
             const totalActive = document.querySelectorAll('.seat:not(.disabled)').length;
-            let html = `<h3>名單快速對照</h3>`;
+            let html = `<h3>快速對照表</h3>`;
             students.forEach(s => {
                 const currentSeat = [...assignedMap.entries()].find(([k,v]) => v.座號 === s.座號)?.[0] || "";
                 html += `
                     <div class="manual-row">
-                        <span><b>${s.座號}</b>. ${s.姓名}</span>
-                        <select onchange="manualAssign('${s.座號}', this.value)" style="width:90px; font-size:12px;">
-                            <option value="">選擇座位</option>
+                        <span><b style="color:var(--primary)">${String(s.座號).padStart(2,'0')}</b> ${s.姓名}</span>
+                        <select onchange="manualAssign('${s.座號}', this.value)" style="padding:5px; border-radius:6px;">
+                            <option value="">未分配</option>
                             ${Array.from({length: totalActive}, (_, i) => i + 1).map(n => `
                                 <option value="${n}" ${currentSeat == n ? 'selected' : ''}>座位 ${n}</option>
                             `).join('')}
@@ -335,9 +335,9 @@
             const element = document.getElementById('capture-area');
             const opt = {
                 margin: 10, filename: '班級座位表.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
+                image: { type: 'jpeg', quality: 1 },
                 html2canvas: { scale: 3, backgroundColor: '#ffffff' },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
         }
@@ -350,7 +350,7 @@
                 const mail = s.教育信箱 || s.信箱;
                 if(mail) emails.push(mail);
             });
-            window.open(`mailto:${emails.join(',')}?subject=座位通知&body=${encodeURIComponent(list.join('\n'))}`);
+            window.open(`mailto:?bcc=${emails.join(',')}&subject=座位通知&body=${encodeURIComponent(list.join('\n'))}`);
         }
 
         renderGrid();
