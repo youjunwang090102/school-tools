@@ -66,30 +66,30 @@
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span id="import-status" style="font-size:13px; color:red; font-weight:bold;">● 尚未匯入名單</span>
-                <button class="btn-s" onclick="downloadTpl()" style="width:auto; padding:4px 8px;">範本下載</button>
+                <button class="btn-s" onclick="downloadTpl()" style="width:auto; padding:4px 8px;">格式下載</button>
             </div>
-            <button class="btn-p" onclick="document.getElementById('fileIn').click()">1. 匯入名單 (.xlsx)</button>
+            <button class="btn-p" onclick="document.getElementById('fileIn').click()">匯入學生名單 (.xlsx)</button>
             <input type="file" id="fileIn" style="display:none" accept=".xlsx">
         </div>
 
         <div class="card">
             <div class="config-row">
-                <div><label>欄數(寬)</label><input type="number" id="gridC" value="6" onchange="makeGrid()"></div>
-                <div><label>列數(深)</label><input type="number" id="gridR" value="6" onchange="makeGrid()"></div>
-                <div><label>起始座號</label><input type="number" id="startNo" value="1"></div>
+                <div><label>直排</label><input type="number" id="gridC" value="6" onchange="makeGrid()"></div>
+                <div><label>橫排</label><input type="number" id="gridR" value="6" onchange="makeGrid()"></div>
+                <div><label>抽籤起始座號</label><input type="number" id="startNo" value="1"></div>
             </div>
-            <p style="font-size:12px; color:var(--a); margin:10px 0 0 0; font-weight:bold;">💡 提示：點擊右側座位可切換「故障/修繕」狀態。</p>
+            <p style="font-size:12px; color:var(--a); margin:10px 0 0 0; font-weight:bold;">💡 點擊座位可切換「可入座/禁止入座」狀態。</p>
         </div>
 
         <div class="card" id="main-action-area" style="flex:1; display:flex; flex-direction:column;">
-            <b style="font-size:15px; margin-bottom:5px;">2. 勾選優先區 <span id="p-count" style="color:var(--a)">(0/0)</span></b>
+            <b style="font-size:15px; margin-bottom:5px;">前兩排優先選位名單 <span id="p-count" style="color:var(--a)">(0/0)</span></b>
             <div id="stu-list" class="scroll-list"></div>
-            <button onclick="lockAndStart()" class="btn-p" style="padding:12px; font-size:16px;">3. 鎖定並開始抽籤</button>
+            <button onclick="lockAndStart()" class="btn-p" style="padding:12px; font-size:16px;">確認名單</button>
         </div>
 
         <div class="card" style="display:flex; gap:10px;">
-            <button onclick="sendMail()" style="background:var(--s); color:white; flex:1;">郵件通知</button>
-            <button onclick="savePDF()" style="background:#64748b; color:white; flex:1;">下載 PDF</button>
+            <button onclick="sendMail()" style="background:var(--s); color:white; flex:1;">群發信箱通知</button>
+            <button onclick="savePDF()" style="background:#64748b; color:white; flex:1;">匯出 PDF</button>
         </div>
     </div>
 
