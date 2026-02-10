@@ -3,229 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級投票系統</title>
+    <title>班級表決系統</title>
     <style>
-        :root { --primary: #4361ee; --bg: #f0f2f5; --card: #ffffff; }
-        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
+        :root { --primary: #4361ee; --bg: #f4f7fe; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); text-align: center; margin-bottom: 25px; }
         
-        /* 遮罩 */
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2000; text-align:center; padding:20px; box-sizing:border-box; }
+        /* 姓名輸入區 */
+        #nameSection { text-align: center; margin-bottom: 20px; }
+        input[type="text"] { width: 80%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 1rem; margin-bottom: 10px; }
         
-        .container { width: 100%; max-width: 500px; padding: 20px; display: none; }
-        .card { background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        
-        h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .vote-item { margin-bottom: 20px; }
-        .label-group { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; }
-        
-        /* 投票長條圖 */
-        .progress-bg { background: #e9ecef; height: 35px; border-radius: 10px; overflow: hidden; cursor: pointer; position: relative; border: 1px solid #ddd; }
-        .progress-fill { background: var(--primary); height: 100%; transition: width 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67); width: 0%; }
-        .progress-text { position: absolute; width: 100%; text-align: center; line-height: 35px; color: #333; font-size: 0.9rem; pointer-events: none; }
+        /* 投票按鈕 */
+        .vote-item { margin-bottom: 15px; }
+        .vote-btn { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 12px; background: white; text-align: left; cursor: pointer; position: relative; overflow: hidden; font-weight: bold; }
+        .vote-btn:hover { border-color: var(--primary); }
+        .progress { position: absolute; left: 0; top: 0; height: 100%; background: rgba(67, 97, 238, 0.1); transition: width 0.5s; z-index: 0; }
+        .btn-text { position: relative; z-index: 1; display: flex; justify-content: space-between; }
 
-        /* 老師面板 */
-        .admin-panel { margin-top: 30px; padding: 15px; background: #2c3e50; color: white; border-radius: 12px; display: none; }
-        button { cursor: pointer; border: none; border-radius: 5px; transition: 0.3s; }
-        .btn-login { padding: 15px 40px; background: #4285F4; color: white; font-size: 1.1rem; }
-        .btn-admin { padding: 8px 15px; background: #e74c3c; color: white; margin-top: 10px; }
-        .tab-group { display: flex; gap: 5px; margin-bottom: 15px; }
-        .tab-btn { flex:1; padding: 10px; background: #ddd; }
-        .tab-btn.active { background: var(--primary); color: white; }
+        /* 老師控制頁 */
+        .admin-area { margin-top: 40px; border-top: 1px dashed #ccc; padding-top: 20px; text-align: center; }
+        .admin-btn { font-size: 0.7rem; color: #999; background: none; border: none; cursor: pointer; }
+        #adminPanel { display: none; background: #333; color: white; padding: 15px; border-radius: 10px; margin-top: 10px; }
+        .control-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 5px; margin: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loginOverlay" class="overlay">
-    <h2>🗳️ 班級表決系統</h2>
-    <p>請先登入以進行投票</p>
-    <button class="btn-login" onclick="signIn()">使用 Google 登入</button>
-</div>
+<div class="card">
+    <h2 id="voteTitle">載入中...</h2>
 
-<div id="unboundOverlay" class="overlay" style="display:none; background:#fff5f5;">
-    <h2 style="color:#c0392b;">⚠️ 權限不足</h2>
-    <p id="userMail"></p>
-    <p>老師尚未將您加入班級清單，請告知老師。</p>
-    <button onclick="signOut()" style="padding:10px; background:#666; color:white;">登出</button>
-</div>
-
-<div class="container" id="mainApp">
-    <div class="tab-group" id="teacherTabs" style="display:none;">
-        <button id="tabA" class="tab-btn" onclick="switchClass('ClassA')">甲班投票</button>
-        <button id="tabB" class="tab-btn" onclick="switchClass('ClassB')">乙班投票</button>
+    <div id="nameSection">
+        <input type="text" id="userName" placeholder="請輸入您的姓名或座號">
+        <p style="font-size: 0.8rem; color: #666;">輸入後點擊選項即可投票</p>
     </div>
 
-    <div class="card">
-        <h2 id="voteTitle">載入中...</h2>
-        <div id="optionsList">
-            </div>
-        <p id="totalInfo" style="text-align:right; color:#888; font-size:0.8rem;"></p>
-    </div>
+    <div id="optionsList"></div>
+    <p id="statusMsg" style="text-align:center; color:#e74c3c; font-weight:bold;"></p>
 
-    <div id="adminPanel" class="admin-panel">
-        <strong>🛠️ 老師控制台</strong><br>
-        <button class="btn-admin" onclick="createNewVote()">發起新投票項目</button>
-        <button class="btn-admin" style="background:#f1c40f; color:#333;" onclick="toggleStudentManager()">管理學生名單</button>
-        <div id="studentList" style="margin-top:10px; font-size:0.8rem; border-top:1px solid #555; padding-top:10px; display:none;"></div>
+    <div class="admin-area">
+        <button class="admin-btn" onclick="openAdmin()">⚙️ 老師管理</button>
+        <div id="adminPanel">
+            <input type="password" id="adminPwd" placeholder="管理密碼" style="width:100px;">
+            <button class="control-btn" onclick="setupVote()">發起新投票</button>
+            <button class="control-btn" style="background:#444" onclick="clearData()">清空紀錄</button>
+        </div>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
 
 <script>
-    // --- ⚠️ 請貼上您的 Firebase Config ---
+    // --- ⚠️ 請替換成您的 Firebase 配置 ---
     const firebaseConfig = {
-        apiKey: "您的apiKey",
-        authDomain: "您的專案.firebaseapp.com",
+        apiKey: "您的API",
+        authDomain: "您的專案ID.firebaseapp.com",
         projectId: "您的專案ID",
-        storageBucket: "您的專案.appspot.com",
-        messagingSenderId: "您的ID",
-        appId: "您的appId"
+        storageBucket: "您的專案ID.appspot.com",
+        messagingSenderId: "...",
+        appId: "..."
     };
-
-    const TEACHER_EMAIL = "automail@gmail.com"; 
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
+    
+    // 預設密碼 (可自行修改)
+    const ADMIN_PASSWORD = "123"; 
 
-    let currentUser = null;
-    let currentClass = null;
-    let voteListener = null;
-
-    function signIn() { auth.signInWithRedirect(provider); }
-    function signOut() { auth.signOut().then(() => location.reload()); }
-
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('loginOverlay').style.display = 'none';
-            // 預登錄使用者資訊
-            await db.collection("users").doc(user.email).set({
-                name: user.displayName, email: user.email
-            }, { merge: true });
-            
-            checkPermission();
+    // 監聽投票數據 (假設只投一個班級，若要分班可改 doc 名稱)
+    db.collection("votes").doc("currentVote").onSnapshot(doc => {
+        if (!doc.exists) {
+            document.getElementById('voteTitle').innerText = "暫無投票項目";
+            return;
         }
+        const data = doc.data();
+        document.getElementById('voteTitle').innerText = data.title;
+        
+        const list = document.getElementById('optionsList');
+        list.innerHTML = "";
+        
+        const total = (data.voters || []).length;
+
+        data.options.forEach(opt => {
+            const count = data.counts[opt] || 0;
+            const pct = total === 0 ? 0 : Math.round(count/total*100);
+            
+            const btn = document.createElement('button');
+            btn.className = 'vote-btn';
+            btn.onclick = () => castVote(opt);
+            btn.innerHTML = `
+                <div class="progress" style="width: ${pct}%"></div>
+                <div class="btn-text">
+                    <span>${opt}</span>
+                    <span>${count} 票 (${pct}%)</span>
+                </div>`;
+            list.appendChild(btn);
+        });
     });
 
-    function checkPermission() {
-        db.collection("users").doc(currentUser.email).onSnapshot(doc => {
-            const data = doc.data();
-            if (currentUser.email === TEACHER_EMAIL) {
-                showApp(true);
-                if (!currentClass) switchClass('ClassA');
-                loadStudentManager();
-            } else if (data && data.class) {
-                showApp(false);
-                switchClass(data.class);
-            } else {
-                document.getElementById('unboundOverlay').style.display = 'flex';
-                document.getElementById('userMail').innerText = currentUser.email;
-            }
-        });
-    }
+    async function castVote(option) {
+        const name = document.getElementById('userName').value.trim();
+        if (!name) return alert("請先輸入姓名！");
 
-    function showApp(isAdmin) {
-        document.getElementById('mainApp').style.display = 'block';
-        document.getElementById('unboundOverlay').style.display = 'none';
-        if (isAdmin) {
-            document.getElementById('teacherTabs').style.display = 'flex';
-            document.getElementById('adminPanel').style.display = 'block';
+        // 本地檢查 (防止同一個瀏覽器投兩次)
+        if (localStorage.getItem('voted')) {
+            document.getElementById('statusMsg').innerText = "您已經投過票囉！";
+            return;
         }
-    }
 
-    function switchClass(cls) {
-        currentClass = cls;
-        if (currentUser.email === TEACHER_EMAIL) {
-            document.getElementById('tabA').className = cls === 'ClassA' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('tabB').className = cls === 'ClassB' ? 'tab-btn active' : 'tab-btn';
-        }
-        startVoteListener();
-    }
-
-    function startVoteListener() {
-        if (voteListener) voteListener();
-        voteListener = db.collection("votes").doc(currentClass).onSnapshot(doc => {
-            const list = document.getElementById('optionsList');
-            const title = document.getElementById('voteTitle');
-            if (!doc.exists) {
-                title.innerText = "目前無進行中表決";
-                list.innerHTML = "";
-                return;
-            }
-            const data = doc.data();
-            title.innerText = data.title;
-            list.innerHTML = "";
-            const total = (data.voters || []).length;
-            document.getElementById('totalInfo').innerText = `總投票數：${total} 票`;
-
-            data.options.forEach(opt => {
-                const count = data.counts[opt] || 0;
-                const pct = total === 0 ? 0 : Math.round(count/total*100);
-                const item = document.createElement('div');
-                item.className = 'vote-item';
-                item.innerHTML = `
-                    <div class="label-group"><span>${opt}</span><span>${count} 票</span></div>
-                    <div class="progress-bg" onclick="vote('${opt}')">
-                        <div class="progress-fill" style="width: ${pct}%"></div>
-                        <div class="progress-text">${pct}%</div>
-                    </div>`;
-                list.appendChild(item);
-            });
-        });
-    }
-
-    async function vote(opt) {
-        const ref = db.collection("votes").doc(currentClass);
+        const ref = db.collection("votes").doc("currentVote");
         const doc = await ref.get();
         const data = doc.data();
-        if ((data.voters || []).includes(currentUser.email)) return alert("您已投過票項目！");
-        
+
+        // 雲端檢查 (防止同名重複)
+        if (data.voters.includes(name)) return alert("此姓名已投過票！");
+
         const newCounts = {...data.counts};
-        newCounts[opt] = (newCounts[opt] || 0) + 1;
+        newCounts[option] = (newCounts[option] || 0) + 1;
+
         await ref.update({
             counts: newCounts,
-            voters: firebase.firestore.FieldValue.arrayUnion(currentUser.email)
+            voters: firebase.firestore.FieldValue.arrayUnion(name)
         });
+
+        localStorage.setItem('voted', 'true');
+        document.getElementById('statusMsg').innerText = "投票成功！";
     }
 
-    // 老師功能
-    function createNewVote() {
-        const title = prompt("請輸入表決題目：", "今天午餐吃什麼？");
-        if (!title) return;
-        const optStr = prompt("請輸入選項（用逗號隔開）：", "排骨飯,雞腿飯,乾麵");
-        if (!optStr) return;
-        const options = optStr.split(",").map(s => s.trim());
+    // --- 老師管理功能 ---
+    function openAdmin() {
+        document.getElementById('adminPanel').style.display = 'block';
+    }
+
+    function setupVote() {
+        if (document.getElementById('adminPwd').value !== ADMIN_PASSWORD) return alert("密碼錯誤");
+        
+        const title = prompt("投票題目？", "今天穿什麼顏色的班服？");
+        const opts = prompt("選項 (逗號隔開)", "紅色,藍色,白色");
+        if (!title || !opts) return;
+
+        const options = opts.split(',').map(s => s.trim());
         const counts = {};
         options.forEach(o => counts[o] = 0);
-        db.collection("votes").doc(currentClass).set({ title, options, counts, voters: [] });
+
+        db.collection("votes").doc("currentVote").set({
+            title, options, counts, voters: []
+        });
+        localStorage.removeItem('voted'); // 發起新投票時清除本地紀錄
+        alert("投票已發布！");
     }
 
-    function loadStudentManager() {
-        db.collection("users").onSnapshot(snap => {
-            const container = document.getElementById('studentList');
-            container.innerHTML = "<strong>名單管理 (點擊分配班級)：</strong><br>";
-            snap.forEach(doc => {
-                const u = doc.data();
-                if (u.email === TEACHER_EMAIL) return;
-                const div = document.createElement('div');
-                div.style = "margin: 5px 0; display:flex; justify-content:space-between;";
-                div.innerHTML = `<span>${u.name || u.email} [${u.class || '未分'}]</span>
-                    <span>
-                        <button onclick="assignClass('${u.email}','ClassA')">甲</button>
-                        <button onclick="assignClass('${u.email}','ClassB')">乙</button>
-                    </span>`;
-                container.appendChild(div);
-            });
-        });
-    }
-    function assignClass(email, cls) { db.collection("users").doc(email).update({ class: cls }); }
-    function toggleStudentManager() {
-        const d = document.getElementById('studentList');
-        d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    function clearData() {
+        if (confirm("確定要清空當前投票與票數嗎？")) {
+            db.collection("votes").doc("currentVote").delete();
+            localStorage.removeItem('voted');
+        }
     }
 </script>
 </body>
