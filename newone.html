@@ -98,7 +98,7 @@
         </div>
 
         <div class="category-label">📚 學業與工具</div>
-        <div class="menu-item homework" onclick="checkAuth('homework.html')">
+        <div class="menu-item homework" onclick="checkAuth('homework/index.html')">
             <div class="icon-box">✍️</div>
             <div class="info"><h2>各科作業提醒</h2><p>小老師發佈作業，同步進度</p></div>
         </div>
@@ -172,7 +172,7 @@
 
     <div id="adminModal" class="modal" onclick="closeModal(event, 'adminModal')">
         <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 450px;">
-            <h3>⚙️ 班級管理後台</h3>
+            <h3>⚙️ 班級管理</h3>
             <div id="adminList" style="max-height: 350px; overflow-y: auto; text-align: left;"></div>
             <button onclick="document.getElementById('adminModal').style.display='none'" style="background:#666">關閉</button>
         </div>
