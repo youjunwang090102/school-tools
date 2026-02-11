@@ -3,33 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>各科作業管理系統</title>
+    <title>班級作業管理系統 v2.0</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; --card: #ffffff; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; }
+        .container { width: 100%; max-width: 600px; }
         
-        /* 質感卡片 */
         .card { background: var(--card); border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2, h3 { margin-top: 0; color: #1e293b; }
         
-        /* 表單樣式 */
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
         input:focus { border-color: var(--p); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); }
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { opacity: 0.9; }
         button:active { transform: scale(0.98); }
         
+        /* 職位標籤 */
+        .role-badge-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .role-badge { background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.3); }
+
         /* 作業項目 */
         .hw-item { background: #f8fafc; border-left: 5px solid var(--p); padding: 15px; border-radius: 15px; margin-bottom: 15px; position: relative; }
         .subject-badge { display: inline-block; background: var(--p); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; }
         .hw-title { font-weight: bold; font-size: 1.1rem; color: #1e293b; margin-bottom: 5px; }
         .hw-info { font-size: 0.85rem; color: #64748b; }
         
-        /* 管理與狀態 */
+        /* 管理列表 */
+        .stu-row { padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1max)); gap: 5px; margin-top: 10px; }
+        .role-option { font-size: 0.8rem; display: flex; align-items: center; }
+        .role-option input { width: auto; margin-right: 5px; }
+
+        /* 過期區分 */
+        .section-title { font-size: 1rem; color: #64748b; margin: 20px 0 10px; display: flex; align-items: center; }
+        .section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 10px; }
+        .expired { opacity: 0.6; }
+        
         .status-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 10px; font-size: 0.85rem; margin: 10px 0; color: #92400e; }
-        .stu-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
         .done-btn { background: var(--s); margin-top: 10px; }
         .done-btn.already { background: #cbd5e1; cursor: default; }
     </style>
@@ -38,27 +50,35 @@
 
 <div class="container">
     <div id="loginCard" class="card">
-        <h2 style="text-align: center;">📝 作業提醒系統</h2>
-        <input type="number" id="stuId" placeholder="座號 (例如: 05)">
+        <h2 style="text-align: center;">📝 作業管理系統</h2>
+        <input type="number" id="stuId" placeholder="座號 (例如: 5)">
         <input type="password" id="stuPw" placeholder="密碼">
-        <button onclick="doLogin()">登入</button>
+        <button onclick="doLogin()">登入系統</button>
     </div>
 
     <div id="mainView" style="display: none;">
         <div class="card" style="background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white;">
-            <h2 id="helloName" style="margin:0; color: white;">載入中...</h2>
-            <p id="myRole" style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem;"></p>
-            <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); margin-top: 15px; padding: 8px;">登出系統</button>
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h2 id="helloName" style="margin:0; color: white;">載入中...</h2>
+                    <div id="roleList" class="role-badge-container"></div>
+                </div>
+                <button onclick="location.reload()" style="width: auto; background: rgba(0,0,0,0.2); margin: 0; padding: 8px 15px; font-size: 0.8rem;">登出</button>
+            </div>
         </div>
 
         <div id="adminBox" class="card" style="display: none;">
-            <h3>👑 管理員：指派學科股長</h3>
-            <div id="studentList" style="max-height: 250px; overflow-y: auto;"></div>
+            <h3>👑 導師/管理員控制台</h3>
+            <p style="font-size: 0.8rem; color: #64748b;">勾選座號右側職位以指派權限</p>
+            <div id="studentList" style="max-height: 400px; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 10px;"></div>
         </div>
 
         <div id="managerBox" class="card" style="display: none; border: 2px solid var(--s);">
             <h3 id="mgrTitle">📢 發佈作業</h3>
+            <label style="font-size: 0.85rem; color: #64748b;">發佈學科/身份：</label>
+            <select id="postSubjectSelector"></select>
             <input type="text" id="hwTitle" placeholder="作業內容 (例如: 習作 P.1-P.5)">
+            <label style="font-size: 0.85rem; color: #64748b;">截止日期：</label>
             <input type="date" id="hwDate">
             <button onclick="addHw()" style="background: var(--s);">確認發佈</button>
         </div>
@@ -71,7 +91,7 @@
 </div>
 
 <script>
-    // 請確認 Firebase 配置正確
+    // --- 配置區 ---
     const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -83,15 +103,20 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let me = null;
-    const subjects = ["無", "國文", "英文", "數學", "物理", "化學", "生物", "地科", "歷史", "地理", "公民"];
+    // 職位定義
+    const OFFICER_ROLES = ["班長", "副班長", "學藝股長", "輔導股長", "資訊股長"];
+    const SUBJECT_TEACHERS = ["國文", "英文", "數學", "經濟", "會計", "商業概論", "文書", "程式語言"];
+    const ALL_ROLES = [...OFFICER_ROLES, ...SUBJECT_TEACHERS];
 
+    let me = null;
+
+    // --- 登入邏輯 ---
     async function doLogin() {
         const idInput = document.getElementById('stuId').value;
         const pwInput = document.getElementById('stuPw').value;
         if(!idInput || !pwInput) return alert("請輸入完整資料");
 
-        const id = idInput.padStart(2, '0'); // 自動補零
+        const id = idInput.padStart(2, '0'); 
         try {
             const doc = await db.collection("students").doc(id).get();
             if (doc.exists && doc.data().password === pwInput) {
@@ -105,90 +130,146 @@
         }
     }
 
+    // --- 主介面渲染 ---
     function renderMain() {
         document.getElementById('loginCard').style.display = 'none';
         document.getElementById('mainView').style.display = 'block';
-        document.getElementById('helloName').innerText = `你好，${me.name}`;
+        document.getElementById('helloName').innerText = `👋 歡迎，${me.name}`;
         
-        const subRole = me.subject_role || "無";
-        document.getElementById('myRole').innerText = subRole !== "無" ? `🛡️ ${subRole}股長` : "📖 一般學生";
+        const roles = me.subject_roles || [];
+        const roleListDiv = document.getElementById('roleList');
+        roleListDiv.innerHTML = roles.length > 0 ? 
+            roles.map(r => `<span class="role-badge">${r}</span>`).join('') : 
+            `<span class="role-badge">📖 一般學生</span>`;
 
-        // 管理員權限
-        if (me.role === 'admin' || me.role === 'teacher') {
+        // 權限判定
+        const isAdmin = (me.role === 'admin' || me.role === 'teacher');
+        
+        if (isAdmin) {
             document.getElementById('adminBox').style.display = 'block';
             loadStudentManager();
         }
 
-        // 股長權限
-        if (subRole !== "無") {
+        if (isAdmin || roles.length > 0) {
             document.getElementById('managerBox').style.display = 'block';
-            document.getElementById('mgrTitle').innerText = `📢 發佈${subRole}作業`;
+            const selector = document.getElementById('postSubjectSelector');
+            const canPost = isAdmin ? ALL_ROLES : roles;
+            selector.innerHTML = canPost.map(r => `<option value="${r}">${r}</option>`).join('');
         }
 
         loadHomework();
     }
 
+    // --- 管理員：學生名單 (解決 100 號排序問題) ---
     function loadStudentManager() {
-        db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
+        db.collection("students").onSnapshot(snap => {
             const container = document.getElementById('studentList');
             container.innerHTML = "";
-            snap.forEach(doc => {
+            
+            // 核心邏輯：將 ID 轉為數字進行排序
+            const sortedDocs = snap.docs.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+            sortedDocs.forEach(doc => {
                 const d = doc.data();
+                const currentRoles = d.subject_roles || [];
+                
+                const roleOptions = ALL_ROLES.map(r => `
+                    <label class="role-option">
+                        <input type="checkbox" ${currentRoles.includes(r) ? 'checked' : ''} 
+                        onchange="toggleRole('${doc.id}', '${r}', this.checked)"> ${r}
+                    </label>
+                `).join('');
+
                 container.innerHTML += `
                     <div class="stu-row">
-                        <span>${doc.id} ${d.name}</span>
-                        <select onchange="updateRole('${doc.id}', this.value)">
-                            ${subjects.map(s => `<option value="${s}" ${d.subject_role === s ? 'selected' : ''}>${s}</option>`).join('')}
-                        </select>
+                        <span><strong>${parseInt(doc.id)}號</strong> ${d.name}</span>
+                        <div class="role-grid">${roleOptions}</div>
                     </div>`;
             });
         });
     }
 
-    async function updateRole(sid, role) {
-        await db.collection("students").doc(sid).update({ subject_role: role });
+    async function toggleRole(sid, role, isAdd) {
+        const ref = db.collection("students").doc(sid);
+        if (isAdd) {
+            await ref.update({ subject_roles: firebase.firestore.FieldValue.arrayUnion(role) });
+        } else {
+            await ref.update({ subject_roles: firebase.firestore.FieldValue.arrayRemove(role) });
+        }
     }
 
+    // --- 作業發佈 ---
     async function addHw() {
         const title = document.getElementById('hwTitle').value;
         const date = document.getElementById('hwDate').value;
-        if(!title || !date) return alert("請填寫完整");
+        const subject = document.getElementById('postSubjectSelector').value;
+        
+        if(!title || !date) return alert("請填寫作業內容與日期");
 
         await db.collection("homework_reminders").add({
-            subject: me.subject_role,
+            subject: subject,
             title: title,
             date: date,
             authorId: me.id,
             authorName: me.name,
-            done_list: []
+            done_list: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+        
         document.getElementById('hwTitle').value = "";
         alert("發佈成功！");
     }
 
+    // --- 作業清單 (包含過期判定) ---
     function loadHomework() {
         db.collection("homework_reminders").orderBy("date", "asc").onSnapshot(snap => {
             const list = document.getElementById('hwList');
             list.innerHTML = "";
-            if(snap.empty) list.innerHTML = "<p style='text-align:center; color:#999;'>目前沒有作業提醒</p>";
+            
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const todayStr = now.toISOString().split('T')[0];
+
+            let activeItems = "";
+            let expiredItems = "";
+
+            if(snap.empty) {
+                list.innerHTML = "<p style='text-align:center; color:#999;'>目前沒有任何作業</p>";
+                return;
+            }
 
             snap.forEach(doc => {
                 const d = doc.data();
+                const isExpired = d.date < todayStr;
                 const hasDone = d.done_list && d.done_list.includes(me.id);
-                const isOwner = (me.id === d.authorId || me.role === 'admin');
+                const isOwner = (me.id === d.authorId || me.role === 'admin' || me.role === 'teacher');
 
-                list.innerHTML += `
-                    <div class="hw-item">
-                        <span class="subject-badge">${d.subject}</span>
+                const itemHtml = `
+                    <div class="hw-item ${isExpired ? 'expired' : ''}">
+                        <span class="subject-badge" style="${isExpired ? 'background:#94a3b8' : ''}">${d.subject}</span>
                         <div class="hw-title">${d.title}</div>
                         <div class="hw-info">截止日期：${d.date} | 發佈：${d.authorName}</div>
+                        
                         ${isOwner ? `<div class="status-box">📊 已完成 (${d.done_list.length}人): ${d.done_list.join(", ")}</div>` : ''}
-                        <button class="done-btn ${hasDone ? 'already' : ''}" onclick="markDone('${doc.id}', ${hasDone})">
-                            ${hasDone ? '✅ 您已回報完成' : '回報完成'}
-                        </button>
-                        ${isOwner ? `<button onclick="deleteHw('${doc.id}')" style="background:none; color:var(--d); font-size:0.8rem; margin-top:5px; border:none; text-decoration:underline;">刪除此提醒</button>` : ''}
+                        
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button class="done-btn ${hasDone ? 'already' : ''}" onclick="markDone('${doc.id}', ${hasDone})" style="flex:3;">
+                                ${hasDone ? '✅ 已完成' : '回報完成'}
+                            </button>
+                            ${isOwner ? `<button onclick="deleteHw('${doc.id}')" style="flex:1; background:var(--d); font-size:0.8rem;">刪除</button>` : ''}
+                        </div>
                     </div>`;
+
+                if (isExpired) expiredItems += itemHtml;
+                else activeItems += itemHtml;
             });
+
+            list.innerHTML = `
+                <div class="section-title">進行中作業</div>
+                ${activeItems || '<p style="font-size:0.8rem; color:#999; margin-left:15px;">暫無進行中作業</p>'}
+                <div class="section-title">先前作業 (已截止)</div>
+                ${expiredItems || '<p style="font-size:0.8rem; color:#999; margin-left:15px;">暫無歷史紀錄</p>'}
+            `;
         });
     }
 
@@ -200,7 +281,9 @@
     }
 
     async function deleteHw(hid) {
-        if(confirm("確定要刪除嗎？")) await db.collection("homework_reminders").doc(hid).delete();
+        if(confirm("確定要刪除這項作業提醒嗎？")) {
+            await db.collection("homework_reminders").doc(hid).delete();
+        }
     }
 </script>
 </body>
