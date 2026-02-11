@@ -3,84 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級雲端勤務系統</title>
+    <title>班級雲端勤務系統 v2.0</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; min-height: 100vh; padding-top: 20px; }
-        .container { width: 92%; max-width: 450px; background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); overflow: hidden; height: fit-content; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 450px; background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden; height: fit-content; }
+        
+        /* 頁籤控制 */
         .tabs { display: flex; background: #edf2f7; }
-        .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; }
+        .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; transition: 0.3s; }
         .tab.active { background: white; color: var(--p); border-top: 4px solid var(--p); }
-        .content { padding: 30px; }
-        .view { display: none; }
+
+        .view { display: none; padding: 30px; }
         .view.active { display: block; }
-        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--p); color: white; border: none; font-weight: 800; cursor: pointer; }
+
+        /* 輸入項樣式 */
+        h2 { margin-top: 0; color: #2d3748; font-size: 1.5rem; text-align: center; }
+        input, select, button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; outline: none; }
+        button { background: var(--p); color: white; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.98); }
+
+        /* 驗證碼 */
         .captcha-row { display: flex; gap: 10px; align-items: center; }
         #captchaCanvas { background: #f7fafc; border-radius: 10px; cursor: pointer; border: 1px solid #e2e8f0; }
-        
-        /* 儀表板樣式 */
-        .main-card { background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white; padding: 35px 20px; border-radius: 25px; text-align: center; margin-bottom: 25px; }
+
+        /* 學生 Dashboard */
+        .user-header { border-bottom: 1px solid #edf2f7; padding-bottom: 15px; margin-bottom: 20px; }
+        .main-card { background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white; padding: 35px 20px; border-radius: 25px; text-align: center; box-shadow: 0 12px 24px rgba(67, 97, 238, 0.25); margin-bottom: 20px; }
         .duty-name { font-size: 2.2rem; font-weight: 900; margin: 15px 0; }
-        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .nav-box { background: #fff; border: 1px solid #edf2f7; padding: 18px; border-radius: 18px; text-align: center; font-weight: bold; }
+        
+        /* 管理控制台 */
+        .admin-box { background: #f8fafc; border: 2px dashed #cbd5e0; padding: 20px; border-radius: 20px; margin-top: 20px; }
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .nav-btn { background: white; color: #4a5568; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="authTabs" class="tabs">
-        <div id="loginTab" class="tab active" onclick="switchTab('login')">登入</div>
-        <div id="regTab" class="tab" onclick="switchTab('register')">註冊</div>
+        <div id="t-login" class="tab active" onclick="switchTab('login')">登入</div>
+        <div id="t-reg" class="tab" onclick="switchTab('register')">註冊</div>
     </div>
 
     <div class="content">
         <div id="loginView" class="view active">
-            <h2>歡迎回來</h2>
-            <input type="number" id="loginId" placeholder="座號 (例如: 01)">
-            <input type="password" id="loginPw" placeholder="密碼">
+            <h2>帳號登入</h2>
+            <input type="number" id="loginId" placeholder="座號 (例如: 05)">
+            <input type="password" id="loginPw" placeholder="登入密碼">
             <div class="captcha-row">
                 <input type="text" id="loginCaptcha" placeholder="驗證碼">
                 <canvas id="captchaCanvas" width="100" height="48" onclick="drawCaptcha()"></canvas>
             </div>
-            <button onclick="handleLogin()">登入系統</button>
+            <button onclick="handleLogin()">進入系統</button>
         </div>
 
         <div id="regView" class="view">
             <h2>新成員註冊</h2>
             <input type="number" id="regId" placeholder="座號 (例如: 01)">
-            <input type="text" id="regName" placeholder="真實姓名">
-            <input type="password" id="regPw" placeholder="自訂密碼">
+            <input type="text" id="regName" placeholder="學生真實姓名">
+            <input type="password" id="regPw" placeholder="設定密碼">
             <select id="regRole" onchange="toggleKey()">
                 <option value="student">我是學生</option>
-                <option value="inner_manager">我是內衛生</option>
-                <option value="outer_manager">我是外衛生</option>
+                <option value="inner_manager">我是內衛生股長</option>
+                <option value="outer_manager">我是外衛生股長</option>
                 <option value="teacher">我是導師</option>
                 <option value="admin">我是管理員</option>
             </select>
-            <input type="password" id="mKey" placeholder="輸入管理金鑰" style="display:none">
-            <button onclick="handleRegister()" style="background: #2ec4b6;">確認註冊</button>
+            <input type="password" id="mKey" placeholder="輸入管理授權金鑰" style="display:none">
+            <button onclick="handleRegister()" style="background: var(--s);">建立帳號</button>
         </div>
 
         <div id="dashboardView" class="view">
-            <div id="userInfo" style="font-weight: bold; margin-bottom: 20px;"></div>
-            <div class="main-card">
-                <h3>📍 目前掃地工作</h3>
-                <div id="myDutyName" class="duty-name">未分配</div>
+            <div class="user-header">
+                <div id="userTitle" style="font-weight: bold; color: #2d3748;"></div>
+                <div id="userRoleBadge" style="font-size: 12px; color: var(--p);"></div>
             </div>
+
+            <div class="main-card">
+                <h3 style="margin:0; opacity:0.8; font-size:14px;">📍 目前分配工作</h3>
+                <div id="dispDuty" class="duty-name">未分配</div>
+                <div id="dispMissing" style="font-size: 12px; background:rgba(0,0,0,0.1); padding:4px 10px; border-radius:10px;">累計缺掃：0 次</div>
+            </div>
+
+            <div id="adminArea" class="admin-box" style="display:none">
+                <h3 style="margin:0 0 10px 0; font-size:15px; color:#4a5568;">🛠️ 管理員控制台</h3>
+                <input type="number" id="targetId" placeholder="目標座號">
+                <input type="text" id="targetJob" placeholder="分配工作內容">
+                <button onclick="doAssign()">更新分配</button>
+                <button onclick="doMark()" style="background:var(--d); margin-top:5px;">登記今日未掃地</button>
+            </div>
+
             <div class="nav-grid">
-                <div class="nav-box">📊<br>歷史記點</div>
-                <div class="nav-box">📜<br>歷史工作</div>
-                <div class="nav-box" onclick="location.reload()" style="grid-column: span 2; color: #ef233c;">🔒 安全登出</div>
+                <div class="nav-btn">📊 歷史記點</div>
+                <div class="nav-btn">👥 全班名單</div>
+                <button onclick="location.reload()" style="grid-column: span 2; background:#718096; margin-top:10px;">安全登出</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 1. 初始化 Firebase (請確認您的配置無誤)
+    // 1. Firebase 初始化
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -89,49 +116,42 @@
         messagingSenderId: "389284021944",
         appId: "1:389284021944:web:3c5311697cbfc7c010564d"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    // 確保只初始化一次
-    let db;
-    try {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        db = firebase.firestore();
-        console.log("Firebase 連結成功！");
-    } catch (e) {
-        console.error("Firebase 初始化失敗：", e);
-        alert("資料庫連線失敗，請檢查網路或 Firebase 配置。");
-    }
+    let captchaCode = "";
+    let currentUser = null;
 
-    let currentCaptcha = "";
-
+    // 2. 切換標籤
     function switchTab(mode) {
-        document.getElementById('loginTab').className = 'tab ' + (mode === 'login' ? 'active' : '');
-        document.getElementById('regTab').className = 'tab ' + (mode === 'register' ? 'active' : '');
-        document.getElementById('loginView').className = 'view ' + (mode === 'login' ? 'active' : '');
-        document.getElementById('regView').className = 'view ' + (mode === 'register' ? 'active' : '');
-        if(mode === 'login') drawCaptcha();
+        document.getElementById('t-login').classList.toggle('active', mode==='login');
+        document.getElementById('t-reg').classList.toggle('active', mode==='register');
+        document.getElementById('loginView').classList.toggle('active', mode==='login');
+        document.getElementById('regView').classList.toggle('active', mode==='register');
+        if(mode==='login') drawCaptcha();
     }
 
+    // 3. 驗證碼產生
     function drawCaptcha() {
         const canvas = document.getElementById('captchaCanvas');
-        if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-        currentCaptcha = "";
+        captchaCode = "";
         ctx.clearRect(0,0,100,48);
         ctx.font = 'bold 22px Arial'; ctx.fillStyle = '#4361ee';
         for(let i=0; i<4; i++) {
             let c = chars.charAt(Math.floor(Math.random()*chars.length));
-            currentCaptcha += c; ctx.fillText(c, 15 + i*20, 32);
+            captchaCode += c; ctx.fillText(c, 15 + i*20, 32);
         }
     }
 
+    // 4. 金鑰欄位切換
     function toggleKey() {
         const role = document.getElementById('regRole').value;
         document.getElementById('mKey').style.display = (role === 'student') ? 'none' : 'block';
     }
 
+    // 5. 註冊功能
     async function handleRegister() {
         const id = document.getElementById('regId').value.padStart(2, '0');
         const name = document.getElementById('regName').value;
@@ -148,46 +168,81 @@
             if(doc.exists) { alert("此座號已註冊！"); return; }
 
             await docRef.set({ name, password: pw, role, duty_zone: "未分配", missing_count: 0 });
-            alert("註冊完畢！請使用登入功能。");
+            alert("註冊成功！請登入。");
             switchTab('login');
-        } catch (error) {
-            console.error(error);
-            alert("註冊過程發生錯誤，請看主控台。");
-        }
+        } catch (e) { alert("註冊失敗，請檢查網路。"); }
     }
 
+    // 6. 登入功能
     async function handleLogin() {
-        const idField = document.getElementById('loginId').value;
-        const id = idField.padStart(2, '0');
+        const id = document.getElementById('loginId').value.padStart(2, '0');
         const pw = document.getElementById('loginPw').value;
         const cap = document.getElementById('loginCaptcha').value.toUpperCase();
 
-        if(cap !== currentCaptcha) { alert("驗證碼錯誤"); drawCaptcha(); return; }
-        if(!idField || !pw) { alert("請輸入座號與密碼"); return; }
+        if(cap !== captchaCode) { alert("驗證碼錯誤"); drawCaptcha(); return; }
 
         try {
             const doc = await db.collection("students").doc(id).get();
             if(doc.exists && doc.data().password === pw) {
-                renderDashboard(id, doc.data());
-            } else {
-                alert("座號或密碼不正確");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("登入失敗，請確認資料庫權限或連線。");
+                currentUser = { id, ...doc.data() };
+                renderDashboard();
+            } else { alert("座號或密碼錯誤"); }
+        } catch (e) { alert("登入失敗"); }
+    }
+
+    // 7. 渲染儀表板
+    function renderDashboard() {
+        document.getElementById('authTabs').style.display = 'none';
+        document.getElementById('loginView').classList.remove('active');
+        document.getElementById('dashboardView').classList.add('active');
+
+        document.getElementById('userTitle').innerText = `座號：${currentUser.id} 姓名：${currentUser.name}`;
+        document.getElementById('userRoleBadge').innerText = `身分：${translate(currentUser.role)}`;
+        document.getElementById('dispDuty').innerText = currentUser.duty_zone || "未分配";
+        document.getElementById('dispMissing').innerText = `累計缺掃：${currentUser.missing_count || 0} 次`;
+
+        // 判斷權限：管理員、老師、衛生
+        const admins = ['admin', 'teacher', 'inner_manager', 'outer_manager'];
+        if(admins.includes(currentUser.role)) {
+            document.getElementById('adminArea').style.display = 'block';
         }
     }
 
-    function renderDashboard(id, data) {
-        document.getElementById('authTabs').style.display = 'none';
-        document.getElementById('loginView').style.display = 'none';
-        document.getElementById('regView').style.display = 'none';
-        document.getElementById('dashboardView').className = 'view active';
-        document.getElementById('userInfo').innerText = `座號：${id} 姓名：${data.name}`;
-        document.getElementById('myDutyName').innerText = data.duty_zone || "尚未分配";
+    // 8. 管理功能：分配
+    async function doAssign() {
+        const tid = document.getElementById('targetId').value.padStart(2, '0');
+        const job = document.getElementById('targetJob').value;
+        if(!tid || !job) { alert("請填寫分配對象與內容"); return; }
+
+        try {
+            await db.collection("students").doc(tid).update({ duty_zone: job });
+            alert(`已更新 ${tid} 號的工作：${job}`);
+            if(tid === currentUser.id) document.getElementById('dispDuty').innerText = job;
+        } catch (e) { alert("更新失敗，請檢查座號是否存在。"); }
     }
 
-    // 啟動時自動繪製驗證碼
+    // 9. 管理功能：記點
+    async function doMark() {
+        const tid = document.getElementById('targetId').value.padStart(2, '0');
+        if(!tid) { alert("請輸入座號"); return; }
+        if(!confirm(`確定要登記 ${tid} 號今日「未掃地」嗎？`)) return;
+
+        try {
+            await db.collection("students").doc(tid).update({
+                missing_count: firebase.firestore.FieldValue.increment(1)
+            });
+            await db.collection("absent_logs").add({
+                target: tid, date: new Date().toLocaleString(), by: currentUser.name
+            });
+            alert(`記點成功！${tid} 號累計次數已增加。`);
+        } catch (e) { alert("記點失敗"); }
+    }
+
+    function translate(role) {
+        const m = { student:'學生', inner_manager:'內衛生', outer_manager:'外衛生', teacher:'導師', admin:'管理員' };
+        return m[role] || role;
+    }
+
     window.onload = drawCaptcha;
 </script>
 </body>
