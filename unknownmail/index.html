@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>匿名心聲箱 - 班級平台</title>
+    <title>匿名信箱</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
@@ -13,20 +13,31 @@
         #loginSection { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
         .login-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        
+        /* 導覽列與通知點設計 */
         .nav { display: none; background: white; padding: 5px; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        .nav-btn { border: none; background: none; font-weight: bold; padding: 12px 5px; color: #888; cursor: pointer; font-size: 0.85rem; flex: 1; }
+        .nav-btn { border: none; background: none; font-weight: bold; padding: 12px 5px; color: #888; cursor: pointer; font-size: 0.85rem; flex: 1; position: relative; }
         .nav-btn.active { color: var(--p); border-bottom: 3px solid var(--p); }
+        .badge { position: absolute; top: 5px; right: 10px; background: var(--t); color: white; font-size: 10px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        
         .container { padding: 20px; max-width: 500px; margin: auto; display: none; }
-        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 12px; border: 1px solid #eee; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 12px; border: 1px solid #eee; position: relative; }
+        .card.unread { border-left: 5px solid var(--p); background: #f0f4ff; }
+        
         .student-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 180px; overflow-y: auto; background: #f0f0f0; padding: 10px; border-radius: 12px; margin: 10px 0; }
         .stu-chip { font-size: 0.75rem; background: white; padding: 6px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid #ddd; }
         .stu-chip.selected { background: var(--p); color: white; border-color: var(--p); }
+        
         textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 16px; margin-top: 10px; resize: none; }
         button.main-btn { width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        
         .msg-info { font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
         .reply-area { margin-top: 10px; padding: 8px; background: #f0fffb; border-radius: 8px; color: #008f7a; font-size: 0.85rem; border-left: 3px solid var(--s); }
         .admin-tag { background: #fff0f0; color: var(--t); font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; margin-bottom: 10px; display: inline-block; }
-        .hidden { display: none; }
+        
+        .action-btns { margin-top: 10px; display: flex; gap: 8px; }
+        .action-btns button { padding: 5px 10px; font-size: 0.75rem; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; background: white; }
+        .btn-confirm { background: #e7f3ff !important; color: #007bff; border-color: #007bff !important; }
     </style>
 </head>
 <body>
@@ -43,7 +54,9 @@
     <div id="navBar" class="nav">
         <button id="btn-send" class="nav-btn" onclick="showPage('send')">發送</button>
         <button id="btn-sentBox" class="nav-btn" onclick="showPage('sentBox')">已發送</button>
-        <button id="btn-receive" class="nav-btn" onclick="showPage('receive')">收件匣</button>
+        <button id="btn-receive" class="nav-btn" onclick="showPage('receive')">
+            收件匣 <span id="unreadBadge" class="badge" style="display:none;">0</span>
+        </button>
         <button id="btn-admin" class="nav-btn" style="display:none;" onclick="showPage('admin')">監控</button>
         <button class="nav-btn" onclick="location.reload()" style="color:#ccc">登出</button>
     </div>
@@ -139,11 +152,12 @@
                     const ref = db.collection("secret_messages").doc();
                     batch.set(ref, {
                         sender_id: me.id, sender_name: me.name, receiver_id: tId,
-                        content: content, reply: "", time: firebase.firestore.FieldValue.serverTimestamp()
+                        content: content, reply: "", read: false, // 預設為未讀
+                        time: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 });
                 await batch.commit();
-                alert("發送成功！可至「已發送」查看狀態");
+                alert("發送成功！");
                 document.getElementById('msgBody').value = "";
                 selectedIds = [];
                 document.querySelectorAll('.stu-chip').forEach(c => c.classList.remove('selected'));
@@ -152,8 +166,10 @@
         }
 
         function startListenMessages() {
-            // 收件匣 (我收到的) - 移除 orderBy 避免索引報錯，改由前端排序
+            // 收件匣 (我收到的)
             db.collection("secret_messages").where("receiver_id", "==", me.id).onSnapshot(snap => {
+                const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
+                updateBadge(unreadCount);
                 renderList(snap, 'receiveList', 'receive');
             });
 
@@ -170,11 +186,20 @@
             }
         }
 
+        function updateBadge(count) {
+            const badge = document.getElementById('unreadBadge');
+            if(count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
         function renderList(snap, elementId, type) {
             const box = document.getElementById(elementId);
             box.innerHTML = snap.empty ? "<p style='color:#ccc;text-align:center;padding:20px;'>尚無資料</p>" : "";
             
-            // 將資料轉為陣列並按時間排序 (解決收不到信的索引問題)
             let docs = [];
             snap.forEach(doc => docs.push({docId: doc.id, ...doc.data()}));
             docs.sort((a, b) => (b.time?.seconds || 0) - (a.time?.seconds || 0));
@@ -182,26 +207,49 @@
             docs.forEach(d => {
                 const t = d.time ? d.time.toDate().toLocaleString() : "傳送中...";
                 const card = document.createElement('div');
-                card.className = 'card';
+                card.className = 'card' + (type === 'receive' && !d.read ? ' unread' : '');
                 
                 let header = "";
                 if(type === 'admin') header = `<div class="admin-tag">來自: ${d.sender_id} ➔ 對象: ${d.receiver_id}</div>`;
-                if(type === 'sent') header = `<div class="msg-info" style="color:var(--p)">寄給座號：${d.receiver_id}</div>`;
+                if(type === 'sent') header = `<div class="msg-info" style="color:var(--p)">寄給座號：${d.receiver_id} ${d.read ? ' (已讀)' : ' (未讀)'}</div>`;
+
+                let actionButtons = "";
+                if(type === 'receive') {
+                    actionButtons = `<div class="action-btns">`;
+                    if(!d.read) {
+                        actionButtons += `<button class="btn-confirm" onclick="markRead('${d.docId}')">確認讀信</button>`;
+                    }
+                    if(!d.reply) {
+                        actionButtons += `<button onclick="replyMsg('${d.docId}')">回覆對方</button>`;
+                    }
+                    actionButtons += `</div>`;
+                }
 
                 card.innerHTML = `
                     ${header}
                     <div class="msg-info">📅 ${t}</div>
                     <div style="font-weight:bold; color:#333; white-space: pre-wrap;">${d.content}</div>
                     ${d.reply ? `<div class="reply-area"><b>回覆內容：</b><br>${d.reply}</div>` : ""}
-                    ${type === 'receive' && !d.reply ? `<button onclick="replyMsg('${d.docId}')" style="margin-top:10px; font-size:0.7rem;">回覆對方</button>` : ""}
+                    ${actionButtons}
                 `;
                 box.appendChild(card);
             });
         }
 
+        async function markRead(docId) {
+            try {
+                await db.collection("secret_messages").doc(docId).update({ read: true });
+            } catch (e) { console.error("Error updating read status: ", e); }
+        }
+
         async function replyMsg(docId) {
             const r = prompt("請輸入回覆內容：");
-            if(r) { await db.collection("secret_messages").doc(docId).update({ reply: r }); }
+            if(r) { 
+                await db.collection("secret_messages").doc(docId).update({ 
+                    reply: r,
+                    read: true // 回覆時也自動標記為已讀
+                }); 
+            }
         }
     </script>
 </body>
