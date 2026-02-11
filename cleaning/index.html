@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v4.1</title>
+    <title>班級勤務管理系統 v4.2</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -21,108 +21,75 @@
         .captcha-row { display: flex; gap: 10px; align-items: center; }
         canvas { background: #f7fafc; border-radius: 10px; cursor: pointer; border: 1px solid #e2e8f0; }
         
-        /* 管理面板樣式 */
+        /* 名單樣式 */
         .admin-dashboard { background: #f8faff; border: 2px solid #e0e7ff; border-radius: 20px; padding: 15px; margin-top: 20px; }
         .stu-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
         .stu-card { background: white; border: 1px solid #dee2e6; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .stu-info { text-align: right; flex: 2; font-size: 0.9rem; }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; margin-left: 5px; }
 
         .main-card { background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white; padding: 30px; border-radius: 25px; text-align: center; margin-bottom: 20px; }
-        .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 0.9rem; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
         .modal-body { background:white; padding:25px; border-radius:20px; width:85%; max-width:380px; }
+        /* 彈窗內的大點數顯示 */
+        .modal-score-display { text-align: center; font-size: 2.5rem; font-weight: 900; color: var(--d); margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1 style="text-align:center; color:var(--p); margin: 20px 0 10px 0;">班級勤務管理系統</h1>
-    
     <div id="authTabs" class="tabs">
         <div id="t-login" class="tab active" onclick="setTab('login')">登入</div>
         <div id="t-reg" class="tab" onclick="setTab('register')">註冊</div>
     </div>
-
     <div class="content">
         <div id="loginView" class="view active">
             <input type="number" id="loginId" placeholder="座號">
             <input type="password" id="loginPw" placeholder="密碼">
-            <div class="captcha-row">
-                <input type="text" id="loginCaptcha" placeholder="驗證碼">
-                <canvas id="captchaCanvas" width="100" height="48" onclick="drawCaptcha()"></canvas>
-            </div>
+            <div class="captcha-row"><input type="text" id="loginCaptcha" placeholder="驗證碼"><canvas id="captchaCanvas" width="100" height="48" onclick="drawCaptcha()"></canvas></div>
             <button onclick="doLogin()">進入系統</button>
         </div>
-
         <div id="regView" class="view">
-            <input type="number" id="regId" placeholder="座號">
-            <input type="text" id="regName" placeholder="真實姓名">
-            <input type="password" id="regPw" placeholder="設定密碼">
-            <select id="regRole" onchange="checkKey()">
-                <option value="student">一般學生</option>
-                <option value="inner_manager">內衛生</option>
-                <option value="outer_manager">外衛生</option>
-                <option value="teacher">導師</option>
-                <option value="admin">管理員</option>
-            </select>
-            <input type="password" id="mKey" placeholder="管理授權碼" style="display:none">
-            <button onclick="doRegister()" style="background:var(--s)">建立帳號</button>
+            <input type="number" id="regId" placeholder="座號"><input type="text" id="regName" placeholder="姓名"><input type="password" id="regPw" placeholder="密碼">
+            <select id="regRole" onchange="checkKey()"><option value="student">學生</option><option value="inner_manager">內衛生</option><option value="outer_manager">外衛生</option><option value="teacher">導師</option><option value="admin">管理員</option></select>
+            <input type="password" id="mKey" placeholder="管理授權碼" style="display:none"><button onclick="doRegister()" style="background:var(--s)">建立帳號</button>
         </div>
-
-        <div id="resetPwView" class="view">
-            <h2 style="color:var(--d)">🔒 安全重設密碼</h2>
-            <p>管理員已將您的密碼重置為預設值。為了安全，請設定一個只有您知道的新密碼：</p>
-            <input type="password" id="newResetPw" placeholder="輸入新密碼">
-            <button onclick="confirmResetPw()">更新密碼並進入</button>
-        </div>
+        <div id="resetPwView" class="view"><h2>🔒 安全重設密碼</h2><input type="password" id="newResetPw" placeholder="輸入新密碼"><button onclick="confirmResetPw()">更新並進入</button></div>
 
         <div id="dashboardView" class="view">
             <div id="welcomeTitle" style="font-weight:bold; margin-bottom:10px;"></div>
-            <div id="studentWarning" class="warning-box" style="display:none;">⚠️ 警告：<span id="warnText"></span></div>
-            
-            <div class="main-card">
-                <div id="myJob" style="font-size:2rem; font-weight:900; margin:10px 0;">讀取中...</div>
-                <div id="myScore" style="font-size:0.9rem;">累計點數：0</div>
-            </div>
-
-            <div id="adminSection" style="display:none;">
-                <div class="admin-dashboard">
-                    <h3 style="margin:0; color:var(--p); display:flex; justify-content:space-between;">🚀 即時勤務名單 <span>點數</span></h3>
-                    <div id="stuGrid" class="stu-grid"></div>
-                </div>
-            </div>
-            <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出系統</button>
+            <div class="main-card"><div id="myJob" style="font-size:2rem; font-weight:900;">載入中...</div><div id="myScore">點數：0</div></div>
+            <div id="adminSection" style="display:none;"><div class="admin-dashboard"><h3>🚀 勤務名單</h3><div id="stuGrid" class="stu-grid"></div></div></div>
+            <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出</button>
         </div>
     </div>
 </div>
 
 <div id="modal">
     <div class="modal-body">
-        <h3 id="targetName" style="margin-top:0;"></h3>
-        <select id="jobPicker"></select>
-        <input type="text" id="newJob" placeholder="手動輸入工作">
-        <hr>
+        <h3 id="targetName" style="margin:0;"></h3>
+        <div class="modal-score-display" id="modalScore">0</div>
+        
         <div style="display:flex; gap:5px;">
             <button onclick="changeScore(1)" style="background:var(--d)">+1 記點</button>
-            <button onclick="changeScore(-1)" style="background:#718096">-1 刪除</button>
+            <button onclick="changeScore(-1)" style="background:#718096">-1 扣除</button>
         </div>
+        <hr>
+        <select id="jobPicker"></select>
+        <input type="text" id="newJob" placeholder="手動輸入工作">
         <input type="text" id="warnInput" placeholder="發送警告訊息...">
-        <button onclick="confirmAssign()" style="background:var(--p)">儲存更新</button>
-        
+        <button onclick="confirmAssign()" style="background:var(--p)">儲存工作與警告</button>
         <div id="advancedAdmin" style="display:none; border-top:1px solid #eee; margin-top:10px; padding-top:10px;">
-            <button onclick="triggerReset()" style="background:#f39c12">還原為預設密碼 (座號三次)</button>
-            <button onclick="deleteStudent()" style="background:#000; margin-top:5px;">刪除學生帳號</button>
+            <button onclick="triggerReset()" style="background:#f39c12">還原密碼 (座號三次)</button>
+            <button onclick="deleteStudent()" style="background:#000; margin-top:5px;">刪除帳號</button>
         </div>
-        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">關閉</button>
+        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">關閉視窗</button>
     </div>
 </div>
 
 <script>
-    // Firebase 初始化 (請確保 Config 完整)
-    const firebaseConfig = { 
+    const firebaseConfig = { /* 老師請保留您的 Config */
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
         projectId: "vote-6668",
@@ -134,26 +101,18 @@
     const db = firebase.firestore();
 
     let me = null, selectedId = null, capText = "";
+    let modalUnsub = null; // 用於監聽彈窗內學生的即時資料
 
     function setTab(m) {
         document.getElementById('loginView').className = 'view ' + (m==='login'?'active':'');
         document.getElementById('regView').className = 'view ' + (m==='register'?'active':'');
-        document.getElementById('t-login').className = 'tab ' + (m==='login'?'active':'');
-        document.getElementById('t-reg').className = 'tab ' + (m==='register'?'active':'');
         if(m==='login') drawCaptcha();
     }
-
     function drawCaptcha() {
-        const canvas = document.getElementById('captchaCanvas');
-        const ctx = canvas.getContext('2d');
-        const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-        capText = ""; ctx.clearRect(0,0,100,48); ctx.font = 'bold 22px Arial'; ctx.fillStyle = '#4361ee';
-        for(let i=0; i<4; i++) {
-            let c = chars.charAt(Math.floor(Math.random()*chars.length));
-            capText += c; ctx.fillText(c, 15 + i*20, 32);
-        }
+        const canvas = document.getElementById('captchaCanvas'); const ctx = canvas.getContext('2d');
+        const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; capText = ""; ctx.clearRect(0,0,100,48); ctx.font = 'bold 22px Arial'; ctx.fillStyle = '#4361ee';
+        for(let i=0; i<4; i++) { let c = chars.charAt(Math.floor(Math.random()*chars.length)); capText += c; ctx.fillText(c, 15 + i*20, 32); }
     }
-
     function checkKey() { document.getElementById('mKey').style.display = (document.getElementById('regRole').value === 'student' ? 'none' : 'block'); }
 
     async function doRegister() {
@@ -169,89 +128,84 @@
         const pw = document.getElementById('loginPw').value;
         const cap = document.getElementById('loginCaptcha').value.toUpperCase();
         if(cap !== capText) { alert("驗證碼錯誤"); drawCaptcha(); return; }
-        
         const doc = await db.collection("students").doc(id).get();
         if(doc.exists && doc.data().password === pw) {
             me = { id, ...doc.data() };
-            if(me.needsReset) {
-                document.getElementById('loginView').classList.remove('active');
-                document.getElementById('resetPwView').classList.add('active');
-            } else {
-                startRealtimeSync();
-            }
-        } else { alert("座號或密碼錯誤"); }
+            if(me.needsReset) { document.getElementById('loginView').classList.remove('active'); document.getElementById('resetPwView').classList.add('active'); }
+            else { startRealtimeSync(); }
+        } else { alert("失敗"); }
     }
 
     function startRealtimeSync() {
-        document.getElementById('authTabs').style.display = 'none';
-        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('authTabs').style.display = 'none'; document.getElementById('loginView').style.display = 'none';
         document.getElementById('dashboardView').className = 'view active';
-        
         db.collection("students").doc(me.id).onSnapshot(doc => {
-            const data = doc.data();
-            document.getElementById('welcomeTitle').innerText = `${doc.id} ${data.name}`;
-            document.getElementById('myJob').innerText = data.duty_zone || "未分配";
-            document.getElementById('myScore').innerText = `我的點數：${data.score || 0}`;
-            document.getElementById('studentWarning').style.display = data.warning ? 'block' : 'none';
-            document.getElementById('warnText').innerText = data.warning || "";
+            const d = doc.data(); document.getElementById('welcomeTitle').innerText = `${doc.id} ${d.name}`;
+            document.getElementById('myJob').innerText = d.duty_zone || "未分配"; document.getElementById('myScore').innerText = `點數：${d.score || 0}`;
         });
-
         if(['teacher','inner_manager','outer_manager','admin'].includes(me.role)) {
-            document.getElementById('adminSection').style.display = 'block';
-            refreshJobs();
+            document.getElementById('adminSection').style.display = 'block'; refreshJobs();
             db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
                 const grid = document.getElementById('stuGrid'); grid.innerHTML = "";
                 snap.forEach(doc => {
                     const d = doc.data();
-                    grid.innerHTML += `<div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')">
-                        <b>${doc.id} ${d.name}</b>
-                        <div class="stu-info">${d.duty_zone || '待分配'}<span class="score-badge">${d.score || 0}</span></div>
-                    </div>`;
+                    grid.innerHTML += `<div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')"><b>${doc.id} ${d.name}</b><div class="stu-info">${d.duty_zone}<span class="score-badge">${d.score}</span></div></div>`;
                 });
             });
         }
     }
 
-    // 🏆 重設密碼邏輯：座號重複三次
-    window.triggerReset = async function() {
-        const defaultPw = selectedId + selectedId + selectedId; // 1號 -> 010101
-        if(!confirm(`確定要將密碼還原為預設值「${defaultPw}」嗎？`)) return;
-        await db.collection("students").doc(selectedId).update({ 
-            password: defaultPw, 
-            needsReset: true 
-        });
-        alert("已還原密碼並強制學生下次登入時更改。");
-        closeModal();
-    }
-
-    async function confirmResetPw() {
-        const newPw = document.getElementById('newResetPw').value;
-        if(newPw.length < 3) { alert("新密碼太短"); return; }
-        await db.collection("students").doc(me.id).update({ password: newPw, needsReset: false });
-        alert("設定成功，請使用新密碼登入"); location.reload();
-    }
-
+    // 🏆 修改重點：打開彈窗時也開啟即時監聽
     window.openModal = function(id, name) {
-        selectedId = id; document.getElementById('targetName').innerText = `${id} ${name} 管理`;
+        selectedId = id;
+        document.getElementById('targetName').innerText = `${id} ${name}`;
         document.getElementById('advancedAdmin').style.display = (['teacher','admin'].includes(me.role)) ? 'block' : 'none';
+        
+        // 監聽該學生的點數，實現彈窗內即時跳動
+        if(modalUnsub) modalUnsub(); 
+        modalUnsub = db.collection("students").doc(id).onSnapshot(doc => {
+            if(doc.exists) document.getElementById('modalScore').innerText = doc.data().score || 0;
+        });
+        
         document.getElementById('modal').style.display = 'flex';
     }
-    window.closeModal = function() { document.getElementById('modal').style.display = 'none'; }
-    window.changeScore = async function(val) { await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(val) }); }
-    window.deleteStudent = async function() {
-        if(confirm("確定刪除？")) { await db.collection("students").doc(selectedId).delete(); closeModal(); }
+
+    window.closeModal = function() { 
+        if(modalUnsub) modalUnsub(); // 關閉彈窗時停止監聽，節省流量
+        document.getElementById('modal').style.display = 'none'; 
     }
+
+    window.changeScore = async function(val) {
+        // 直接在資料庫更新，彈窗內的監聽器會自動捕捉並更新數字
+        await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(val) });
+    }
+
     window.confirmAssign = async function() {
         const j1 = document.getElementById('jobPicker').value, j2 = document.getElementById('newJob').value.trim();
-        const final = j2 || j1, warn = document.getElementById('warnInput').value;
+        const warn = document.getElementById('warnInput').value;
         if(j2) await db.collection("duty_options").doc(j2).set({ active: true });
-        await db.collection("students").doc(selectedId).update({ duty_zone: final || "未分配", warning: warn });
+        await db.collection("students").doc(selectedId).update({ duty_zone: j2 || j1 || "未分配", warning: warn });
         closeModal();
     }
+
+    window.triggerReset = async function() {
+        const def = selectedId + selectedId + selectedId;
+        if(confirm(`密碼將還原為 ${def}`)) {
+            await db.collection("students").doc(selectedId).update({ password: def, needsReset: true });
+            closeModal();
+        }
+    }
+    window.deleteStudent = async function() { if(confirm("確定刪除？")) { await db.collection("students").doc(selectedId).delete(); closeModal(); } }
     async function refreshJobs() {
         const picker = document.getElementById('jobPicker'); picker.innerHTML = '<option value="">-- 選項 --</option>';
         const snap = await db.collection("duty_options").get();
         snap.forEach(doc => { picker.innerHTML += `<option value="${doc.id}">${doc.id}</option>`; });
+    }
+    window.confirmResetPw = async function() {
+        const newPw = document.getElementById('newResetPw').value;
+        if(newPw.length < 3) return alert("太短");
+        await db.collection("students").doc(me.id).update({ password: newPw, needsReset: false });
+        location.reload();
     }
     window.onload = drawCaptcha;
 </script>
