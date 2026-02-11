@@ -2,69 +2,84 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>匿名心聲箱 - 班級平台</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    
     <style>
-        :root { --p: #4361ee; --s: #2ec4b6; --t: #ef233c; --bg: #f8f9fa; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; }
-        .nav { display: flex; background: white; padding: 10px; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .nav-btn { border: none; background: none; font-weight: bold; padding: 10px; color: #666; cursor: pointer; }
+        :root { --p: #4361ee; --s: #2ec4b6; --t: #ef233c; --bg: #f8f9fa; --card: #ffffff; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        /* 登入區塊 */
+        #loginSection { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        .login-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        
+        /* 主程式導航 */
+        .nav { display: none; background: white; padding: 10px; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .nav-btn { border: none; background: none; font-weight: bold; padding: 10px; color: #888; cursor: pointer; font-size: 0.9rem; }
         .nav-btn.active { color: var(--p); border-bottom: 2px solid var(--p); }
         
-        .container { padding: 20px; max-width: 500px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; position: relative; }
+        .container { padding: 20px; max-width: 500px; margin: auto; display: none; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 15px; border: 1px solid #eee; }
         
-        /* 發信頁面樣式 */
-        textarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 10px; padding: 10px; box-sizing: border-box; font-size: 16px; margin-top: 10px; }
-        .student-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 10px; margin: 10px 0; }
-        .stu-item { font-size: 0.8rem; background: #eee; padding: 5px; border-radius: 5px; text-align: center; cursor: pointer; }
-        .stu-item.selected { background: var(--p); color: white; }
+        /* 學生選取器 (複選) */
+        .student-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 200px; overflow-y: auto; background: #f0f0f0; padding: 10px; border-radius: 12px; margin: 10px 0; }
+        .stu-chip { font-size: 0.75rem; background: white; padding: 6px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid #ddd; transition: 0.2s; }
+        .stu-chip.selected { background: var(--p); color: white; border-color: var(--p); }
         
-        /* 信件列表樣式 */
-        .msg-header { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
-        .msg-content { font-size: 1rem; line-height: 1.5; color: #333; }
-        .reply-box { margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; font-size: 0.9rem; color: var(--s); }
-        .admin-info { font-size: 0.7rem; color: var(--t); background: #fff5f5; padding: 4px; border-radius: 4px; margin-bottom: 5px; }
+        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 16px; margin-top: 10px; resize: none; }
+        button.main-btn { width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
         
-        button.main-btn { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
-        .hidden { display: none; }
+        .msg-info { font-size: 0.75rem; color: #aaa; margin-bottom: 5px; }
+        .reply-area { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #eee; color: var(--s); font-size: 0.9rem; }
+        .admin-tag { background: #fff0f0; color: var(--t); font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <div id="authCheck" class="container"><h3>請稍後...</h3></div>
-
-    <div id="mainApp" class="hidden">
-        <div class="nav">
-            <button class="nav-btn active" onclick="tab('send')">發送心聲</button>
-            <button class="nav-btn" onclick="tab('receive')">收件匣</button>
-            <button id="adminTab" class="nav-btn hidden" onclick="tab('admin')">管理監控</button>
-        </div>
-
-        <div id="sendPage" class="container">
-            <h3>告訴同學你的想法</h3>
-            <p style="font-size: 0.8rem; color: #888;">收件人 (可複選)：</p>
-            <div id="stuSelector" class="student-selector"></div>
-            <textarea id="msgInput" placeholder="寫下你想說的話..."></textarea>
-            <button class="main-btn" onclick="sendMsg()">匿名傳送</button>
-        </div>
-
-        <div id="receivePage" class="container hidden">
-            <h3>我的收件匣</h3>
-            <div id="receiveList"></div>
-        </div>
-
-        <div id="adminPage" class="container hidden">
-            <h3>🔍 全班信件監控 (導師權限)</h3>
-            <div id="adminList"></div>
+    <div id="loginSection">
+        <div class="login-card">
+            <h2 style="margin-top:0">匿名心聲箱</h2>
+            <p style="color:#888; font-size: 0.85rem;">請使用座號與密碼登入</p>
+            <input type="number" id="loginId" placeholder="座號 (例如 05)">
+            <input type="password" id="loginPw" placeholder="密碼">
+            <button class="main-btn" onclick="doLogin()">登入</button>
         </div>
     </div>
 
+    <div id="navBar" class="nav">
+        <button class="nav-btn active" onclick="showPage('send')">發送</button>
+        <button class="nav-btn" onclick="showPage('receive')">收件</button>
+        <button id="adminTab" class="nav-btn" style="display:none;" onclick="showPage('admin')">監控</button>
+        <button class="nav-btn" onclick="logout()" style="color:#ccc">登出</button>
+    </div>
+
+    <div id="sendPage" class="container">
+        <h3>匿名傳送心聲</h3>
+        <p style="font-size: 0.8rem; color: #888;">選擇對象 (可複選)：</p>
+        <div id="stuGrid" class="student-grid"></div>
+        <textarea id="msgBody" placeholder="寫下想對同學說的話..."></textarea>
+        <button class="main-btn" onclick="sendToStudents()">確認傳送</button>
+    </div>
+
+    <div id="receivePage" class="container">
+        <h3>收件匣</h3>
+        <div id="receiveList"></div>
+    </div>
+
+    <div id="adminPage" class="container">
+        <h3>全班信件紀錄</h3>
+        <div id="adminList"></div>
+    </div>
+
     <script>
-        // Firebase 配置 (請更換為您的)
+        // Firebase 配置
         const firebaseConfig = { 
             apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
             authDomain: "vote-6668.firebaseapp.com",
@@ -76,128 +91,140 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let currentUser = JSON.parse(sessionStorage.getItem('user'));
-        let selectedStu = [];
+        let me = null;
+        let selectedIds = [];
 
-        // 初始化檢查
-        window.onload = async () => {
-            if (!currentUser) {
-                alert("請先從主頁面登入！");
-                window.location.href = "index.html";
-                return;
-            }
-            document.getElementById('authCheck').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            if (currentUser.role === 'teacher' || currentUser.role === 'admin') {
-                document.getElementById('adminTab').classList.remove('hidden');
-            }
-            loadStudents();
-            loadMessages();
-        };
+        // 登入邏輯
+        async function doLogin() {
+            const id = document.getElementById('loginId').value.padStart(2, '0');
+            const pw = document.getElementById('loginPw').value;
+            
+            try {
+                const doc = await db.collection("students").doc(id).get();
+                if (doc.exists && doc.data().password === pw) {
+                    me = { id, ...doc.data() };
+                    initApp();
+                } else {
+                    alert("帳密錯誤，請重新輸入");
+                }
+            } catch (e) { alert("登入失敗: " + e.message); }
+        }
 
-        // 頁籤切換
-        function tab(type) {
-            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        function initApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('navBar').style.display = 'flex';
+            if (me.role === 'teacher' || me.role === 'admin') {
+                document.getElementById('adminTab').style.display = 'block';
+            }
+            showPage('send');
+            loadStudentList();
+            startListenMessages();
+        }
+
+        function showPage(p) {
+            document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(type + 'Page').classList.remove('hidden');
+            document.getElementById(p + 'Page').style.display = 'block';
             event.target.classList.add('active');
         }
 
-        // 載入學生名單 (多選用)
-        async function loadStudents() {
+        // 載入同學名單供複選
+        async function loadStudentList() {
             const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
-            const box = document.getElementById('stuSelector');
+            const grid = document.getElementById('stuGrid');
+            grid.innerHTML = "";
             snap.forEach(doc => {
-                if(doc.id === currentUser.id) return; // 不選自己
-                const div = document.createElement('div');
-                div.className = 'stu-item';
-                div.innerText = `${doc.id} ${doc.data().name}`;
-                div.onclick = () => {
-                    div.classList.toggle('selected');
-                    const id = doc.id;
-                    if(selectedStu.includes(id)) selectedStu = selectedStu.filter(i => i !== id);
-                    else selectedStu.push(id);
+                if(doc.id === me.id) return;
+                const chip = document.createElement('div');
+                chip.className = 'stu-chip';
+                chip.innerText = `${doc.id} ${doc.data().name}`;
+                chip.onclick = () => {
+                    chip.classList.toggle('selected');
+                    const sid = doc.id;
+                    if(selectedIds.includes(sid)) selectedIds = selectedIds.filter(i => i !== sid);
+                    else selectedIds.push(sid);
                 };
-                box.appendChild(div);
+                grid.appendChild(chip);
             });
         }
 
-        // 發送信件
-        async function sendMsg() {
-            const text = document.getElementById('msgInput').value;
-            if (selectedStu.length === 0 || !text) return alert("請選擇收件人並填寫內容");
-            
-            if(confirm(`確定要匿名發送給這 ${selectedStu.length} 位同學嗎？`)) {
+        // 傳送邏輯
+        async function sendToStudents() {
+            const content = document.getElementById('msgBody').value;
+            if (selectedIds.length === 0 || !content) return alert("請選擇對象並填寫內容");
+
+            if(confirm(`將匿名傳送給這 ${selectedIds.length} 位同學，確定嗎？`)) {
                 const batch = db.batch();
-                selectedStu.forEach(targetId => {
-                    const newRef = db.collection("secret_messages").doc();
-                    batch.set(newRef, {
-                        sender_id: currentUser.id,
-                        sender_name: currentUser.name,
+                selectedIds.forEach(targetId => {
+                    const ref = db.collection("secret_messages").doc();
+                    batch.set(ref, {
+                        sender_id: me.id,
+                        sender_name: me.name,
                         receiver_id: targetId,
-                        content: text,
+                        content: content,
                         reply: "",
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        time: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 });
                 await batch.commit();
-                alert("發送成功！");
-                location.reload();
+                alert("已成功發送！");
+                document.getElementById('msgBody').value = "";
+                // 重置選取狀態
+                selectedIds = [];
+                document.querySelectorAll('.stu-chip').forEach(c => c.classList.remove('selected'));
             }
         }
 
-        // 載入信件
-        function loadMessages() {
-            // 收件匣 (我收到的)
+        // 監聽訊息
+        function startListenMessages() {
+            // 我的收件
             db.collection("secret_messages")
-                .where("receiver_id", "==", currentUser.id)
-                .orderBy("timestamp", "desc")
+                .where("receiver_id", "==", me.id)
+                .orderBy("time", "desc")
                 .onSnapshot(snap => {
-                    const box = document.getElementById('receiveList');
-                    box.innerHTML = snap.empty ? "目前沒有信件" : "";
-                    snap.forEach(doc => renderMsg(doc, box, false));
+                    renderList(snap, 'receiveList', false);
                 });
 
-            // 管理員監控
-            if (currentUser.role === 'teacher' || currentUser.role === 'admin') {
+            // 管理監控
+            if (me.role === 'teacher' || me.role === 'admin') {
                 db.collection("secret_messages")
-                    .orderBy("timestamp", "desc")
+                    .orderBy("time", "desc")
                     .onSnapshot(snap => {
-                        const box = document.getElementById('adminList');
-                        box.innerHTML = "";
-                        snap.forEach(doc => renderMsg(doc, box, true));
+                        renderList(snap, 'adminList', true);
                     });
             }
         }
 
-        function renderMsg(doc, container, isAdmin) {
-            const d = doc.data();
-            const date = d.timestamp ? d.timestamp.toDate().toLocaleString() : "";
-            const div = document.createElement('div');
-            div.className = 'card';
-            
-            let adminHeader = isAdmin ? `<div class="admin-info">來自：${d.sender_id} ${d.sender_name} ➔ 對象：${d.receiver_id}</div>` : "";
-            
-            div.innerHTML = `
-                ${adminHeader}
-                <div class="msg-header">📅 ${date}</div>
-                <div class="msg-content">${d.content}</div>
-                <div id="reply-${doc.id}" class="reply-box ${d.reply?'':'hidden'}">
-                    <b>回覆：</b> ${d.reply}
-                </div>
-                ${!isAdmin && !d.reply ? `<button onclick="openReply('${doc.id}')" style="font-size:0.7rem; margin-top:5px;">回覆此信件</button>` : ""}
-                ${isAdmin ? `<button onclick="openReply('${doc.id}')" style="font-size:0.7rem; margin-top:5px; color:red;">老師代為回覆/指導</button>` : ""}
-            `;
-            container.appendChild(div);
+        function renderList(snap, elementId, isAdmin) {
+            const box = document.getElementById(elementId);
+            box.innerHTML = snap.empty ? "<p style='color:#ccc;text-align:center;'>目前尚無信件</p>" : "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const timeStr = d.time ? d.time.toDate().toLocaleString() : "";
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    ${isAdmin ? `<div class="admin-tag">身分：${d.sender_id} ${d.sender_name} ➔ ${d.receiver_id}</div>` : ""}
+                    <div class="msg-info">📅 ${timeStr}</div>
+                    <div style="font-weight:bold; color:#333;">${d.content}</div>
+                    <div class="reply-area ${d.reply?'':'hidden'}" id="reply-box-${doc.id}">
+                        ${d.reply ? `<b>回覆：</b> ${d.reply}` : ""}
+                    </div>
+                    ${!d.reply ? `<button onclick="replyMsg('${doc.id}')" style="margin-top:10px; font-size:0.7rem; cursor:pointer;">回覆內容</button>` : ""}
+                `;
+                box.appendChild(card);
+            });
         }
 
-        async function openReply(docId) {
-            const replyText = prompt("請輸入回覆內容：");
-            if (replyText) {
-                await db.collection("secret_messages").doc(docId).update({ reply: replyText });
-                alert("回覆已傳送");
+        async function replyMsg(docId) {
+            const r = prompt("請輸入回覆內容：");
+            if(r) {
+                await db.collection("secret_messages").doc(docId).update({ reply: r });
+                alert("已送出回覆！");
             }
         }
+
+        function logout() { location.reload(); }
     </script>
 </body>
 </html>
