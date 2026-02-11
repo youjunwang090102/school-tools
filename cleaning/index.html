@@ -9,7 +9,7 @@
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        .container { width: 100%; max-width: 550px; background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
         .tabs { display: flex; background: #edf2f7; }
         .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; border-top: 4px solid transparent; }
         .tab.active { background: white; color: var(--p); border-top: 4px solid var(--p); }
@@ -21,16 +21,20 @@
         .captcha-row { display: flex; gap: 10px; align-items: center; }
         canvas { background: #f7fafc; border-radius: 10px; cursor: pointer; border: 1px solid #e2e8f0; }
         
-        /* 學生列表與管理 */
+        /* 強化管理面板 */
         .admin-dashboard { background: #f8faff; border: 2px solid #e0e7ff; border-radius: 20px; padding: 15px; margin-top: 20px; }
-        .stu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .stu-card { background: white; border: 1px solid #dee2e6; padding: 12px; border-radius: 15px; cursor: pointer; text-align: center; }
-        .stu-card.assigned { border-left: 5px solid var(--s); }
+        .stu-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
+        .stu-card { background: white; border: 1px solid #dee2e6; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .stu-card:hover { background: #f0f3ff; border-color: var(--p); }
+        .stu-card b { color: #2d3748; flex: 1; }
+        .stu-info { text-align: right; flex: 2; font-size: 0.9rem; }
+        .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; margin-left: 5px; }
+
         .main-card { background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white; padding: 30px; border-radius: 25px; text-align: center; margin-bottom: 20px; }
         .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 0.9rem; }
         
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
-        .modal-body { background:white; padding:25px; border-radius:20px; width:85%; max-width:350px; }
+        .modal-body { background:white; padding:25px; border-radius:20px; width:85%; max-width:380px; max-height: 90vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -71,17 +75,17 @@
 
         <div id="dashboardView" class="view">
             <div id="welcomeTitle" style="font-weight:bold; margin-bottom:10px;"></div>
-            <div id="studentWarning" class="warning-box" style="display:none;">⚠️ 警告訊息：<span id="warnText"></span></div>
+            <div id="studentWarning" class="warning-box" style="display:none;">⚠️ 警告：<span id="warnText"></span></div>
             
             <div class="main-card">
-                <div style="font-size:0.9rem; opacity:0.8;">我的掃地位置</div>
+                <div style="font-size:0.9rem; opacity:0.8;">目前工作</div>
                 <div id="myJob" style="font-size:2rem; font-weight:900; margin:10px 0;">未分配</div>
-                <div id="myScore" style="font-size:0.9rem;">累計點數：0</div>
+                <div id="myScore" style="font-size:0.9rem;">我的點數：0</div>
             </div>
 
             <div id="adminSection" style="display:none;">
                 <div class="admin-dashboard">
-                    <h3 style="margin:0; color:var(--p);">🚀 勤務管理面板</h3>
+                    <h3 style="margin:0; color:var(--p); display:flex; justify-content:space-between;">🚀 勤務名單 <span>點數</span></h3>
                     <div id="stuGrid" class="stu-grid"></div>
                 </div>
             </div>
@@ -93,20 +97,26 @@
 <div id="modal">
     <div class="modal-body">
         <h3 id="targetName" style="margin-top:0;"></h3>
+        <label style="font-size:0.8rem;">掃地工作：</label>
         <select id="jobPicker"></select>
-        <input type="text" id="newJob" placeholder="手動輸入新工作">
+        <input type="text" id="newJob" placeholder="手動輸入工作">
         <hr>
-        <input type="text" id="warnInput" placeholder="輸入給該生的警告訊息">
+        <label style="font-size:0.8rem;">記點操作：</label>
         <div style="display:flex; gap:5px;">
-            <button onclick="changeScore(1)" style="background:var(--d)">記點+1</button>
-            <button onclick="changeScore(-1)" style="background:#718096">刪除記點-1</button>
+            <button onclick="changeScore(1)" style="background:var(--d)">+1 記點</button>
+            <button onclick="changeScore(-1)" style="background:#718096">-1 刪除</button>
         </div>
-        <button onclick="confirmAssign()">更新分配與發送訊息</button>
-        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:5px;">取消</button>
+        <input type="text" id="warnInput" placeholder="發送警告訊息...">
+        <button onclick="confirmAssign()">儲存更新</button>
+        
+        <button id="delBtn" onclick="deleteStudent()" style="background:#000; color:#fff; margin-top:10px; display:none;">❗ 刪除此學生帳號</button>
+        
+        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:5px;">關閉</button>
     </div>
 </div>
 
 <script>
+    // Firebase 初始化 (保持原本 Config)
     const firebaseConfig = {
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -165,9 +175,9 @@
         document.getElementById('authTabs').style.display = 'none';
         document.getElementById('loginView').style.display = 'none';
         document.getElementById('dashboardView').className = 'view active';
-        document.getElementById('welcomeTitle').innerText = `你好，${me.id} ${me.name} (${me.role})`;
+        document.getElementById('welcomeTitle').innerText = `${me.id} ${me.name} (${translateRole(me.role)})`;
         document.getElementById('myJob').innerText = me.duty_zone || "未分配";
-        document.getElementById('myScore').innerText = `累計點數：${me.score || 0}`;
+        document.getElementById('myScore').innerText = `我的點數：${me.score || 0}`;
         if(me.warning) { document.getElementById('studentWarning').style.display = 'block'; document.getElementById('warnText').innerText = me.warning; }
 
         if(['teacher','inner_manager','outer_manager','admin'].includes(me.role)) {
@@ -176,15 +186,25 @@
         }
     }
 
+    function translateRole(r) {
+        const m = { student:'學生', inner_manager:'內衛生', outer_manager:'外衛生', teacher:'導師', admin:'管理員' };
+        return m[r] || r;
+    }
+
     async function refreshList() {
         const grid = document.getElementById('stuGrid');
         const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
         grid.innerHTML = "";
         snap.forEach(doc => {
             const d = doc.data();
-            const showDetail = (me.role === 'admin') ? `<br>點數:${d.score || 0}` : '';
-            grid.innerHTML += `<div class="stu-card ${d.duty_zone!=='未分配'?'assigned':''}" onclick="openModal('${doc.id}', '${d.name}')">
-                <b>${doc.id} ${d.name}</b><span>${d.duty_zone || '待分配'}${showDetail}</span></div>`;
+            grid.innerHTML += `
+                <div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')">
+                    <b>${doc.id} ${d.name}</b>
+                    <div class="stu-info">
+                        <span style="color:#718096">${d.duty_zone || '待分配'}</span>
+                        <span class="score-badge">${d.score || 0}</span>
+                    </div>
+                </div>`;
         });
     }
 
@@ -196,7 +216,9 @@
     }
 
     window.openModal = function(id, name) {
-        selectedId = id; document.getElementById('targetName').innerText = `${id} ${name} 管理`;
+        selectedId = id; 
+        document.getElementById('targetName').innerText = `${id} ${name} 管理`;
+        document.getElementById('delBtn').style.display = (['teacher','admin'].includes(me.role)) ? 'block' : 'none';
         document.getElementById('modal').style.display = 'flex';
     }
 
@@ -204,7 +226,13 @@
 
     window.changeScore = async function(val) {
         await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(val) });
-        alert("點數已更新"); refreshList();
+        refreshList();
+    }
+
+    window.deleteStudent = async function() {
+        if(!confirm(`確定要徹底刪除 ${selectedId} 號學生帳號嗎？此動作不可復原。`)) return;
+        await db.collection("students").doc(selectedId).delete();
+        alert("已刪除該學生"); closeModal(); refreshList();
     }
 
     window.confirmAssign = async function() {
@@ -215,7 +243,7 @@
         if(warn) upData.warning = warn;
         if(j2) await db.collection("duty_options").doc(j2).set({ active: true });
         await db.collection("students").doc(selectedId).update(upData);
-        alert("更新成功"); closeModal(); refreshList();
+        alert("儲存成功"); closeModal(); refreshList();
     }
 
     window.onload = drawCaptcha;
