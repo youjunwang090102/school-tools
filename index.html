@@ -16,6 +16,7 @@
             --cal: #5856D6;  /* 行事曆 - 靛藍 */
             --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
             --help: #ff758c; /* 心聲箱 - 暖粉紅 */
+            --duty: #4cc9f0; /* 勤務 - 天藍 */
 
             --bg: #f0f2f5;
             --card: #ffffff;
@@ -102,6 +103,10 @@
         .board { border-left: 6px solid var(--m); }
         .board .icon-box { background: #fffde7; color: #f59e0b; }
 
+        /* 勤務管理樣式 */
+        .duty { border-left: 6px solid var(--duty); }
+        .duty .icon-box { background: #e0f7fa; color: var(--duty); }
+
         .seat { border-left: 6px solid var(--p); }
         .seat .icon-box { background: #eef2ff; color: var(--p); }
         
@@ -128,7 +133,7 @@
 
     <div class="header">
         <h1 id="adminTrigger">班級數位平台</h1>
-        <p>提供整合班級常用服務 ｜ 導師教學利器</p>
+        <p>整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
     </div>
 
     <div class="menu-list">
@@ -178,6 +183,14 @@
         </a>
 
         <div class="category-label">⚙️ 班務處理</div>
+        <a href="duty/index.html" class="menu-item duty">
+            <div class="icon-box">🧹</div>
+            <div class="info">
+                <h2>班級勤務管理系統</h2>
+                <p>內外衛生檢查與記點獎懲統計</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
         <a href="seating/index.html" class="menu-item seat">
             <div class="icon-box">🪑</div>
             <div class="info">
