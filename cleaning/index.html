@@ -3,51 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v3.1 (Secured)</title>
+    <title>班級勤務管理系統 v4.0 (Audit & Alert)</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --w: #f6ad55; --bg: #f4f7fe; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 550px; background: white; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
+        .container { width: 100%; max-width: 600px; background: white; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
         
-        /* Tab 動畫修正 */
-        .tabs { display: flex; background: #edf2f7; position: relative; }
-        .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; transition: all 0.3s ease; border-bottom: 3px solid transparent; }
+        .tabs { display: flex; background: #edf2f7; }
+        .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; border-bottom: 3px solid transparent; transition:0.3s; }
         .tab.active { background: white; color: var(--p); border-bottom: 3px solid var(--p); }
         
         .content { padding: 20px; }
-        .view { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .view { display: none; opacity: 0; transition: opacity 0.3s; }
         .view.active { display: block; opacity: 1; }
         
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { opacity: 0.9; }
         
-        /* 密碼顯示與驗證碼容器 */
         .pw-box { position: relative; width: 100%; }
         .pw-box input { padding-right: 45px; width: 100%; }
         .pw-toggle { position: absolute; right: 5px; top: 9px; width: 40px; height: 40px; background: none; border: none; color: #718096; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
 
-        /* 驗證碼樣式 */
         .captcha-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        .captcha-display { flex: 1; background: #2d3748; color: #fff; letter-spacing: 5px; font-family: monospace; font-size: 1.5rem; text-align: center; padding: 10px; border-radius: 12px; font-weight: bold; user-select: none; text-decoration: line-through; }
-        .captcha-btn { width: auto; padding: 10px 15px; background: #cbd5e0; color: #4a5568; font-size: 1.2rem; }
+        .captcha-display { flex: 1; background: #2d3748; color: #fff; letter-spacing: 5px; font-family: monospace; font-size: 1.5rem; text-align: center; padding: 10px; border-radius: 12px; font-weight: bold; text-decoration: line-through; }
+        .captcha-btn { width: auto; padding: 10px 15px; background: #cbd5e0; color: #4a5568; }
 
         .history-section { margin-top: 15px; border-top: 1px dashed #cbd5e0; padding-top: 10px; }
         .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 0.85rem; border-left: 4px solid var(--d); }
-        .del-btn { color: white; background: var(--d); border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; width: auto; margin: 0; }
-        .stu-card { background: white; border: 1px solid #eee; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        
+        /* 學生卡片樣式 */
+        .stu-card { background: white; border: 1px solid #eee; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition:0.2s; }
+        .stu-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; }
+        
+        /* 警告區塊 */
+        #alertSection { background: #fff5f5; border: 2px solid #fc8181; border-radius: 15px; padding: 15px; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(252, 129, 129, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(252, 129, 129, 0);} 100% {box-shadow: 0 0 0 0 rgba(252, 129, 129, 0);} }
+        .alert-item { color: #c53030; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+        /* 待審核區塊 */
+        #pendingSection { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 15px; padding: 15px; margin-bottom: 20px; display: none; }
+        .pending-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #bee3f8; }
         
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
         .modal-body { background:white; padding:25px; border-radius:20px; width:90%; max-width:400px; max-height: 85vh; overflow-y: auto; }
         
-        /* 管理員特殊按鈕區域 */
-        #superAdminControls { display: none; margin-top: 15px; padding-top: 15px; border-top: 2px solid #edf2f7; }
-        #roleAssignSection { display: none; background: #fffbe6; padding: 10px; border-radius: 10px; border: 1px solid #ffe58f; margin-bottom: 10px; }
+        #superAdminControls, #roleAssignSection, #serviceSection { display: none; margin-top: 10px; padding: 10px; border-radius: 10px; }
+        #roleAssignSection { background: #fffbe6; border: 1px solid #ffe58f; }
+        #serviceSection { background: #f0fff4; border: 1px solid #9ae6b4; text-align: center; }
+        
         .danger-btn { background: var(--d); margin-bottom: 5px; }
         .warn-btn { background: var(--w); color: white; margin-bottom: 5px; }
+        .success-btn { background: #48bb78; color: white; margin-bottom: 5px; }
         .role-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #4a5568; margin-left: 5px; }
     </style>
 </head>
@@ -61,7 +71,7 @@
     
     <div class="content">
         <div id="loginView" class="view active">
-            <input type="number" id="loginId" placeholder="座號 (例如: 01)">
+            <input type="number" id="loginId" placeholder="座號 (例如: 1, 99, 100)">
             <div class="pw-box">
                 <input type="password" id="loginPw" placeholder="密碼">
                 <button type="button" class="pw-toggle" onclick="togglePw('loginPw')">👁️</button>
@@ -72,48 +82,53 @@
         <div id="resetView" class="view" style="text-align: center;">
             <h2 style="color:var(--d)">⚠️ 需重設密碼</h2>
             <p style="color:#718096; font-size:0.9rem;">系統偵測到您使用預設密碼，請設定新密碼。</p>
-            <div class="pw-box">
-                <input type="password" id="resetPw" placeholder="新密碼">
-                <button type="button" class="pw-toggle" onclick="togglePw('resetPw')">👁️</button>
-            </div>
-            <div class="pw-box">
-                <input type="password" id="resetPw2" placeholder="再次確認密碼">
-                <button type="button" class="pw-toggle" onclick="togglePw('resetPw2')">👁️</button>
-            </div>
+            <div class="pw-box"><input type="password" id="resetPw" placeholder="新密碼"><button type="button" class="pw-toggle" onclick="togglePw('resetPw')">👁️</button></div>
+            <div class="pw-box"><input type="password" id="resetPw2" placeholder="再次確認密碼"><button type="button" class="pw-toggle" onclick="togglePw('resetPw2')">👁️</button></div>
             <button onclick="doForcePasswordChange()">確認修改並登入</button>
         </div>
 
         <div id="regView" class="view">
             <input type="number" id="regId" placeholder="座號 (請填寫真實座號)">
             <input type="text" id="regName" placeholder="姓名 (請填寫真實姓名)">
-            
-            <div class="pw-box">
-                <input type="password" id="regPw" placeholder="設定密碼">
-                <button type="button" class="pw-toggle" onclick="togglePw('regPw')">👁️</button>
-            </div>
-            <div class="pw-box">
-                <input type="password" id="regPw2" placeholder="確認密碼">
-                <button type="button" class="pw-toggle" onclick="togglePw('regPw2')">👁️</button>
-            </div>
-
+            <div class="pw-box"><input type="password" id="regPw" placeholder="設定密碼"><button type="button" class="pw-toggle" onclick="togglePw('regPw')">👁️</button></div>
+            <div class="pw-box"><input type="password" id="regPw2" placeholder="確認密碼"><button type="button" class="pw-toggle" onclick="togglePw('regPw2')">👁️</button></div>
             <div class="captcha-row">
                 <div id="captchaDisplay" class="captcha-display">ABCD</div>
                 <button type="button" class="captcha-btn" onclick="refreshCaptcha()">🔄</button>
             </div>
             <input type="text" id="captchaInput" placeholder="請輸入上方 4 碼驗證碼">
-
-            <button onclick="doRegister()" style="background:var(--s)">建立學生帳號</button>
+            <button onclick="doRegister()" style="background:var(--s)">送出加入申請</button>
         </div>
 
         <div id="dashboardView" class="view">
+            <div id="alertSection">
+                <h3 style="margin:0 0 10px 0; color:#c53030;">🚨 需愛班服務名單</h3>
+                <div id="alertList"></div>
+            </div>
+
+            <div id="pendingSection">
+                <h3 style="margin:0 0 10px 0; color:#2b6cb0;">⏳ 加入申請列表</h3>
+                <div id="pendingList"></div>
+            </div>
+
             <div id="stuWarning" style="background:#fff5f5; border:1px solid #feb2b2; color:#c53030; padding:15px; border-radius:15px; margin-bottom:15px; text-align:center; display:none;">⚠️ 警告：<span id="warnText"></span></div>
+            
             <div style="background: linear-gradient(135deg, #4361ee, #4cc9f0); color:white; padding:25px; border-radius:20px; text-align:center;">
                 <h2 id="welcomeTitle"></h2>
                 <div id="myJob" style="font-size:1.8rem; font-weight:900; margin:10px 0;"></div>
                 <div id="myScore" style="font-size:1.1rem;">目前點數：0</div>
             </div>
+            
             <div class="history-section"><h3>📅 記點歷程</h3><div id="myLogs"></div></div>
-            <div id="adminSection" style="display:none;"><h3>🚀 管理面板</h3><div id="stuGrid"></div></div>
+            
+            <div id="adminSection" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                    <h3>🚀 管理面板</h3>
+                    <button id="settingBtn" onclick="editThreshold()" style="width:auto; font-size:0.8rem; padding:5px 10px; background:#718096;">⚙️ 設定</button>
+                </div>
+                <div id="stuGrid"></div>
+            </div>
+            
             <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出系統</button>
         </div>
     </div>
@@ -123,36 +138,42 @@
     <div class="modal-body">
         <h3 id="targetName" style="margin:0;"></h3>
         <div id="modalScore" style="text-align:center; font-size:3rem; color:var(--d); font-weight:900; margin:10px 0;">0</div>
+        
+        <div id="serviceSection">
+            <p style="margin:5px 0; font-weight:bold; color:#2f855a;">🎉 點數已達標！</p>
+            <button onclick="doService()" class="success-btn">🧹 批准愛班服務 (銷點)</button>
+        </div>
+
         <button onclick="addPoint()" style="background:var(--d); font-size:1.2rem; padding:15px;">➕ 記點 (+1)</button>
         <hr>
         
         <div id="roleAssignSection">
-            <label style="font-size:0.8rem; color:#888; font-weight:bold;">👑 身份權限設定</label>
+            <label style="font-size:0.8rem; color:#888; font-weight:bold;">👑 身份權限</label>
             <select id="rolePicker">
                 <option value="student">一般學生</option>
                 <option value="inner_manager">內衛生 (管理)</option>
                 <option value="outer_manager">外衛生 (管理)</option>
-                </select>
+            </select>
         </div>
 
         <select id="jobPicker"></select>
-        <input type="text" id="newJob" placeholder="手動輸入新工作 (會自動儲存)">
+        <input type="text" id="newJob" placeholder="手動輸入新工作 (自動儲存)">
         <input type="text" id="warnInput" placeholder="給學生的話">
-        <button onclick="confirmAssign()" style="background:var(--p)">儲存更新並關閉</button>
+        <button onclick="confirmAssign()" style="background:var(--p)">儲存更新</button>
         
         <div class="history-section"><h4>🔍 詳細歷程</h4><div id="modalLogs"></div></div>
         
         <div id="superAdminControls">
             <button onclick="resetToDefaultPw()" class="warn-btn">↺ 還原預設密碼</button>
-            <button onclick="deleteStudent()" class="danger-btn">🗑️ 刪除學生帳號</button>
+            <button onclick="deleteStudent()" class="danger-btn">🗑️ 刪除帳號</button>
         </div>
 
-        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">取消返回</button>
+        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">關閉</button>
     </div>
 </div>
 
 <script>
-    // 1. Firebase 初始化
+    // 1. Firebase Config
     const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -165,52 +186,74 @@
     const db = firebase.firestore();
 
     let me = null, selectedId = null, unsubS = null, unsubL = null;
-    let tempResetId = null;
-    let currentCaptcha = "";
+    let tempResetId = null, currentCaptcha = "";
+    let alertThreshold = 3; // 預設 3 點，會從 DB 讀取
 
-    // 2. 介面與工具
+    // 2. 基礎 UI 函式
     function setTab(m) {
-        // 更新標籤樣式
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        if(m === 'login') document.getElementById('t-login').classList.add('active');
-        if(m === 'register') {
-            document.getElementById('t-reg').classList.add('active');
-            refreshCaptcha(); // 切換到註冊頁時刷新驗證碼
-        }
-
-        // 更新視圖
+        if(m==='login') document.getElementById('t-login').classList.add('active');
+        if(m==='register') { document.getElementById('t-reg').classList.add('active'); refreshCaptcha(); }
         document.getElementById('loginView').className = 'view '+(m==='login'?'active':'');
         document.getElementById('regView').className = 'view '+(m==='register'?'active':'');
         document.getElementById('resetView').classList.remove('active');
     }
     
-    function togglePw(fid) {
-        const x = document.getElementById(fid);
-        x.type = (x.type === "password") ? "text" : "password";
-    }
+    function togglePw(fid) { const x=document.getElementById(fid); x.type=(x.type==="password")?"text":"password"; }
 
-    // 新增：產生驗證碼
     function refreshCaptcha() {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 排除易混淆字元 I, 1, O, 0
-        let result = "";
-        for(let i=0; i<4; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        currentCaptcha = result;
-        document.getElementById('captchaDisplay').innerText = result;
-        document.getElementById('captchaInput').value = ""; // 清空輸入框
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let res = ""; for(let i=0;i<4;i++) res+=chars.charAt(Math.floor(Math.random()*chars.length));
+        currentCaptcha = res;
+        document.getElementById('captchaDisplay').innerText = res;
+        document.getElementById('captchaInput').value = "";
     }
 
-    // 3. 登入邏輯
+    // 3. 系統設定 (閾值) 讀取
+    async function loadConfig() {
+        try {
+            const doc = await db.collection("settings").doc("config").get();
+            if(doc.exists && doc.data().threshold) {
+                alertThreshold = doc.data().threshold;
+            }
+        } catch(e) { console.log("Config load error", e); }
+    }
+
+    // 4. 登入
     async function doLogin() {
-        const id = document.getElementById('loginId').value.padStart(2,'0');
+        // 去除座號前導0，統一轉為數字再比對，或直接比對字串 (此處維持字串ID，但允許使用者輸入不補0)
+        // 為了相容，假設 DB 存的是 "01", "100"。使用者輸入 "1" -> "01", "100" -> "100"
+        let rawId = document.getElementById('loginId').value;
+        if(!rawId) return;
+        
+        // 簡單格式化：如果長度是1且是數字，補0 (支援舊資料)，如果是2位或3位則保留
+        // 但為了 100 號，建議 ID 統一處理。這裡假設註冊時會自動處理 ID 格式
+        // 修正：註冊時我們不做 padStart(2) 了，直接用 parseInt 後的字串當 ID，或者統一不補0？
+        // 為了相容舊版代碼 "01"，我們嘗試兩種可能
+        
+        // 策略：嘗試直接 ID，失敗則補 0
+        let id = rawId; 
+        if(rawId.length === 1) id = "0" + rawId;
+
         const pw = document.getElementById('loginPw').value;
         
         try {
-            const doc = await db.collection("students").doc(id).get();
+            let doc = await db.collection("students").doc(id).get();
+            // 如果補0後沒找到，試試原始輸入 (針對 100 號)
+            if(!doc.exists && rawId.length > 2) {
+                doc = await db.collection("students").doc(rawId).get();
+                if(doc.exists) id = rawId;
+            }
+
             if(doc.exists && doc.data().password === pw) {
                 const data = doc.data();
                 
+                // 檢查是否已審核
+                if(data.status === 'pending') {
+                    alert("⏳ 您的帳號正在審核中，請等待導師批准。");
+                    return;
+                }
+
                 if (data.forceReset === true) {
                     tempResetId = id;
                     document.getElementById('authTabs').style.display = 'none';
@@ -223,118 +266,171 @@
                 document.getElementById('authTabs').style.display = 'none';
                 document.getElementById('loginView').classList.remove('active');
                 document.getElementById('dashboardView').classList.add('active');
+                await loadConfig();
                 startApp();
             } else {
                 alert("登入失敗：座號或密碼錯誤");
             }
-        } catch(e) {
-            alert("系統錯誤：" + e.message);
-        }
+        } catch(e) { alert("系統錯誤：" + e.message); }
     }
 
     async function doForcePasswordChange() {
-        const p1 = document.getElementById('resetPw').value;
-        const p2 = document.getElementById('resetPw2').value;
-        if (!p1) return alert("請輸入密碼");
-        if (p1 !== p2) return alert("兩次密碼不一致！");
-
+        const p1=document.getElementById('resetPw').value, p2=document.getElementById('resetPw2').value;
+        if(!p1 || p1!==p2) return alert("密碼錯誤");
         await db.collection("students").doc(tempResetId).update({ password: p1, forceReset: false });
-        alert("密碼已更新，請重新登入！");
-        location.reload();
+        alert("密碼更新成功"); location.reload();
     }
 
-    // 4. 註冊邏輯 (修改：強制 role 為 student，加入驗證碼檢查)
+    // 5. 註冊 (狀態預設 pending)
     async function doRegister() {
-        const id = document.getElementById('regId').value.padStart(2,'0');
-        const p1 = document.getElementById('regPw').value;
-        const p2 = document.getElementById('regPw2').value;
-        const name = document.getElementById('regName').value;
-        const userCaptcha = document.getElementById('captchaInput').value.toUpperCase();
+        let rawId = document.getElementById('regId').value;
+        // 處理 ID：1 -> 01, 99 -> 99, 100 -> 100
+        let id = rawId;
+        if(rawId.length === 1) id = "0" + rawId;
+        
+        const p1=document.getElementById('regPw').value, p2=document.getElementById('regPw2').value;
+        const name=document.getElementById('regName').value;
+        const uC=document.getElementById('captchaInput').value.toUpperCase();
 
-        if(!id || !name || !p1) return alert("請填寫完整資訊");
-        if(p1 !== p2) return alert("兩次密碼不一致！");
-        if(userCaptcha !== currentCaptcha) {
-            alert("驗證碼錯誤，請重新輸入");
-            refreshCaptcha();
-            return;
-        }
+        if(!id || !name || !p1) return alert("資訊不完整");
+        if(p1!==p2) return alert("密碼不一致");
+        if(uC!==currentCaptcha) { refreshCaptcha(); return alert("驗證碼錯誤"); }
 
-        // 檢查是否已存在
         const check = await db.collection("students").doc(id).get();
-        if(check.exists) {
-            alert("此座號已註冊過！");
-            return;
-        }
+        if(check.exists) return alert("此座號已註冊");
 
         await db.collection("students").doc(id).set({ 
-            name: name, 
-            password: p1, 
-            role: "student", // 強制指定為學生
-            duty_zone: "未分配", 
-            score: 0, 
-            warning: "",
-            forceReset: false 
+            name: name, password: p1, role: "student", 
+            duty_zone: "未分配", score: 0, warning: "",
+            forceReset: false,
+            status: "pending" // 新增狀態
         });
-        alert("註冊成功，請登入");
+        alert("申請已送出！請通知導師或管理員審核您的帳號。");
         setTab('login');
     }
 
-    // 5. 主程式
+    // 6. 主程式
     function startApp() {
+        // 監聽自己
         db.collection("students").doc(me.id).onSnapshot(doc => {
             if(!doc.exists) { location.reload(); return; }
             const d = doc.data();
+            if(d.status === 'pending') { alert("帳號被重設為審核中"); location.reload(); }
             
-            // 顯示身份徽章
-            let roleText = "";
-            if(d.role === "admin") roleText = " (管理員)";
-            else if(d.role === "teacher") roleText = " (導師)";
-            else if(d.role === "inner_manager") roleText = " (內衛生)";
-            else if(d.role === "outer_manager") roleText = " (外衛生)";
+            let rT = "";
+            if(d.role==="admin") rT=" (管理員)";
+            else if(d.role==="teacher") rT=" (導師)";
+            else if(d.role==="inner_manager") rT=" (內衛生)";
+            else if(d.role==="outer_manager") rT=" (外衛生)";
 
-            document.getElementById('welcomeTitle').innerText = `${doc.id} ${d.name}${roleText}`;
-            document.getElementById('myJob').innerText = d.duty_zone || "未分配";
+            document.getElementById('welcomeTitle').innerText = `${doc.id} ${d.name}${rT}`;
+            document.getElementById('myJob').innerText = d.duty_zone;
             document.getElementById('myScore').innerText = d.score || 0;
             document.getElementById('stuWarning').style.display = d.warning ? 'block' : 'none';
             document.getElementById('warnText').innerText = d.warning || "";
         });
 
+        // 監聽歷程
         db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push(l.data()));
             list.sort((a,b) => b.time - a.time).forEach(l => {
-                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><b>+1</b></div>`;
+                // 如果是愛班服務，顯示不同樣式
+                if(l.type === 'service') {
+                    box.innerHTML += `<div class="log-item" style="border-left-color:#48bb78; background:#f0fff4;"><span>${new Date(l.time).toLocaleString()}</span><b>完成愛班 (-${l.points})</b></div>`;
+                } else {
+                    box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><b>+1</b></div>`;
+                }
             });
         });
 
-        // 權限檢查：只要不是普通學生，就有管理介面
-        if(me.role !== 'student') {
+        // 管理員/導師/衛生 邏輯
+        const isManager = ['admin', 'teacher', 'inner_manager', 'outer_manager'].includes(me.role);
+        const canApprove = ['admin', 'teacher'].includes(me.role);
+
+        if(isManager) {
             document.getElementById('adminSection').style.display = 'block';
-            db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
-                const grid = document.getElementById('stuGrid'); grid.innerHTML = "";
+            
+            // 監聽所有學生 (含 active 與 pending)
+            db.collection("students").onSnapshot(snap => {
+                const activeList = [];
+                const pendingList = [];
+                const alertList = []; // 超過閾值名單
+                
                 snap.forEach(doc => {
                     const d = doc.data();
-                    let badge = "";
-                    if(d.role === 'inner_manager') badge = '<span class="role-badge">內衛</span>';
-                    if(d.role === 'outer_manager') badge = '<span class="role-badge">外衛</span>';
+                    const stu = { id: doc.id, ...d };
                     
-                    grid.innerHTML += `<div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')"><b>${doc.id} ${d.name} ${badge}</b><div>${d.duty_zone} <span class="score-badge">${d.score || 0}</span></div></div>`;
+                    if(d.status === 'pending') pendingList.push(stu);
+                    else {
+                        activeList.push(stu);
+                        if(d.score >= alertThreshold) alertList.push(stu);
+                    }
                 });
+
+                // 排序邏輯修正：轉數字排序 (解決 100 在 99 前面的問題)
+                activeList.sort((a,b) => parseInt(a.id) - parseInt(b.id));
+
+                // 渲染主列表
+                const grid = document.getElementById('stuGrid'); grid.innerHTML = "";
+                activeList.forEach(s => {
+                    let badge = "";
+                    if(s.role === 'inner_manager') badge = '<span class="role-badge">內衛</span>';
+                    if(s.role === 'outer_manager') badge = '<span class="role-badge">外衛</span>';
+                    
+                    // 如果超過閾值，卡片邊框變紅
+                    const warnStyle = s.score >= alertThreshold ? "border:2px solid var(--d);" : "";
+                    
+                    grid.innerHTML += `<div class="stu-card" style="${warnStyle}" onclick="openModal('${s.id}', '${s.name}')">
+                        <b>${s.id} ${s.name} ${badge}</b>
+                        <div>${s.duty_zone} <span class="score-badge">${s.score||0}</span></div>
+                    </div>`;
+                });
+
+                // 渲染警告區 (所有人只要有權限都看得到)
+                const abox = document.getElementById('alertSection');
+                const alist = document.getElementById('alertList');
+                if(alertList.length > 0) {
+                    abox.style.display = 'block';
+                    alist.innerHTML = "";
+                    alertList.forEach(s => {
+                        alist.innerHTML += `<div class="alert-item">⚠️ ${s.id} ${s.name} (記點 ${s.score} 次)</div>`;
+                    });
+                } else {
+                    abox.style.display = 'none';
+                }
+
+                // 渲染待審核區 (僅導師/管理員)
+                const pbox = document.getElementById('pendingSection');
+                if(canApprove && pendingList.length > 0) {
+                    pbox.style.display = 'block';
+                    const plist = document.getElementById('pendingList');
+                    plist.innerHTML = "";
+                    pendingList.forEach(s => {
+                        plist.innerHTML += `
+                        <div class="pending-item">
+                            <span>${s.id} ${s.name}</span>
+                            <button onclick="approveStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem;">✅ 批准</button>
+                        </div>`;
+                    });
+                } else {
+                    pbox.style.display = 'none';
+                }
             });
             refreshJobs();
         }
+        
+        // 隱藏設定按鈕 (若非導師/管理員)
+        if(!canApprove) document.getElementById('settingBtn').style.display = 'none';
     }
 
-    // 6. Modal 操作
+    // 7. Modal 操作
     window.openModal = async function(id, name) {
-        selectedId = id; 
+        selectedId = id;
         document.getElementById('targetName').innerText = `${id} ${name}`;
         
-        // 判斷按鈕顯示權限 (導師/管理員)
         const isSuper = (me.role === 'teacher' || me.role === 'admin');
         document.getElementById('superAdminControls').style.display = isSuper ? 'block' : 'none';
-        
-        // 判斷是否顯示身份設定區塊
         document.getElementById('roleAssignSection').style.display = isSuper ? 'block' : 'none';
 
         const docSnap = await db.collection("students").doc(id).get();
@@ -345,32 +441,78 @@
         document.getElementById('newJob').value = "";
         document.getElementById('warnInput').value = d.warning || "";
         
-        // 設定目前的 Role 到下拉選單
-        if(d.role === 'student' || d.role === 'inner_manager' || d.role === 'outer_manager') {
-             document.getElementById('rolePicker').value = d.role;
-        } else {
-             // 若是 admin/teacher，選單保持預設或顯示 student，避免誤改自己人
-             document.getElementById('rolePicker').value = 'student'; 
-        }
+        // 角色選單
+        if(['student','inner_manager','outer_manager'].includes(d.role)) document.getElementById('rolePicker').value = d.role;
+        else document.getElementById('rolePicker').value = 'student';
 
+        // 分數監聽
         if(unsubS) unsubS();
         unsubS = db.collection("students").doc(id).onSnapshot(doc => {
-            if(doc.exists) document.getElementById('modalScore').innerText = doc.data().score || 0;
+            if(doc.exists) {
+                const sc = doc.data().score || 0;
+                document.getElementById('modalScore').innerText = sc;
+                // 愛班服務按鈕判斷
+                const svcDiv = document.getElementById('serviceSection');
+                if(isSuper && sc >= alertThreshold) svcDiv.style.display = 'block';
+                else svcDiv.style.display = 'none';
+            }
         });
 
+        // 歷程
         if(unsubL) unsubL();
         unsubL = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
             const box = document.getElementById('modalLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push({lid: l.id, ...l.data()}));
             list.sort((a,b) => b.time - a.time).forEach(l => {
-                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><button class="del-btn" onclick="deleteLog('${l.lid}')">🗑️ 刪除</button></div>`;
+                if(l.type === 'service') {
+                    box.innerHTML += `<div class="log-item" style="background:#f0fff4; border-left-color:#48bb78;"><span>${new Date(l.time).toLocaleString()}</span><span>愛班服務</span></div>`;
+                } else {
+                    box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><button class="del-btn" onclick="deleteLog('${l.lid}')">🗑️ 刪除</button></div>`;
+                }
             });
         });
         document.getElementById('modal').style.display = 'flex';
     }
 
+    // 批准學生
+    window.approveStudent = async function(sid) {
+        if(!confirm(`允許 ${sid} 號入班？`)) return;
+        await db.collection("students").doc(sid).update({ status: 'active' });
+    }
+
+    // 設定閾值
+    window.editThreshold = async function() {
+        const n = prompt("請設定「記點達 N 次」顯示警告：", alertThreshold);
+        if(n && !isNaN(n)) {
+            await db.collection("settings").doc("config").set({ threshold: parseInt(n) }, {merge:true});
+            alertThreshold = parseInt(n);
+            alert("設定已更新");
+        }
+    }
+
+    // 愛班服務 (銷點)
+    window.doService = async function() {
+        if(!confirm(`確認 ${selectedId} 已完成愛班服務？\n這將會扣除 ${alertThreshold} 點，並新增一筆服務紀錄。`)) return;
+        
+        try {
+            // 1. 扣點
+            await db.collection("students").doc(selectedId).update({
+                score: firebase.firestore.FieldValue.increment(-alertThreshold)
+            });
+            // 2. 新增服務紀錄 (保留舊紀錄，只加新的一條說明)
+            await db.collection("point_logs").add({
+                studentId: selectedId,
+                time: Date.now(),
+                type: 'service',
+                points: alertThreshold
+            });
+            alert("已完成銷點！");
+        } catch(e) { alert("操作失敗"); }
+    }
+
+    // 以下維持原樣
     window.resetToDefaultPw = async function() {
-        if(!confirm(`確定要還原 ${selectedId} 號的密碼嗎？`)) return;
+        if(!confirm(`還原密碼？`)) return;
         const defPw = selectedId.repeat(3); 
         await db.collection("students").doc(selectedId).update({ password: defPw, forceReset: true });
         alert(`密碼已還原為：${defPw}`);
@@ -378,22 +520,19 @@
     }
 
     window.deleteStudent = async function() {
-        const confirmName = prompt(`⚠️ 危險操作！\n請輸入學生的「座號」以確認刪除：`);
-        if(confirmName !== selectedId) return alert("輸入錯誤，取消刪除。");
+        const confirmName = prompt(`輸入座號確認刪除：`);
+        if(confirmName !== selectedId) return;
         await db.collection("students").doc(selectedId).delete();
-        alert("資料已刪除");
         closeModal();
     }
 
     window.addPoint = async function() {
-        try {
-            await db.collection("point_logs").add({ studentId: selectedId, time: Date.now() });
-            await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
-        } catch (e) { alert("記點失敗！請檢查權限。"); }
+        await db.collection("point_logs").add({ studentId: selectedId, time: Date.now(), type: 'normal' });
+        await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
     }
 
     window.deleteLog = async function(lid) {
-        if(!confirm("確定移除這筆紀錄並扣除 1 點？")) return;
+        if(!confirm("刪除此紀錄？")) return;
         await db.collection("point_logs").doc(lid).delete();
         await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(-1) });
     }
@@ -404,33 +543,22 @@
         const w = document.getElementById('warnInput').value;
         const finalJob = manualJob || selectedJob || "未分配";
         
-        // 取得身份設定 (僅導師/管理員有效)
         let newRole = null;
-        if(me.role === 'teacher' || me.role === 'admin') {
-            newRole = document.getElementById('rolePicker').value;
+        if(me.role === 'teacher' || me.role === 'admin') newRole = document.getElementById('rolePicker').value;
+
+        const updateData = { duty_zone: finalJob, warning: w };
+        if(newRole) {
+            const check = await db.collection("students").doc(selectedId).get();
+            const cRole = check.data().role;
+            if(cRole !== 'admin' && cRole !== 'teacher') updateData.role = newRole;
         }
 
-        try {
-            const updateData = { duty_zone: finalJob, warning: w };
-            
-            // 如果有變更身份，且目標不是導師/管理員(避免誤降級)，則更新身份
-            if(newRole) {
-                // 安全檢查：從 DB 再確認一次目標不是 admin
-                const check = await db.collection("students").doc(selectedId).get();
-                const currentRole = check.data().role;
-                if(currentRole !== 'admin' && currentRole !== 'teacher') {
-                    updateData.role = newRole;
-                }
-            }
-
-            await db.collection("students").doc(selectedId).update(updateData);
-
-            if(manualJob) {
-                await db.collection("duty_options").doc(manualJob).set({ active: true });
-                await refreshJobs();
-            }
-            closeModal();
-        } catch (e) { alert("儲存失敗：" + e.message); }
+        await db.collection("students").doc(selectedId).update(updateData);
+        if(manualJob) {
+            await db.collection("duty_options").doc(manualJob).set({ active: true });
+            await refreshJobs();
+        }
+        closeModal();
     }
 
     window.closeModal = function() { document.getElementById('modal').style.display = 'none'; if(unsubS) unsubS(); if(unsubL) unsubL(); }
@@ -444,14 +572,11 @@
             s.forEach(doc => options.push(doc.id));
             options.sort();
             p.innerHTML = '<option value="">-- 選擇已存工作 --</option>';
-            options.forEach(opt => {
-                p.innerHTML += `<option value="${opt}">${opt}</option>`;
-            });
+            options.forEach(opt => p.innerHTML += `<option value="${opt}">${opt}</option>`);
             if(oldVal) p.value = oldVal;
         } catch(e) {}
     }
     
-    // 初始化時產生一次驗證碼
     refreshCaptcha();
 </script>
 </body>
