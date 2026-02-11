@@ -21,11 +21,11 @@
         
         .history-section { margin-top: 20px; border-top: 1px dashed #cbd5e0; padding-top: 15px; }
         .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 0.8rem; border-left: 4px solid var(--d); }
-        .del-log { color: var(--d); cursor: pointer; font-weight: bold; padding: 5px; border: 1px solid var(--d); border-radius: 5px; font-size: 0.7rem; }
+        .del-log { color: var(--d); cursor: pointer; font-weight: bold; padding: 4px 8px; border: 1px solid var(--d); border-radius: 5px; font-size: 0.7rem; }
 
         .stu-card { background: white; border: 1px solid #dee2e6; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; }
-        .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 15px; margin-bottom: 15px; font-weight: bold; animation: pulse 2s infinite; }
+        .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 15px; margin-bottom: 15px; font-weight: bold; animation: pulse 2s infinite; text-align: center; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
         
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
@@ -59,7 +59,7 @@
                 <div id="myJob" style="font-size:1.8rem; font-weight:900; margin:10px 0;"></div>
                 <div id="myScore" style="font-size:1.1rem;">目前點數：0</div>
             </div>
-            <div id="historyView" class="history-section"><h3>📅 我的記點歷程</h3><div id="myLogs"></div></div>
+            <div id="historyView" class="history-section"><h3>📅 記點歷程</h3><div id="myLogs"></div></div>
             <div id="adminSection" style="display:none;"><div class="admin-dashboard"><h3>🚀 管理面板</h3><div id="stuGrid"></div></div></div>
             <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出系統</button>
         </div>
@@ -72,19 +72,23 @@
         <div style="text-align:center; font-size:2.5rem; color:var(--d); font-weight:900;" id="modalScore">0</div>
         <button onclick="addPoint()" style="background:var(--d)">➕ 記點 (+1)</button>
         <hr>
+        <label style="font-size:0.8rem; color:#666;">分配工作：</label>
         <select id="jobPicker"></select>
-        <input type="text" id="newJob" placeholder="手動輸入工作">
-        <input type="text" id="warnInput" placeholder="給學生的警告訊息">
-        <button onclick="confirmAssign()" style="background:var(--p)">儲存工作與警告</button>
+        <input type="text" id="newJob" placeholder="或手動輸入新工作">
+        <label style="font-size:0.8rem; color:#666;">警告訊息：</label>
+        <input type="text" id="warnInput" placeholder="輸入警告內容">
+        <button onclick="confirmAssign()" style="background:var(--p)">儲存更新並關閉</button>
+        
         <div class="history-section">
-            <h4 style="margin:0 0 10px 0;">🔍 紀錄與刪除</h4>
+            <h4 style="margin:0 0 10px 0;">🔍 點數紀錄 (按日期)</h4>
             <div id="modalLogs"></div>
         </div>
+        
         <div id="advancedAdmin" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-            <button onclick="triggerReset()" style="background:#f39c12">重置密碼 (座號x3)</button>
-            <button onclick="deleteStudent()" style="background:#000; margin-top:5px;">刪除帳號</button>
+            <button onclick="triggerReset()" style="background:#f39c12">重設密碼 (座號x3)</button>
+            <button onclick="deleteStudent()" style="background:#000; margin-top:5px;">刪除此帳號</button>
         </div>
-        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">關閉離開</button>
+        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">取消返回</button>
     </div>
 </div>
 
@@ -113,9 +117,9 @@
 
     async function doRegister() {
         const id = document.getElementById('regId').value.padStart(2,'0');
-        if(document.getElementById('regRole').value!=='student' && document.getElementById('mKey').value!=='Admin888') return alert("授權碼錯");
+        if(document.getElementById('regRole').value!=='student' && document.getElementById('mKey').value!=='Admin888') return alert("金鑰錯誤");
         await db.collection("students").doc(id).set({ name: document.getElementById('regName').value, password: document.getElementById('regPw').value, role: document.getElementById('regRole').value, duty_zone: "未分配", score: 0, warning: "" });
-        alert("完成"); setTab('login');
+        alert("註冊成功"); setTab('login');
     }
 
     async function doLogin() {
@@ -141,9 +145,12 @@
             document.getElementById('warnText').innerText = d.warning || "";
         });
 
-        db.collection("point_logs").where("studentId", "==", me.id).orderBy("time", "desc").onSnapshot(snap => {
+        // 學生端的歷史紀錄 (前端排序避免 Index 錯誤)
+        db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
-            snap.forEach(l => box.innerHTML += `<div class="log-item"><span>${new Date(l.data().time).toLocaleString()}</span><span>記點 +1</span></div>`);
+            let logs = []; snap.forEach(l => logs.push(l.data()));
+            logs.sort((a,b) => b.time - a.time);
+            logs.forEach(l => box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><span>記點 +1</span></div>`);
         });
 
         if(['teacher','inner_manager','outer_manager','admin'].includes(me.role)) {
@@ -159,21 +166,30 @@
         }
     }
 
-    window.openModal = function(id, name) {
-        selectedId = id; document.getElementById('targetName').innerText = `${id} ${name}`;
+    window.openModal = async function(id, name) {
+        selectedId = id; 
+        document.getElementById('targetName').innerText = `${id} ${name}`;
         document.getElementById('advancedAdmin').style.display = (['teacher','admin'].includes(me.role)) ? 'block' : 'none';
         
+        // 抓取該生目前的即時資料並預填
+        const docSnap = await db.collection("students").doc(id).get();
+        const currentData = docSnap.data();
+        document.getElementById('jobPicker').value = currentData.duty_zone || "";
+        document.getElementById('warnInput').value = currentData.warning || "";
+        document.getElementById('newJob').value = ""; // 清空手動輸入框
+
         if(unsubStudent) unsubStudent();
         unsubStudent = db.collection("students").doc(id).onSnapshot(doc => {
             document.getElementById('modalScore').innerText = doc.data().score || 0;
-            document.getElementById('warnInput').value = doc.data().warning || "";
         });
 
         if(unsubLogs) unsubLogs();
-        unsubLogs = db.collection("point_logs").where("studentId", "==", id).orderBy("time", "desc").onSnapshot(snap => {
+        unsubLogs = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
             const box = document.getElementById('modalLogs'); box.innerHTML = "";
-            snap.forEach(l => {
-                box.innerHTML += `<div class="log-item" style="font-size:0.75rem;"><span>${new Date(l.data().time).toLocaleDateString()} ${new Date(l.data().time).toLocaleTimeString()}</span><span class="del-log" onclick="deleteLog('${l.id}')">🗑️ 刪除</span></div>`;
+            let logs = []; snap.forEach(l => logs.push({id: l.id, ...l.data()}));
+            logs.sort((a,b) => b.time - a.time);
+            logs.forEach(l => {
+                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleDateString()} ${new Date(l.time).toLocaleTimeString()}</span><span class="del-log" onclick="deleteLog('${l.id}')">🗑️ 刪除</span></div>`;
             });
         });
         document.getElementById('modal').style.display = 'flex';
@@ -181,7 +197,9 @@
 
     window.addPoint = async function() {
         const ts = Date.now();
+        // 1. 先增加歷史紀錄
         await db.collection("point_logs").add({ studentId: selectedId, time: ts });
+        // 2. 更新學生點數
         await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
     }
 
@@ -192,12 +210,18 @@
     }
 
     window.confirmAssign = async function() {
-        const j = document.getElementById('newJob').value || document.getElementById('jobPicker').value;
-        const w = document.getElementById('warnInput').value;
-        await db.collection("students").doc(selectedId).update({ duty_zone: j || "未分配", warning: w });
-        if(document.getElementById('newJob').value) await db.collection("duty_options").doc(j).set({active:true});
+        const j = document.getElementById('newJob').value.trim() || document.getElementById('jobPicker').value;
+        const w = document.getElementById('warnInput').value.trim();
+        
+        const upData = { duty_zone: j || "未分配", warning: w };
+        await db.collection("students").doc(selectedId).update(upData);
+        
+        if(document.getElementById('newJob').value.trim()) {
+            await db.collection("duty_options").doc(j).set({active:true});
+            refreshJobs();
+        }
         alert("更新成功");
-        closeModal(); // 強制關閉彈窗
+        closeModal();
     }
 
     window.closeModal = function() { 
@@ -209,15 +233,18 @@
     window.triggerReset = async function() {
         const p = selectedId+selectedId+selectedId;
         await db.collection("students").doc(selectedId).update({ password: p });
-        alert("已重設為 "+p);
+        alert("已重設密碼為 "+p);
     }
 
     window.deleteStudent = async function() { if(confirm("確定刪除？")) { await db.collection("students").doc(selectedId).delete(); closeModal(); } }
 
     async function refreshJobs() {
-        const p = document.getElementById('jobPicker'); p.innerHTML='<option value="">選擇工作</option>';
+        const p = document.getElementById('jobPicker');
+        const currentVal = p.value; // 暫存目前選中的值
+        p.innerHTML='<option value="">選擇工作</option>';
         const s = await db.collection("duty_options").get();
         s.forEach(d => p.innerHTML+=`<option value="${d.id}">${d.id}</option>`);
+        if(currentVal) p.value = currentVal; // 恢復選中
     }
 </script>
 </body>
