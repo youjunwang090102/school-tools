@@ -17,7 +17,7 @@
             --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
             --help: #ff758c; /* 心聲箱 - 暖粉紅 */
             --duty: #4cc9f0; /* 勤務 - 天藍 */
-            --homework: #b5a442; /* 作業 - 褐金 (調整為較深色方便閱讀) */
+            --homework: #b5a442; /* 作業 - 褐金 */
             --unknownmail: #0081a7; /* 匿名信箱 - 深青藍 */
 
             --bg: #f0f2f5;
@@ -40,6 +40,7 @@
             background: white; box-sizing: border-box;
             border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
+            transition: all 0.3s ease;
         }
 
         .header h1 {
@@ -49,11 +50,12 @@
 
         .header p { margin: 8px 0 0; font-size: 0.9rem; color: #8d99ae; }
 
-        /* 列表容器 */
+        /* 列表容器 - 手機版預設單欄 */
         .menu-list {
             width: 100%; max-width: 500px; padding: 20px;
-            box-sizing: border-box; display: flex;
-            flex-direction: column; gap: 14px;
+            box-sizing: border-box; display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
         }
 
         /* 分類標題樣式 */
@@ -63,6 +65,7 @@
             color: #8d99ae;
             font-weight: bold;
             letter-spacing: 1px;
+            grid-column: 1 / -1; /* 確保標題永遠佔滿整列 */
         }
 
         /* 通用卡片樣式 */
@@ -71,23 +74,41 @@
             display: flex; align-items: center;
             text-decoration: none; color: inherit;
             box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1px solid rgba(0,0,0,0.03);
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
         }
 
-        .menu-item:active { transform: scale(0.97); background-color: #f8f9fa; }
+        /* 電腦版懸停特效 (Hover) */
+        @media (hover: hover) {
+            .menu-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+                border-color: rgba(0,0,0,0.1);
+            }
+            .menu-item:hover .arrow {
+                transform: translateX(5px);
+                color: var(--p);
+            }
+        }
+
+        .menu-item:active { transform: scale(0.97); }
 
         .icon-box {
             width: 52px; height: 52px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; margin-right: 16px; flex-shrink: 0;
+            transition: transform 0.3s ease;
         }
+
+        .menu-item:hover .icon-box { transform: rotate(-5deg) scale(1.1); }
 
         .info { flex-grow: 1; }
         .info h2 { margin: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
         .info p { margin: 0; font-size: 0.82rem; color: #6d7280; line-height: 1.4; }
-        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; }
+        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; transition: all 0.3s ease; }
 
         /* --- 顏色與邊框定義 --- */
         .calendar { border-left: 6px solid var(--cal); }
@@ -129,10 +150,34 @@
         .final { border-left: 6px solid var(--a); }
         .final .icon-box { background: #fffaf0; color: var(--a); }
 
+        /* --- 響應式佈局 (平板與電腦) --- */
+        @media (min-width: 768px) {
+            .menu-list {
+                max-width: 850px;
+                grid-template-columns: 1fr 1fr; /* 雙欄 */
+                gap: 20px;
+                padding: 30px;
+            }
+            .header {
+                padding: 70px 20px 50px;
+                border-bottom-left-radius: 60px;
+                border-bottom-right-radius: 60px;
+            }
+            .header h1 { font-size: 2.4rem; }
+        }
+
+        @media (min-width: 1100px) {
+            .menu-list {
+                max-width: 1200px;
+                grid-template-columns: 1fr 1fr 1fr; /* 三欄 */
+            }
+        }
+
         footer {
             margin: 40px 0 20px; padding: 20px;
             font-size: 0.75rem; color: #adb5bd; text-align: center;
             line-height: 1.6;
+            width: 100%;
         }
     </style>
 </head>
