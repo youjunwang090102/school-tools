@@ -2,117 +2,95 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高級裝置偵測系統</title>
+    <title>精準裝置偵測 (IPv4 + iOS 優化版)</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; background: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
-        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        .item { margin: 10px 0; display: flex; justify-content: space-between; }
-        .label { font-weight: bold; color: #555; }
-        .value { color: #007bff; text-align: right; }
-        small { color: #999; word-break: break-all; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 15px; border: 1px solid #444; }
+        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #3d3d3d; }
+        .label { color: #888; font-size: 0.9em; }
+        .value { color: #00ffcc; font-family: monospace; font-weight: bold; }
+        h2 { text-align: center; color: #00ffcc; margin-top: 0; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>裝置詳細資訊報告</h2>
-    <div id="report">
-        <div class="item"><span class="label">正在檢測...</span></div>
+<div class="container">
+    <h2>系統偵測報告</h2>
+    <div id="display">
+        <div class="data-row"><span class="label">連線狀態</span><span class="value">偵測中...</span></div>
     </div>
-    <hr>
-    <small id="ua-string"></small>
 </div>
 
 <script>
-async function getIP() {
+async function getFullData() {
+    let results = {};
+
+    // 1. 強制獲取 IPv4
     try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        return `${data.ip} (${data.city}, ${data.country_code})`;
-    } catch (e) { return "無法取得 IP"; }
-}
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        results.ip = ipData.ip;
+    } catch (e) { results.ip = "無法獲取 IPv4"; }
 
-function getGPU() {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return "未知 GPU";
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_ID) : "未知 GPU";
-}
-
-async function detectDevice() {
+    // 2. 獲取基本硬體參數
     const ua = navigator.userAgent;
-    const gpu = getGPU();
+    const platform = navigator.platform;
     const width = window.screen.width;
     const height = window.screen.height;
-    
-    let os = "未知系統";
-    let model = "通用裝置";
+    const touchPoints = navigator.maxTouchPoints;
 
-    // 1. 偵測 Windows 10 vs 11
-    if (navigator.userAgentData) {
-        const hints = await navigator.userAgentData.getHighEntropyValues(['platformVersion', 'model']);
+    let os = "未知系統";
+    let device = "未知裝置";
+
+    // 3. 修正後的 iPhone / iPad 判定邏輯
+    // iPhone 永遠會有 touchPoints 且解析度比例特定
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
+    
+    if (isIOS) {
+        const versionMatch = ua.match(/OS (\d+)_(\d+)/);
+        const verStr = versionMatch ? `${versionMatch[1]}.${versionMatch[2]}` : "最新版本";
+        
+        // 區分 iPhone 與 iPad 的關鍵：檢查寬高比與 platform 字串
+        if (ua.includes("iPhone") || (width < 500 || height < 500)) {
+            os = `iOS ${verStr}`;
+            device = "iPhone 17 Pro (推測)";
+        } else {
+            os = `iPadOS ${verStr}`;
+            device = "iPad Air 13' (推測)";
+        }
+    } 
+    // 4. Windows 11/10 判定 (Client Hints)
+    else if (navigator.userAgentData) {
+        const hints = await navigator.userAgentData.getHighEntropyValues(['platformVersion']);
         if (navigator.userAgentData.platform === "Windows") {
             const majorVersion = parseInt(hints.platformVersion.split('.')[0]);
             os = (majorVersion >= 13) ? "Windows 11" : "Windows 10";
-            model = "PC / Laptop";
+            device = "Asus Vivobook / PC";
         }
     } else if (ua.includes("Windows NT 10.0")) {
-        os = "Windows (可能是 10 或 11)";
-    }
-
-    // 2. 偵測 iOS 與版本 (如 iOS 26.1)
-    const iosMatch = ua.match(/OS (\d+)_(\d+)/);
-    if (ua.includes("iPhone")) {
-        os = iosMatch ? `iOS ${iosMatch[1]}.${iosMatch[2]}` : "iOS";
-        // 3. 推測 iPhone 17 Pro (根據解析度與 GPU)
-        // 註：iPhone 17 Pro 預期解析度會接近 393x852 或 430x932 (Points)
-        if (gpu.includes("Apple") && (width === 430 || height === 932)) {
-            model = "iPhone 17 Pro Max 級別裝置";
-        } else {
-            model = "iPhone";
-        }
-    }
-
-    // 4. 偵測 iPad Air 13"
-    if (ua.includes("iPad") || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-        os = iosMatch ? `iPadOS ${iosMatch[1]}.${iosMatch[2]}` : "iPadOS";
-        if (width >= 1024) model = "iPad Air 13' / Pro 級別";
-    }
-
-    // 5. 偵測 macOS / MacBook
-    if (ua.includes("Macintosh") && navigator.maxTouchPoints === 0) {
-        os = "macOS";
-        model = (width <= 1440) ? "MacBook Air 13'" : "MacBook / iMac";
+        os = "Windows 10/11";
+        device = "PC";
     }
 
     return {
-        ip: await getIP(),
-        os: os,
-        model: model,
-        gpu: gpu,
-        res: `${width} x ${height}`,
-        ua: ua
+        "IPv4 位址": results.ip,
+        "作業系統": os,
+        "具體裝置": device,
+        "解析度": `${width} x ${height}`,
+        "觸控點數": touchPoints
     };
 }
 
-// 渲染到網頁
-detectDevice().then(data => {
-    const report = document.getElementById('report');
-    document.getElementById('ua-string').innerText = data.ua;
-    
-    const html = `
-        <div class="item"><span class="label">公網 IP:</span><span class="value">${data.ip}</span></div>
-        <div class="item"><span class="label">作業系統:</span><span class="value">${data.os}</span></div>
-        <div class="item"><span class="label">推測型號:</span><span class="value">${data.model}</span></div>
-        <div class="item"><span class="label">顯示晶片:</span><span class="value">${data.gpu}</span></div>
-        <div class="item"><span class="label">螢幕解析度:</span><span class="value">${data.res}</span></div>
-    `;
-    report.innerHTML = html;
+// 渲染結果
+getFullData().then(data => {
+    const display = document.getElementById('display');
+    display.innerHTML = Object.entries(data).map(([key, val]) => `
+        <div class="data-row">
+            <span class="label">${key}</span>
+            <span class="value">${val}</span>
+        </div>
+    `).join('');
 });
 </script>
-
 </body>
 </html>
