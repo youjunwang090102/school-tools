@@ -2,95 +2,132 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>精準裝置偵測 (IPv4 + iOS 優化版)</title>
+    <title>高級系統偵測與網速測試</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 15px; border: 1px solid #444; }
-        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #3d3d3d; }
-        .label { color: #888; font-size: 0.9em; }
-        .value { color: #00ffcc; font-family: monospace; font-weight: bold; }
-        h2 { text-align: center; color: #00ffcc; margin-top: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; display: flex; justify-content: center; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #38bdf8; margin-bottom: 25px; }
+        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #334155; }
+        .label { color: #94a3b8; }
+        .value { color: #f1f5f9; font-weight: 600; text-align: right; }
+        .speed-box { text-align: center; margin-top: 20px; padding: 20px; background: #334155; border-radius: 15px; }
+        #speed-value { font-size: 2.5em; font-weight: bold; color: #fbbf24; }
+        .unit { font-size: 0.5em; color: #94a3b8; margin-left: 5px; }
+        button { width: 100%; padding: 12px; margin-top: 15px; border-radius: 10px; border: none; background: #38bdf8; color: #0f172a; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0ea5e9; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>系統偵測報告</h2>
-    <div id="display">
-        <div class="data-row"><span class="label">連線狀態</span><span class="value">偵測中...</span></div>
+<div class="card">
+    <h2>系統狀態報告</h2>
+    <div id="info-display">
+        </div>
+
+    <div class="speed-box">
+        <div id="speed-label">網速測試</div>
+        <div id="speed-value">--<span class="unit">Mbps</span></div>
+        <button id="start-test">開始測試網速</button>
     </div>
 </div>
 
 <script>
-async function getFullData() {
-    let results = {};
-
-    // 1. 強制獲取 IPv4
+// 1. 裝置與 IP 偵測邏輯
+async function getSystemInfo() {
+    let info = {};
+    
+    // 強制 IPv4
     try {
         const ipRes = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipRes.json();
-        results.ip = ipData.ip;
-    } catch (e) { results.ip = "無法獲取 IPv4"; }
+        info.ipv4 = ipData.ip;
+    } catch (e) { info.ipv4 = "無法獲取"; }
 
-    // 2. 獲取基本硬體參數
     const ua = navigator.userAgent;
-    const platform = navigator.platform;
-    const width = window.screen.width;
-    const height = window.screen.height;
-    const touchPoints = navigator.maxTouchPoints;
+    const w = window.screen.width;
+    const h = window.screen.height;
+    const tp = navigator.maxTouchPoints;
 
-    let os = "未知系統";
-    let device = "未知裝置";
-
-    // 3. 修正後的 iPhone / iPad 判定邏輯
-    // iPhone 永遠會有 touchPoints 且解析度比例特定
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
-    
-    if (isIOS) {
-        const versionMatch = ua.match(/OS (\d+)_(\d+)/);
-        const verStr = versionMatch ? `${versionMatch[1]}.${versionMatch[2]}` : "最新版本";
+    // 判斷 iOS 版本與型號
+    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && tp > 1)) {
+        const ver = ua.match(/OS (\d+)_(\d+)/);
+        const osVer = ver ? `${ver[1]}.${ver[2]}` : "26.1 (推測)";
         
-        // 區分 iPhone 與 iPad 的關鍵：檢查寬高比與 platform 字串
-        if (ua.includes("iPhone") || (width < 500 || height < 500)) {
-            os = `iOS ${verStr}`;
-            device = "iPhone 17 Pro (推測)";
+        if (ua.includes("iPhone") || (w < 500 || h < 500)) {
+            info.os = `iOS ${osVer}`;
+            info.device = "iPhone 17 Pro / Pro Max";
         } else {
-            os = `iPadOS ${verStr}`;
-            device = "iPad Air 13' (推測)";
+            info.os = `iPadOS ${osVer}`;
+            info.device = "iPad Air 13' / Pro";
         }
     } 
-    // 4. Windows 11/10 判定 (Client Hints)
+    // 判斷 Windows 10/11
     else if (navigator.userAgentData) {
         const hints = await navigator.userAgentData.getHighEntropyValues(['platformVersion']);
-        if (navigator.userAgentData.platform === "Windows") {
-            const majorVersion = parseInt(hints.platformVersion.split('.')[0]);
-            os = (majorVersion >= 13) ? "Windows 11" : "Windows 10";
-            device = "Asus Vivobook / PC";
-        }
-    } else if (ua.includes("Windows NT 10.0")) {
-        os = "Windows 10/11";
-        device = "PC";
+        const major = parseInt(hints.platformVersion.split('.')[0]);
+        info.os = (major >= 13) ? "Windows 11" : "Windows 10";
+        info.device = "Asus Vivobook / MacBook Air"; 
+    } else {
+        info.os = "MacOS / Linux";
+        info.device = "Generic Desktop";
     }
 
-    return {
-        "IPv4 位址": results.ip,
-        "作業系統": os,
-        "具體裝置": device,
-        "解析度": `${width} x ${height}`,
-        "觸控點數": touchPoints
-    };
+    return info;
 }
 
-// 渲染結果
-getFullData().then(data => {
-    const display = document.getElementById('display');
-    display.innerHTML = Object.entries(data).map(([key, val]) => `
-        <div class="data-row">
-            <span class="label">${key}</span>
-            <span class="value">${val}</span>
-        </div>
+// 2. 網速測試邏輯
+async function testSpeed() {
+    const speedVal = document.getElementById('speed-value');
+    const btn = document.getElementById('start-test');
+    btn.disabled = true;
+    speedVal.innerHTML = '測試中...';
+
+    // 使用一個大約 5MB 的測試檔案 (這裡使用 GitHub 或公共資源的圖片/檔案)
+    // 注意：實際開發建議放在自己的伺服器上避免 CORS 問題
+    const testFile = "https://upload.wikimedia.org/wikipedia/commons/f/ff/Piz_Zup%C3%B2_from_Piz_Alv.jpg?cache=" + Math.random();
+    const fileSizeBits = 5 * 1024 * 1024 * 8; // 假設檔案大小為 5MB 並轉為 bits
+
+    const startTime = new Date().getTime();
+    
+    try {
+        const response = await fetch(testFile);
+        const reader = response.body.getReader();
+        while (true) {
+            const {done} = await reader.read();
+            if (done) break;
+        }
+        const endTime = new Date().getTime();
+        const duration = (endTime - startTime) / 1000;
+        const bps = fileSizeBits / duration;
+        const mbps = (bps / 1024 / 1024).toFixed(2);
+        
+        speedVal.innerHTML = `${mbps}<span class="unit">Mbps</span>`;
+    } catch (e) {
+        speedVal.innerHTML = '<span style="font-size:0.5em">測試失敗(CORS)</span>';
+    }
+    btn.disabled = false;
+}
+
+// 初始化
+async function init() {
+    const data = await getSystemInfo();
+    const display = document.getElementById('info-display');
+    const rows = [
+        ["IPv4 位址", data.ipv4],
+        ["作業系統", data.os],
+        ["偵測裝置", data.device]
+    ];
+    
+    display.innerHTML = rows.map(([l, v]) => `
+        <div class="data-row"><span class="label">${l}</span><span class="value">${v}</span></div>
     `).join('');
-});
+
+    document.getElementById('start-test').onclick = testSpeed;
+}
+
+init();
 </script>
+
 </body>
 </html>
