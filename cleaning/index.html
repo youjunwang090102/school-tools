@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v5.4</title>
+    <title>班級勤務管理系統 v5.5</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 550px; background: white; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 550px; background: white; border-radius: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; }
         .tabs { display: flex; background: #edf2f7; }
         .tab { flex: 1; padding: 18px; text-align: center; cursor: pointer; font-weight: bold; color: #718096; border-bottom: 3px solid transparent; }
         .tab.active { background: white; color: var(--p); border-bottom: 3px solid var(--p); }
@@ -18,15 +18,18 @@
         .view.active { display: block; }
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .history-section { margin-top: 20px; border-top: 1px dashed #cbd5e0; padding-top: 15px; }
-        .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 0.8rem; border-left: 4px solid var(--d); }
-        .del-log { color: var(--d); cursor: pointer; font-weight: bold; padding: 4px 8px; border: 1px solid var(--d); border-radius: 5px; font-size: 0.7rem; }
-        .stu-card { background: white; border: 1px solid #dee2e6; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        
+        /* 歷程樣式 */
+        .history-section { margin-top: 15px; border-top: 1px dashed #cbd5e0; padding-top: 10px; }
+        .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 0.85rem; border-left: 4px solid var(--d); }
+        .del-btn { color: white; background: var(--d); border: none; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+
+        .stu-card { background: white; border: 1px solid #eee; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; }
-        .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 15px; margin-bottom: 15px; font-weight: bold; animation: pulse 2s infinite; text-align: center; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 15px; margin-bottom: 15px; font-weight: bold; text-align: center; }
+        
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
-        .modal-body { background:white; padding:25px; border-radius:20px; width:90%; max-width:400px; max-height: 85vh; overflow-y: auto; }
+        .modal-body { background:white; padding:25px; border-radius:20px; width:90%; max-width:400px; max-height: 80vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -53,10 +56,10 @@
             <div style="background: linear-gradient(135deg, #4361ee, #4cc9f0); color:white; padding:25px; border-radius:20px; text-align:center;">
                 <h2 id="welcomeTitle" style="margin:0;"></h2>
                 <div id="myJob" style="font-size:1.8rem; font-weight:900; margin:10px 0;"></div>
-                <div id="myScore" style="font-size:1.1rem;">目前點數：0</div>
+                <div id="myScore" style="font-size:1.1rem;">點數：0</div>
             </div>
-            <div id="historyView" class="history-section"><h3>📅 記點歷程</h3><div id="myLogs"></div></div>
-            <div id="adminSection" style="display:none;"><div class="admin-dashboard"><h3>🚀 管理面板</h3><div id="stuGrid"></div></div></div>
+            <div class="history-section"><h3>📅 記點歷程</h3><div id="myLogs"></div></div>
+            <div id="adminSection" style="display:none;"><h3>🚀 管理面板</h3><div id="stuGrid"></div></div>
             <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出系統</button>
         </div>
     </div>
@@ -65,20 +68,21 @@
 <div id="modal">
     <div class="modal-body">
         <h3 id="targetName" style="margin:0;"></h3>
-        <div style="text-align:center; font-size:2.5rem; color:var(--d); font-weight:900;" id="modalScore">0</div>
-        <button onclick="addPoint()" style="background:var(--d)">➕ 記點 (+1)</button>
+        <div id="modalScore" style="text-align:center; font-size:3rem; color:var(--d); font-weight:900; margin:10px 0;">0</div>
+        <button onclick="addPoint()" style="background:var(--d); font-size:1.2rem; padding:15px;">➕ 記點 (+1)</button>
         <hr>
+        <p style="margin:5px 0; font-size:0.8rem;">分配工作：</p>
         <select id="jobPicker"></select>
-        <input type="text" id="newJob" placeholder="或手動輸入工作">
-        <input type="text" id="warnInput" placeholder="警告訊息">
-        <button onclick="confirmAssign()" style="background:var(--p)">儲存更新並關閉</button>
+        <input type="text" id="newJob" placeholder="或輸入新工作名稱">
+        <p style="margin:5px 0; font-size:0.8rem;">警告訊息：</p>
+        <input type="text" id="warnInput" placeholder="給學生的話">
+        <button onclick="confirmAssign()" style="background:var(--p)">儲存設定並關閉</button>
         
         <div class="history-section">
-            <h4 style="margin:0 0 10px 0;">🔍 點數紀錄與刪除</h4>
+            <h4 style="margin:0 0 10px 0;">🔍 詳細點數歷程</h4>
             <div id="modalLogs"></div>
         </div>
-        
-        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">取消返回</button>
+        <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">取消</button>
     </div>
 </div>
 
@@ -94,13 +98,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let me = null, selectedId = null, unsubStudent = null, unsubLogs = null;
+    let me = null, selectedId = null, unsubS = null, unsubL = null;
 
     function setTab(m) {
-        document.getElementById('loginView').className = 'view ' + (m==='login'?'active':'');
-        document.getElementById('regView').className = 'view ' + (m==='register'?'active':'');
-        document.getElementById('t-login').className = 'tab ' + (m==='login'?'active':'');
-        document.getElementById('t-reg').className = 'tab ' + (m==='register'?'active':'');
+        document.getElementById('loginView').className = 'view '+(m==='login'?'active':'');
+        document.getElementById('regView').className = 'view '+(m==='register'?'active':'');
+        document.getElementById('t-login').className = 'tab '+(m==='login'?'active':'');
+        document.getElementById('t-reg').className = 'tab '+(m==='register'?'active':'');
     }
     function checkKey() { document.getElementById('mKey').style.display = (document.getElementById('regRole').value==='student'?'none':'block'); }
 
@@ -115,15 +119,16 @@
         const doc = await db.collection("students").doc(id).get();
         if(doc.exists && doc.data().password === document.getElementById('loginPw').value) {
             me = { id, ...doc.data() };
-            startSync();
-        } else alert("錯誤");
+            startApp();
+        } else alert("登入失敗");
     }
 
-    function startSync() {
+    function startApp() {
         document.getElementById('authTabs').style.display = 'none';
         document.getElementById('loginView').classList.remove('active');
         document.getElementById('dashboardView').classList.add('active');
 
+        // 監聽學生個人資料
         db.collection("students").doc(me.id).onSnapshot(doc => {
             const d = doc.data();
             document.getElementById('welcomeTitle').innerText = `${doc.id} ${d.name}`;
@@ -133,10 +138,13 @@
             document.getElementById('warnText').innerText = d.warning || "";
         });
 
+        // 監聽學生個人歷程 (前端排序修復)
         db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
-            let logs = []; snap.forEach(l => logs.push(l.data()));
-            logs.sort((a,b) => b.time - a.time).forEach(l => box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><span>+1</span></div>`);
+            let list = []; snap.forEach(l => list.push(l.data()));
+            list.sort((a,b) => b.time - a.time).forEach(l => {
+                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><b>+1</b></div>`;
+            });
         });
 
         if(me.role !== 'student') {
@@ -157,21 +165,23 @@
         
         const docSnap = await db.collection("students").doc(id).get();
         const d = docSnap.data();
-        // 🏆 關鍵：預先填入該生目前的工作與警告
+        
+        // 🏆 關鍵：同步更新選單顯示目前工作
         document.getElementById('jobPicker').value = d.duty_zone || "";
         document.getElementById('warnInput').value = d.warning || "";
 
-        if(unsubStudent) unsubStudent();
-        unsubStudent = db.collection("students").doc(id).onSnapshot(doc => {
+        if(unsubS) unsubS();
+        unsubS = db.collection("students").doc(id).onSnapshot(doc => {
             document.getElementById('modalScore').innerText = doc.data().score || 0;
         });
 
-        if(unsubLogs) unsubLogs();
-        unsubLogs = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
+        if(unsubL) unsubL();
+        // 🏆 關鍵：管理端歷程查詢 (前端排序修復，解決不顯示問題)
+        unsubL = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
             const box = document.getElementById('modalLogs'); box.innerHTML = "";
-            let logs = []; snap.forEach(l => logs.push({id: l.id, ...l.data()}));
-            logs.sort((a,b) => b.time - a.time).forEach(l => {
-                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><span class="del-log" onclick="deleteLog('${l.id}')">🗑️ 刪除</span></div>`;
+            let list = []; snap.forEach(l => list.push({lid: l.id, ...l.data()}));
+            list.sort((a,b) => b.time - a.time).forEach(l => {
+                box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><button class="del-btn" onclick="deleteLog('${l.lid}')">🗑️ 刪除</button></div>`;
             });
         });
         document.getElementById('modal').style.display = 'flex';
@@ -179,16 +189,13 @@
 
     window.addPoint = async function() {
         const ts = Date.now();
-        // 分開處理，避免 Promise.all 假性失敗
-        try {
-            await db.collection("point_logs").add({ studentId: selectedId, time: ts });
-            await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
-        } catch (e) { console.error(e); }
+        await db.collection("point_logs").add({ studentId: selectedId, time: ts });
+        await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
     }
 
-    window.deleteLog = async function(logId) {
-        if(!confirm("確定刪除並扣分？")) return;
-        await db.collection("point_logs").doc(logId).delete();
+    window.deleteLog = async function(lid) {
+        if(!confirm("確定移除這筆紀錄並扣除 1 點？")) return;
+        await db.collection("point_logs").doc(lid).delete();
         await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(-1) });
     }
 
@@ -196,16 +203,22 @@
         const j = document.getElementById('newJob').value.trim() || document.getElementById('jobPicker').value;
         const w = document.getElementById('warnInput').value;
         await db.collection("students").doc(selectedId).update({ duty_zone: j || "未分配", warning: w });
-        if(document.getElementById('newJob').value) await db.collection("duty_options").doc(j).set({active:true});
+        if(document.getElementById('newJob').value.trim()) {
+            await db.collection("duty_options").doc(j).set({active:true});
+            refreshJobs();
+        }
         closeModal();
     }
 
-    window.closeModal = function() { document.getElementById('modal').style.display = 'none'; if(unsubStudent) unsubStudent(); if(unsubLogs) unsubLogs(); }
-    
+    window.closeModal = function() { document.getElementById('modal').style.display = 'none'; if(unsubS) unsubS(); if(unsubL) unsubL(); }
+
     async function refreshJobs() {
-        const p = document.getElementById('jobPicker'); p.innerHTML='<option value="">選擇工作</option>';
+        const p = document.getElementById('jobPicker');
+        const oldVal = p.value;
+        p.innerHTML='<option value="">選擇工作</option>';
         const s = await db.collection("duty_options").get();
         s.forEach(d => p.innerHTML+=`<option value="${d.id}">${d.id}</option>`);
+        if(oldVal) p.value = oldVal;
     }
 </script>
 </body>
