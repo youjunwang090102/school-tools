@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匿名心聲箱 - 班級平台</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --p: #4361ee; --s: #2ec4b6; --t: #ef233c; --bg: #f8f9fa; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        .nav { display: flex; background: white; padding: 10px; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .nav-btn { border: none; background: none; font-weight: bold; padding: 10px; color: #666; cursor: pointer; }
+        .nav-btn.active { color: var(--p); border-bottom: 2px solid var(--p); }
+        
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; position: relative; }
+        
+        /* 發信頁面樣式 */
+        textarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 10px; padding: 10px; box-sizing: border-box; font-size: 16px; margin-top: 10px; }
+        .student-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 10px; margin: 10px 0; }
+        .stu-item { font-size: 0.8rem; background: #eee; padding: 5px; border-radius: 5px; text-align: center; cursor: pointer; }
+        .stu-item.selected { background: var(--p); color: white; }
+        
+        /* 信件列表樣式 */
+        .msg-header { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
+        .msg-content { font-size: 1rem; line-height: 1.5; color: #333; }
+        .reply-box { margin-top: 10px; border-top: 1px dashed #eee; padding-top: 10px; font-size: 0.9rem; color: var(--s); }
+        .admin-info { font-size: 0.7rem; color: var(--t); background: #fff5f5; padding: 4px; border-radius: 4px; margin-bottom: 5px; }
+        
+        button.main-btn { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="authCheck" class="container"><h3>請稍後...</h3></div>
+
+    <div id="mainApp" class="hidden">
+        <div class="nav">
+            <button class="nav-btn active" onclick="tab('send')">發送心聲</button>
+            <button class="nav-btn" onclick="tab('receive')">收件匣</button>
+            <button id="adminTab" class="nav-btn hidden" onclick="tab('admin')">管理監控</button>
+        </div>
+
+        <div id="sendPage" class="container">
+            <h3>告訴同學你的想法</h3>
+            <p style="font-size: 0.8rem; color: #888;">收件人 (可複選)：</p>
+            <div id="stuSelector" class="student-selector"></div>
+            <textarea id="msgInput" placeholder="寫下你想說的話..."></textarea>
+            <button class="main-btn" onclick="sendMsg()">匿名傳送</button>
+        </div>
+
+        <div id="receivePage" class="container hidden">
+            <h3>我的收件匣</h3>
+            <div id="receiveList"></div>
+        </div>
+
+        <div id="adminPage" class="container hidden">
+            <h3>🔍 全班信件監控 (導師權限)</h3>
+            <div id="adminList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 配置 (請更換為您的)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+            authDomain: "vote-6668.firebaseapp.com",
+            projectId: "vote-6668",
+            storageBucket: "vote-6668.firebasestorage.app",
+            messagingSenderId: "389284021944",
+            appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUser = JSON.parse(sessionStorage.getItem('user'));
+        let selectedStu = [];
+
+        // 初始化檢查
+        window.onload = async () => {
+            if (!currentUser) {
+                alert("請先從主頁面登入！");
+                window.location.href = "index.html";
+                return;
+            }
+            document.getElementById('authCheck').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            if (currentUser.role === 'teacher' || currentUser.role === 'admin') {
+                document.getElementById('adminTab').classList.remove('hidden');
+            }
+            loadStudents();
+            loadMessages();
+        };
+
+        // 頁籤切換
+        function tab(type) {
+            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(type + 'Page').classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+
+        // 載入學生名單 (多選用)
+        async function loadStudents() {
+            const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
+            const box = document.getElementById('stuSelector');
+            snap.forEach(doc => {
+                if(doc.id === currentUser.id) return; // 不選自己
+                const div = document.createElement('div');
+                div.className = 'stu-item';
+                div.innerText = `${doc.id} ${doc.data().name}`;
+                div.onclick = () => {
+                    div.classList.toggle('selected');
+                    const id = doc.id;
+                    if(selectedStu.includes(id)) selectedStu = selectedStu.filter(i => i !== id);
+                    else selectedStu.push(id);
+                };
+                box.appendChild(div);
+            });
+        }
+
+        // 發送信件
+        async function sendMsg() {
+            const text = document.getElementById('msgInput').value;
+            if (selectedStu.length === 0 || !text) return alert("請選擇收件人並填寫內容");
+            
+            if(confirm(`確定要匿名發送給這 ${selectedStu.length} 位同學嗎？`)) {
+                const batch = db.batch();
+                selectedStu.forEach(targetId => {
+                    const newRef = db.collection("secret_messages").doc();
+                    batch.set(newRef, {
+                        sender_id: currentUser.id,
+                        sender_name: currentUser.name,
+                        receiver_id: targetId,
+                        content: text,
+                        reply: "",
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                alert("發送成功！");
+                location.reload();
+            }
+        }
+
+        // 載入信件
+        function loadMessages() {
+            // 收件匣 (我收到的)
+            db.collection("secret_messages")
+                .where("receiver_id", "==", currentUser.id)
+                .orderBy("timestamp", "desc")
+                .onSnapshot(snap => {
+                    const box = document.getElementById('receiveList');
+                    box.innerHTML = snap.empty ? "目前沒有信件" : "";
+                    snap.forEach(doc => renderMsg(doc, box, false));
+                });
+
+            // 管理員監控
+            if (currentUser.role === 'teacher' || currentUser.role === 'admin') {
+                db.collection("secret_messages")
+                    .orderBy("timestamp", "desc")
+                    .onSnapshot(snap => {
+                        const box = document.getElementById('adminList');
+                        box.innerHTML = "";
+                        snap.forEach(doc => renderMsg(doc, box, true));
+                    });
+            }
+        }
+
+        function renderMsg(doc, container, isAdmin) {
+            const d = doc.data();
+            const date = d.timestamp ? d.timestamp.toDate().toLocaleString() : "";
+            const div = document.createElement('div');
+            div.className = 'card';
+            
+            let adminHeader = isAdmin ? `<div class="admin-info">來自：${d.sender_id} ${d.sender_name} ➔ 對象：${d.receiver_id}</div>` : "";
+            
+            div.innerHTML = `
+                ${adminHeader}
+                <div class="msg-header">📅 ${date}</div>
+                <div class="msg-content">${d.content}</div>
+                <div id="reply-${doc.id}" class="reply-box ${d.reply?'':'hidden'}">
+                    <b>回覆：</b> ${d.reply}
+                </div>
+                ${!isAdmin && !d.reply ? `<button onclick="openReply('${doc.id}')" style="font-size:0.7rem; margin-top:5px;">回覆此信件</button>` : ""}
+                ${isAdmin ? `<button onclick="openReply('${doc.id}')" style="font-size:0.7rem; margin-top:5px; color:red;">老師代為回覆/指導</button>` : ""}
+            `;
+            container.appendChild(div);
+        }
+
+        async function openReply(docId) {
+            const replyText = prompt("請輸入回覆內容：");
+            if (replyText) {
+                await db.collection("secret_messages").doc(docId).update({ reply: replyText });
+                alert("回覆已傳送");
+            }
+        }
+    </script>
+</body>
+</html>
