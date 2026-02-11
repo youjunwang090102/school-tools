@@ -3,154 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>各科作業提醒系統</title>
+    <title>各科作業與職位管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
-        :root { --p: #6366f1; --s: #10b981; --bg: #f8fafc; --card: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: var(--card); border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
-        .header { background: var(--p); color: white; padding: 25px; text-align: center; }
-        .content { padding: 20px; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #e2e8f0; box-sizing: border-box; font-size: 16px; }
-        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.9; }
-        .hw-item { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--p); position: relative; }
-        .hw-subject { font-weight: bold; color: var(--p); font-size: 0.9rem; }
-        .hw-title { font-size: 1.1rem; margin: 5px 0; color: #1e293b; }
-        .hw-date { font-size: 0.8rem; color: #64748b; }
-        .del-btn { position: absolute; right: 10px; top: 10px; background: #ff4d4f; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; border: none; cursor: pointer; }
-        .admin-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 15px; border-radius: 15px; margin-bottom: 20px; }
+        :root { --p: #6366f1; --s: #10b981; --bg: #f1f5f9; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+        .container { width: 100%; max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .hw-item { border-left: 5px solid var(--p); background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative; }
+        .subject-tag { display: inline-block; background: var(--p); color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; }
+        .done-btn { background: var(--s); color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; width: auto; margin-top: 10px; }
+        .admin-panel, .manager-panel { border-top: 2px solid #eee; padding-top: 15px; margin-top: 15px; }
+        .stu-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        select { padding: 5px; border-radius: 5px; }
+        .completion-status { font-size: 0.8rem; color: #666; background: #fffbeb; padding: 5px; margin-top: 5px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loginView" class="content">
-        <h2 style="text-align: center; color: var(--p);">📝 作業提醒登入</h2>
-        <p style="text-align: center; color: #64748b; font-size: 0.9rem;">請使用打掃平台帳號登入</p>
-        <input type="number" id="stuId" placeholder="座號">
-        <input type="password" id="stuPw" placeholder="密碼">
-        <button onclick="doLogin()">登入系統</button>
+    <div id="authView" class="card">
+        <h3>🔐 作業系統登入</h3>
+        <input type="number" id="stuId" placeholder="座號" style="width:100%; padding:10px; margin:5px 0;">
+        <input type="password" id="stuPw" placeholder="密碼" style="width:100%; padding:10px; margin:5px 0;">
+        <button onclick="doLogin()" style="width:100%; padding:10px; background:var(--p); color:white; border:none; border-radius:5px;">登入</button>
     </div>
 
-    <div id="mainView" style="display: none;">
-        <div class="header">
-            <h2 id="userHello" style="margin:0;"></h2>
-            <p id="userRole" style="margin:5px 0 0 0; opacity: 0.8;"></p>
+    <div id="mainView" style="display:none;">
+        <div class="card">
+            <h2 id="userName">載入中...</h2>
+            <p id="userRoleInfo"></p>
+            <button onclick="location.reload()" style="background:#666; color:white; border:none; padding:5px 10px; border-radius:5px;">登出</button>
         </div>
-        
-        <div class="content">
-            <div id="adminPanel" class="admin-box" style="display: none;">
-                <h4 style="margin:0 0 10px 0;">📢 發佈新作業</h4>
-                <select id="subject">
-                    <option value="國文">國文</option><option value="英文">英文</option><option value="數學">數學</option>
-                    <option value="物理">物理</option><option value="化學">化學</option><option value="生物">生物</option>
-                    <option value="地科">地科</option><option value="地理">地理</option><option value="歷史">歷史</option>
-                    <option value="公民">公民</option><option value="其他">其他</option>
-                </select>
-                <input type="text" id="hwTitle" placeholder="作業內容 (如：習作 P.10)">
-                <input type="date" id="deadline">
-                <button onclick="addHw()" style="background: var(--s);">發佈作業</button>
-            </div>
 
+        <div id="adminPanel" class="card" style="display:none;">
+            <h3>👑 管理員：分配學科職位</h3>
+            <div id="studentList"></div>
+        </div>
+
+        <div id="managerPanel" class="card" style="display:none;">
+            <h3 id="managerTitle">📢 發佈作業</h3>
+            <input type="text" id="hwTitle" placeholder="作業內容" style="width:100%; padding:10px; margin-bottom:5px;">
+            <input type="date" id="hwDate" style="width:100%; padding:10px; margin-bottom:5px;">
+            <button onclick="addHw()" style="width:100%; padding:10px; background:var(--s); color:white; border:none; border-radius:5px;">確認發佈</button>
+        </div>
+
+        <div class="card">
             <h3>📅 目前作業清單</h3>
             <div id="hwList"></div>
-            
-            <button onclick="location.reload()" style="background:#94a3b8; margin-top: 20px;">登出</button>
         </div>
     </div>
 </div>
 
 <script>
-    // ⚠️ 請務必使用您原有的 Firebase 配置
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
-        authDomain: "vote-6668.firebaseapp.com",
-        projectId: "vote-6668",
-        storageBucket: "vote-6668.firebasestorage.app",
-        messagingSenderId: "389284021944",
-        appId: "1:389284021944:web:3c5311697cbfc7c010564d"
-    };
+    const firebaseConfig = { /* ... 您的配置 ... */ };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let currentUser = null;
+    let me = null;
+    const subjects = ["無", "國文", "英文", "數學", "物理", "化學", "生物", "地科", "歷史", "地理", "公民"];
 
     async function doLogin() {
         const id = document.getElementById('stuId').value.padStart(2, '0');
         const pw = document.getElementById('stuPw').value;
-        
         const doc = await db.collection("students").doc(id).get();
         if (doc.exists && doc.data().password === pw) {
-            currentUser = { id, ...doc.data() };
-            showMain();
-        } else {
-            alert("帳號或密碼錯誤！");
-        }
+            me = { id, ...doc.data() };
+            startApp();
+        } else alert("登入失敗");
     }
 
-    function showMain() {
-        document.getElementById('loginView').style.display = 'none';
+    function startApp() {
+        document.getElementById('authView').style.display = 'none';
         document.getElementById('mainView').style.display = 'block';
-        document.getElementById('userHello').innerText = `你好，${currentUser.name}`;
-        document.getElementById('userRole').innerText = `身分：${translateRole(currentUser.role)}`;
+        document.getElementById('userName').innerText = `你好，${me.name}`;
+        
+        // 判斷權限
+        const roleText = me.subject_role && me.subject_role !== "無" ? `${me.subject_role}股長` : "一般學生";
+        document.getElementById('userRoleInfo').innerText = `目前身分：${roleText}`;
 
-        // 如果不是一般學生，顯示發佈面板
-        if (currentUser.role !== 'student') {
-            document.getElementById('adminPanel').style.display = 'block';
+        if (me.role === 'admin' || me.role === 'teacher') {
+            showAdminPanel();
+        }
+        
+        if (me.subject_role && me.subject_role !== "無") {
+            document.getElementById('managerPanel').style.display = 'block';
+            document.getElementById('managerTitle').innerText = `📢 發佈${me.subject_role}作業`;
         }
 
         loadHw();
     }
 
-    function translateRole(r) {
-        const roles = { teacher: "老師", admin: "管理員", inner_manager: "內衛生", outer_manager: "外衛生" };
-        return roles[r] || "學生";
-    }
-
-    async function addHw() {
-        const subject = document.getElementById('subject').value;
-        const title = document.getElementById('hwTitle').value;
-        const date = document.getElementById('deadline').value;
-
-        if (!title || !date) return alert("請填寫完整資訊");
-
-        await db.collection("homework_reminders").add({
-            subject, title, date,
-            createdAt: Date.now(),
-            author: currentUser.name
-        });
-        
-        document.getElementById('hwTitle').value = "";
-        alert("作業已發佈");
-    }
-
-    function loadHw() {
-        // 監聽作業清單，按日期排序
-        db.collection("homework_reminders").orderBy("date", "asc").onSnapshot(snap => {
-            const box = document.getElementById('hwList');
-            box.innerHTML = "";
+    // 管理員：列出學生並設定職位
+    async function showAdminPanel() {
+        document.getElementById('adminPanel').style.display = 'block';
+        db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
+            const list = document.getElementById('studentList');
+            list.innerHTML = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                const isAuthor = (currentUser.role !== 'student'); 
-                box.innerHTML += `
-                    <div class="hw-item">
-                        <div class="hw-subject">${d.subject}</div>
-                        <div class="hw-title">${d.title}</div>
-                        <div class="hw-date">截止日期：${d.date} (發佈人：${d.author})</div>
-                        ${isAuthor ? `<button class="del-btn" onclick="deleteHw('${doc.id}')">刪除</button>` : ''}
-                    </div>
-                `;
+                let options = subjects.map(s => `<option value="${s}" ${d.subject_role === s ? 'selected' : ''}>${s}</option>`).join("");
+                list.innerHTML += `
+                    <div class="stu-row">
+                        <span>${doc.id} ${d.name}</span>
+                        <select onchange="updateSubjectRole('${doc.id}', this.value)">${options}</select>
+                    </div>`;
             });
-            if(snap.empty) box.innerHTML = "<p style='color:#999; text-align:center;'>目前沒有作業，放假囉！🎉</p>";
         });
     }
 
-    async function deleteHw(id) {
-        if (confirm("確定移除這項作業提醒嗎？")) {
-            await db.collection("homework_reminders").doc(id).delete();
-        }
+    async function updateSubjectRole(id, role) {
+        await db.collection("students").doc(id).update({ subject_role: role });
+    }
+
+    // 發佈作業
+    async function addHw() {
+        const title = document.getElementById('hwTitle').value;
+        const date = document.getElementById('hwDate').value;
+        if (!title || !date) return alert("請填寫內容與日期");
+
+        await db.collection("homework_reminders").add({
+            subject: me.subject_role,
+            title: title,
+            date: date,
+            authorId: me.id,
+            done_list: [] // 儲存已完成學生的座號
+        });
+        alert("發佈成功");
+    }
+
+    // 載入作業
+    function loadHw() {
+        db.collection("homework_reminders").orderBy("date", "asc").onSnapshot(snap => {
+            const list = document.getElementById('hwList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const doneCount = d.done_list ? d.done_list.length : 0;
+                const hasDone = d.done_list && d.done_list.includes(me.id);
+                
+                // 股長或管理員可以看到詳細完成名單
+                let statusInfo = "";
+                if (me.id === d.authorId || me.role === 'admin') {
+                    statusInfo = `<div class="completion-status">📊 已完成：${doneCount} 人 (${d.done_list.join(", ")})</div>`;
+                }
+
+                list.innerHTML += `
+                    <div class="hw-item">
+                        <span class="subject-tag">${d.subject}</span>
+                        <div style="font-weight:bold; margin:5px 0;">${d.title}</div>
+                        <div style="font-size:0.8rem; color:#666;">截止：${d.date}</div>
+                        ${statusInfo}
+                        <button class="done-btn" style="background:${hasDone?'#94a3b8':''}" 
+                                onclick="markAsDone('${doc.id}', ${hasDone})">
+                            ${hasDone ? '✅ 已回報完成' : '按此回報完成'}
+                        </button>
+                    </div>`;
+            });
+        });
+    }
+
+    async function markAsDone(hwId, hasDone) {
+        if (hasDone) return; // 已完成則不重複觸發
+        const ref = db.collection("homework_reminders").doc(hwId);
+        await ref.update({
+            done_list: firebase.firestore.FieldValue.arrayUnion(me.id)
+        });
     }
 </script>
 </body>
