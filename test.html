@@ -3,329 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>班級數位平台</title>
+    <title>匿名心聲箱 - 班級平台</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    
     <style>
-        :root {
-            --p: #4361ee;    /* 座位 - 藍 */
-            --s: #2ec4b6;    /* 段考 - 綠 */
-            --a: #ff9f1c;    /* 學期 - 橘 */
-            --t: #ef233c;    /* 倒數 - 紅 */
-            --g: #7209b7;    /* 分組 - 紫 */
-            --m: #ffd60a;    /* 留言 - 黃 */
-            --v: #38b000;    /* 投票 - 草綠 */
-            --cal: #5856D6;  /* 行事曆 - 靛藍 */
-            --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
-            --help: #ff758c; /* 心聲箱 - 暖粉紅 */
-            --duty: #4cc9f0; /* 勤務 - 天藍 */
-            --homework: #b5a442; /* 作業 - 褐金 */
-            --unknownmail: #0081a7; /* 匿名信箱 - 深青藍 */
+        :root { --p: #4361ee; --s: #2ec4b6; --t: #ef233c; --bg: #f0f2f5; --card: #ffffff; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 0; color: #333; }
+        
+        /* 登入介面 */
+        #loginSection { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 380px; text-align: center; }
+        .login-card input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; background: #f9f9f9; }
 
-            --bg: #f0f2f5;
-            --card: #ffffff;
-            --text: #2b2d42;
+        /* 導覽列 - 毛玻璃效果 */
+        .nav { 
+            display: none; background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 5px; justify-content: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; 
+        }
+        .nav-btn { border: none; background: none; font-weight: bold; padding: 15px 20px; color: #888; cursor: pointer; font-size: 0.95rem; transition: 0.3s; border-radius: 12px; margin: 0 5px; }
+        .nav-btn.active { color: var(--p); background: rgba(67, 97, 238, 0.1); }
+
+        .container { padding: 20px; max-width: 1000px; margin: auto; display: none; }
+        
+        /* 響應式佈局：電腦變雙欄 */
+        .msg-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+            margin-top: 15px;
         }
 
-        body {
-            margin: 0; padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
+        @media (min-width: 768px) {
+            .msg-grid { grid-template-columns: 1fr 1fr; }
         }
 
-        /* 頂部標題區 */
-        .header {
-            width: 100%; padding: 50px 20px 30px;
-            background: white; box-sizing: border-box;
-            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
+        .card { 
+            background: var(--card); padding: 20px; border-radius: 18px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);
             transition: all 0.3s ease;
         }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
 
-        .header h1 {
-            margin: 0; font-size: 1.8rem; font-weight: 800;
-            color: var(--text); cursor: pointer; user-select: none;
+        /* 學生選取清單 */
+        .student-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+            gap: 10px; background: #f0f2f5; padding: 15px; border-radius: 15px; margin: 15px 0;
+            max-height: 250px; overflow-y: auto;
         }
+        .stu-chip { font-size: 0.8rem; background: white; padding: 8px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; transition: 0.2s; }
+        .stu-chip.selected { background: var(--p); color: white; border-color: var(--p); box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
 
-        .header p { margin: 8px 0 0; font-size: 0.9rem; color: #8d99ae; }
-
-        /* 列表容器 - 手機版預設單欄 */
-        .menu-list {
-            width: 100%; max-width: 500px; padding: 20px;
-            box-sizing: border-box; display: grid;
-            grid-template-columns: 1fr;
-            gap: 14px;
-        }
-
-        /* 分類標題樣式 */
-        .category-label {
-            margin: 15px 0 5px 10px;
-            font-size: 0.85rem;
-            color: #8d99ae;
-            font-weight: bold;
-            letter-spacing: 1px;
-            grid-column: 1 / -1; /* 確保標題永遠佔滿整列 */
-        }
-
-        /* 通用卡片樣式 */
-        .menu-item {
-            background: var(--card); border-radius: 20px; padding: 18px;
-            display: flex; align-items: center;
-            text-decoration: none; color: inherit;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1px solid rgba(0,0,0,0.03);
-            -webkit-tap-highlight-color: transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 電腦版懸停特效 (Hover) */
-        @media (hover: hover) {
-            .menu-item:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 12px 20px rgba(0,0,0,0.08);
-                border-color: rgba(0,0,0,0.1);
-            }
-            .menu-item:hover .arrow {
-                transform: translateX(5px);
-                color: var(--p);
-            }
-        }
-
-        .menu-item:active { transform: scale(0.97); }
-
-        .icon-box {
-            width: 52px; height: 52px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; margin-right: 16px; flex-shrink: 0;
-            transition: transform 0.3s ease;
-        }
-
-        .menu-item:hover .icon-box { transform: rotate(-5deg) scale(1.1); }
-
-        .info { flex-grow: 1; }
-        .info h2 { margin: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
-        .info p { margin: 0; font-size: 0.82rem; color: #6d7280; line-height: 1.4; }
-        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; transition: all 0.3s ease; }
-
-        /* --- 顏色與邊框定義 --- */
-        .calendar { border-left: 6px solid var(--cal); }
-        .calendar .icon-box { background: #f0f0ff; color: var(--cal); }
-
-        .timer { border-left: 6px solid var(--t); }
-        .timer .icon-box { background: #ffe5e5; color: var(--t); }
-
-        .homework { border-left: 6px solid var(--homework); }
-        .homework .icon-box { background: #fdfae6; color: var(--homework); }
-
-        .teacher-help { border-left: 6px solid var(--help); }
-        .teacher-help .icon-box { background: #fff0f2; color: var(--help); }
-
-        .unknownmail { border-left: 6px solid var(--unknownmail); }
-        .unknownmail .icon-box { background: #e0f2f7; color: var(--unknownmail); }
-
-        .whisper { border-left: 6px solid var(--whi); }
-        .whisper .icon-box { background: #f9f0ff; color: var(--whi); }
-
-        .board { border-left: 6px solid var(--m); }
-        .board .icon-box { background: #fffde7; color: #f59e0b; }
-
-        .duty { border-left: 6px solid var(--duty); }
-        .duty .icon-box { background: #e0f7fa; color: var(--duty); }
-
-        .seat { border-left: 6px solid var(--p); }
-        .seat .icon-box { background: #eef2ff; color: var(--p); }
+        textarea { width: 100%; height: 150px; border: 1px solid #eee; border-radius: 15px; padding: 15px; box-sizing: border-box; font-size: 16px; background: #f9f9f9; resize: none; margin-bottom: 10px; }
+        button.main-btn { width: 100%; padding: 16px; background: var(--p); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s; }
         
-        .vote { border-left: 6px solid var(--v); }
-        .vote .icon-box { background: #e8f5e9; color: var(--v); }
-
-        .group { border-left: 6px solid var(--g); }
-        .group .icon-box { background: #f3e5f5; color: var(--g); }
-
-        .exam { border-left: 6px solid var(--s); }
-        .exam .icon-box { background: #e6fffa; color: var(--s); }
-        
-        .final { border-left: 6px solid var(--a); }
-        .final .icon-box { background: #fffaf0; color: var(--a); }
-
-        /* --- 響應式佈局 (平板與電腦) --- */
-        @media (min-width: 768px) {
-            .menu-list {
-                max-width: 850px;
-                grid-template-columns: 1fr 1fr; /* 雙欄 */
-                gap: 20px;
-                padding: 30px;
-            }
-            .header {
-                padding: 70px 20px 50px;
-                border-bottom-left-radius: 60px;
-                border-bottom-right-radius: 60px;
-            }
-            .header h1 { font-size: 2.4rem; }
-        }
-
-        @media (min-width: 1100px) {
-            .menu-list {
-                max-width: 1200px;
-                grid-template-columns: 1fr 1fr 1fr; /* 三欄 */
-            }
-        }
-
-        footer {
-            margin: 40px 0 20px; padding: 20px;
-            font-size: 0.75rem; color: #adb5bd; text-align: center;
-            line-height: 1.6;
-            width: 100%;
-        }
+        .msg-info { font-size: 0.75rem; color: #aaa; margin-bottom: 8px; }
+        .reply-area { margin-top: 15px; padding: 12px; background: #f0fffb; border-radius: 12px; color: #008f7a; font-size: 0.9rem; border-left: 4px solid var(--s); white-space: pre-wrap; }
+        .admin-tag { background: #fff0f0; color: var(--t); font-size: 0.75rem; padding: 5px 10px; border-radius: 8px; margin-bottom: 10px; display: inline-block; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1 id="adminTrigger">班級數位平台</h1>
-        <p>整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
+    <div id="loginSection">
+        <div class="login-card">
+            <h1 style="color:var(--p); margin-bottom:10px;">🤫 匿名信箱</h1>
+            <p style="color:#888; margin-bottom:20px;">想說的話，在這裡傳達</p>
+            <input type="number" id="loginId" placeholder="座號 (例如 05)">
+            <input type="password" id="loginPw" placeholder="登入密碼">
+            <button class="main-btn" onclick="doLogin()">登入服務</button>
+        </div>
     </div>
 
-    <div class="menu-list">
-        
-        <div class="category-label">🔔 提醒系列</div>
-        <a href="行事曆/index.html" class="menu-item calendar">
-            <div class="icon-box">📅</div>
-            <div class="info">
-                <h2>班級重要行事曆</h2>
-                <p>考試、活動、補課日程不漏接</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="countdown/index.html" class="menu-item timer">
-            <div class="icon-box">⏳</div>
-            <div class="info">
-                <h2>大考與日程倒數</h2>
-                <p>掌握統測、學測倒數時間</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="homework/index.html" class="menu-item homework">
-            <div class="icon-box">📒</div>
-            <div class="info">
-                <h2>各科作業提醒</h2>
-                <p>小老師發佈作業，同步進度</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-
-        <div class="category-label">🤝 互動系列</div>
-        <a href="help/student.html" class="menu-item teacher-help">
-            <div class="icon-box">🌱</div>
-            <div class="info">
-                <h2>導師悄悄話 (心聲箱)</h2>
-                <p>遇到困難了嗎？點這裡私下告訴老師</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="unknownmail/index.html" class="menu-item unknownmail">
-            <div class="icon-box">🤫</div>
-            <div class="info">
-                <h2>匿名信箱</h2>
-                <p>有什麼想告訴誰怕尷尬嗎？可以一次傳送給多位同學</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="匿名/index.html" class="menu-item whisper">
-            <div class="icon-box">🤫</div>
-            <div class="info">
-                <h2>班級匿名許願池</h2>
-                <p>有什麼想說的？悄悄告訴大家</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="board/index.html" class="menu-item board">
-            <div class="icon-box">💬</div>
-            <div class="info">
-                <h2>班級互動留言板</h2>
-                <p>班級事務公開討論區</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-        <div class="category-label">⚙️ 班務處理</div>
-        <a href="cleaning/index.html" class="menu-item duty">
-            <div class="icon-box">🧹</div>
-            <div class="info">
-                <h2>班級勤務管理系統</h2>
-                <p>內外衛生檢查與記點獎懲統計</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="seating/index.html" class="menu-item seat">
-            <div class="icon-box">🪑</div>
-            <div class="info">
-                <h2>數位教室選位系統</h2>
-                <p>現場超刺激抽籤選位</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="vote/index.html" class="menu-item vote">
-            <div class="icon-box">🗳️</div>
-            <div class="info">
-                <h2>線上投票決策系統</h2>
-                <p>重要班級事務一鍵表決</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="grouping/index.html" class="menu-item group">
-            <div class="icon-box">🎲</div>
-            <div class="info">
-                <h2>隨機分組小幫手</h2>
-                <p>輸入名單自動公平分組</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-
-        <div class="category-label">📊 成績系列</div>
-        <a href="exam_calc/index.html" class="menu-item exam">
-            <div class="icon-box">📝</div>
-            <div class="info">
-                <h2>段考成績加權計算</h2>
-                <p>計算段考加權平均分數</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="final_calc/index.html" class="menu-item final">
-            <div class="icon-box">📈</div>
-            <div class="info">
-                <h2>科目學期總成績</h2>
-                <p>計算平時、段考與期末加權</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
+    <div id="navBar" class="nav">
+        <button id="btn-send" class="nav-btn" onclick="showPage('send')">撰寫</button>
+        <button id="btn-sentBox" class="nav-btn" onclick="showPage('sentBox')">已寄出</button>
+        <button id="btn-receive" class="nav-btn" onclick="showPage('receive')">收件匣</button>
+        <button id="btn-admin" class="nav-btn" style="display:none;" onclick="showPage('admin')">管理</button>
+        <button class="nav-btn" onclick="location.reload()" style="color:#ccc">登出</button>
     </div>
 
-    <footer>
-        © 2026 班級數位服務系統
-        <br>Designed by 王宥鈞
-    </footer>
+    <div id="sendPage" class="container" style="max-width: 600px;">
+        <h2>📝 傳送心聲</h2>
+        <div id="stuGrid" class="student-grid"></div>
+        <textarea id="msgBody" placeholder="寫下想對同學說的話..."></textarea>
+        <button class="main-btn" onclick="sendToStudents()">確認發送</button>
+    </div>
+
+    <div id="sentBoxPage" class="container">
+        <h2>📤 我寄出的信件</h2>
+        <div id="sentList" class="msg-grid"></div>
+    </div>
+
+    <div id="receivePage" class="container">
+        <h2>📥 收到的信件</h2>
+        <div id="receiveList" class="msg-grid"></div>
+    </div>
+
+    <div id="adminPage" class="container">
+        <h2>🔍 全班紀錄</h2>
+        <div id="adminList" class="msg-grid"></div>
+    </div>
 
     <script>
-        // 管理員模式觸發器
-        let clickCount = 0;
-        const trigger = document.getElementById('adminTrigger');
+        // --- Firebase 配置 ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+            authDomain: "vote-6668.firebaseapp.com",
+            projectId: "vote-6668",
+            storageBucket: "vote-6668.firebasestorage.app",
+            messagingSenderId: "389284021944",
+            appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        trigger.addEventListener('click', () => {
-            clickCount++;
-            if (clickCount === 5) {
-                const pw = prompt("啟動全站管理模式？\n請輸入密碼：");
-                if (pw === "Admin88888") {
-                    sessionStorage.setItem('isClassAdmin', 'true');
-                    alert("管理員模式已啟動。");
-                }
-                clickCount = 0;
+        let me = null;
+        let selectedIds = [];
+
+        // --- 核心邏輯 ---
+        async function doLogin() {
+            const rawId = document.getElementById('loginId').value;
+            if(!rawId) return alert("請輸入座號");
+            const id = rawId.padStart(2, '0');
+            const pw = document.getElementById('loginPw').value;
+            try {
+                const doc = await db.collection("students").doc(id).get();
+                if (doc.exists && doc.data().password === pw) {
+                    me = { id, ...doc.data() };
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('navBar').style.display = 'flex';
+                    if (me.role === 'teacher' || me.role === 'admin') document.getElementById('btn-admin').style.display = 'block';
+                    showPage('send');
+                    loadStudentList();
+                    startListenMessages();
+                } else { alert("座號或密碼錯誤"); }
+            } catch (e) { alert("系統錯誤: " + e.message); }
+        }
+
+        function showPage(p) {
+            document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(p + 'Page').style.display = 'block';
+            document.getElementById('btn-' + p).classList.add('active');
+        }
+
+        async function loadStudentList() {
+            const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
+            const grid = document.getElementById('stuGrid');
+            grid.innerHTML = "";
+            snap.forEach(doc => {
+                if(doc.id === me.id) return;
+                const chip = document.createElement('div');
+                chip.className = 'stu-chip';
+                chip.innerText = `${doc.id} ${doc.data().name}`;
+                chip.onclick = () => {
+                    chip.classList.toggle('selected');
+                    const sid = doc.id;
+                    if(selectedIds.includes(sid)) selectedIds = selectedIds.filter(i => i !== sid);
+                    else selectedIds.push(sid);
+                };
+                grid.appendChild(chip);
+            });
+        }
+
+        async function sendToStudents() {
+            const content = document.getElementById('msgBody').value;
+            if (selectedIds.length === 0 || !content) return alert("請選擇對象並填寫內容");
+            if(confirm(`將匿名傳送給 ${selectedIds.length} 位同學，確定嗎？`)) {
+                const batch = db.batch();
+                selectedIds.forEach(tId => {
+                    const ref = db.collection("secret_messages").doc();
+                    batch.set(ref, {
+                        sender_id: me.id, sender_name: me.name, receiver_id: tId,
+                        content: content, reply: "", time: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                alert("發送成功！");
+                document.getElementById('msgBody').value = "";
+                selectedIds = [];
+                document.querySelectorAll('.stu-chip').forEach(c => c.classList.remove('selected'));
+                showPage('sentBox');
             }
-            setTimeout(() => { clickCount = 0; }, 3000);
-        });
+        }
+
+        function startListenMessages() {
+            // 收件匣
+            db.collection("secret_messages").where("receiver_id", "==", me.id).onSnapshot(snap => {
+                renderList(snap, 'receiveList', 'receive');
+            });
+            // 寄件備份
+            db.collection("secret_messages").where("sender_id", "==", me.id).onSnapshot(snap => {
+                renderList(snap, 'sentList', 'sent');
+            });
+            // 管理端
+            if (me.role === 'teacher' || me.role === 'admin') {
+                db.collection("secret_messages").onSnapshot(snap => {
+                    renderList(snap, 'adminList', 'admin');
+                });
+            }
+        }
+
+        function renderList(snap, elementId, type) {
+            const box = document.getElementById(elementId);
+            if (!box) return;
+            box.innerHTML = snap.empty ? "<p style='color:#ccc;text-align:center;padding:20px;grid-column:1/-1;'>尚無信件資料</p>" : "";
+            
+            let docs = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                const timestamp = data.time ? data.time.toMillis() : Date.now();
+                docs.push({ docId: doc.id, ...data, sortTime: timestamp });
+            });
+            docs.sort((a, b) => b.sortTime - a.sortTime);
+
+            docs.forEach(d => {
+                const timeDisplay = d.time ? d.time.toDate().toLocaleString() : "傳送中...";
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                let header = "";
+                if(type === 'admin') header = `<div class="admin-tag">FROM: ${d.sender_id} ➔ TO: ${d.receiver_id}</div>`;
+                if(type === 'sent') header = `<div class="msg-info" style="color:var(--p);font-weight:bold;">To: ${d.receiver_id} 同學</div>`;
+
+                card.innerHTML = `
+                    ${header}
+                    <div class="msg-info">📅 ${timeDisplay}</div>
+                    <div style="font-weight:bold; color:#333; white-space: pre-wrap;">${d.content}</div>
+                    ${d.reply ? `<div class="reply-area"><b>回覆：</b><br>${d.reply}</div>` : ""}
+                    ${type === 'receive' && !d.reply ? `<button onclick="replyMsg('${d.docId}')" style="margin-top:12px; cursor:pointer;">回覆對方</button>` : ""}
+                `;
+                box.appendChild(card);
+            });
+        }
+
+        async function replyMsg(docId) {
+            const r = prompt("請輸入回覆內容：");
+            if(r) { 
+                await db.collection("secret_messages").doc(docId).update({ reply: r });
+            }
+        }
     </script>
 </body>
 </html>
