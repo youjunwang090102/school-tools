@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級雲端服務總台</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; }
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .nav-item { background: white; padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: 0.3s; }
+        .nav-item:hover { border-color: var(--p); transform: translateY(-5px); }
+        .nav-item i { font-size: 2rem; display: block; margin-bottom: 10px; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .admin-zone { background: #fff5f5; border: 1px solid #fed7d7; }
+        .stu-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .btn-del { width: auto; background: var(--d); padding: 5px 10px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="authBox" class="card">
+        <h2 style="text-align: center;">🏛️ 班級雲端總台</h2>
+        <div id="loginView">
+            <input type="number" id="stuId" placeholder="座號 (例如: 05)">
+            <input type="password" id="stuPw" placeholder="密碼">
+            <button onclick="doLogin()">登入</button>
+            <p style="text-align: center; font-size: 0.8rem; color: #666; cursor: pointer;" onclick="toggleAuth(true)">尚未註冊？按此註冊</p>
+        </div>
+        <div id="regView" style="display: none;">
+            <input type="number" id="regId" placeholder="座號">
+            <input type="text" id="regName" placeholder="姓名">
+            <input type="password" id="regPw" placeholder="密碼">
+            <select id="regRole">
+                <option value="student">一般學生</option>
+                <option value="teacher">老師/導師</option>
+                <option value="admin">管理員</option>
+            </select>
+            <button onclick="doRegister()" style="background: var(--s);">建立帳號</button>
+            <p style="text-align: center; font-size: 0.8rem; color: #666; cursor: pointer;" onclick="toggleAuth(false)">已有帳號？返回登入</p>
+        </div>
+    </div>
+
+    <div id="mainMenu" style="display: none;">
+        <div class="card" style="background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white;">
+            <h2 id="userName" style="margin:0; color: white;">你好</h2>
+            <p id="userDetail" style="margin:5px 0 0 0; opacity: 0.8;"></p>
+            <button onclick="logout()" style="background: rgba(255,255,255,0.2); margin-top: 15px; width: auto;">登出</button>
+        </div>
+
+        <div class="grid">
+            <div class="nav-item" onclick="goTo('cleaning')">🧹<span>打掃勤務</span></div>
+            <div class="nav-item" onclick="goTo('homework')">📚<span>作業提醒</span></div>
+            <div class="nav-item" onclick="goTo('pdf_tools')">📑<span>PDF 壓縮</span></div>
+            <div class="nav-item" onclick="goTo('votes')">🗳️<span>班級投票</span></div>
+        </div>
+
+        <div id="adminPanel" class="card admin-zone" style="display: none; margin-top: 20px;">
+            <h3>⚙️ 超級管理後台</h3>
+            <div id="studentManagerList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 💡 設定兩個資料庫配置 (若在同一個 Project，只需一個 db)
+    const configCleaning = { /* 您的第一個 Project 配置 */ };
+    const appCleaning = firebase.initializeApp(configCleaning, "cleaning");
+    const db = appCleaning.firestore(); // 主要帳號庫
+
+    let me = null;
+
+    // --- 登入邏輯 ---
+    async function doLogin() {
+        const id = document.getElementById('stuId').value.padStart(2, '0');
+        const pw = document.getElementById('stuPw').value;
+        const doc = await db.collection("students").doc(id).get();
+        
+        if (doc.exists && doc.data().password === pw) {
+            me = { id, ...doc.data() };
+            showDashboard();
+        } else alert("登入失敗");
+    }
+
+    // --- 註冊邏輯 ---
+    async function doRegister() {
+        const id = document.getElementById('regId').value.padStart(2, '0');
+        const name = document.getElementById('regName').value;
+        const pw = document.getElementById('regPw').value;
+        const role = document.getElementById('regRole').value;
+        
+        if(!id || !name || !pw) return alert("請填寫完整");
+        
+        await db.collection("students").doc(id).set({
+            name, password: pw, role, 
+            subject_role: "無", duty_zone: "未分配"
+        });
+        alert("註冊成功，請登入");
+        toggleAuth(false);
+    }
+
+    function showDashboard() {
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('mainMenu').style.display = 'block';
+        document.getElementById('userName').innerText = `你好，${me.name}`;
+        document.getElementById('userDetail').innerText = `身分：${me.role} | 職位：${me.subject_role || '無'}`;
+
+        if (me.role === 'admin' || me.role === 'teacher') {
+            loadAdminPanel();
+        }
+    }
+
+    // --- 管理員：學生清單、職位設定、移除帳號 ---
+    function loadAdminPanel() {
+        document.getElementById('adminPanel').style.display = 'block';
+        db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
+            const list = document.getElementById('studentManagerList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                list.innerHTML += `
+                    <div class="stu-row">
+                        <span><b>${doc.id} ${d.name}</b></span>
+                        <select style="width:100px; margin:0 5px;" onchange="setSubRole('${doc.id}', this.value)">
+                            <option value="無" ${d.subject_role==='無'?'selected':''}>無職位</option>
+                            <option value="國文" ${d.subject_role==='國文'?'selected':''}>國文</option>
+                            <option value="英文" ${d.subject_role==='英文'?'selected':''}>英文</option>
+                            </select>
+                        <button class="btn-del" onclick="removeAccount('${doc.id}')">移除</button>
+                    </div>`;
+            });
+        });
+    }
+
+    async function setSubRole(id, role) {
+        await db.collection("students").doc(id).update({ subject_role: role });
+    }
+
+    async function removeAccount(id) {
+        if(confirm(`確定要移除座號 ${id} 的帳號嗎？此動作不可逆！`)) {
+            await db.collection("students").doc(id).delete();
+        }
+    }
+
+    // --- 導航 ---
+    function goTo(service) {
+        // 將身分帶入 URL，讓子頁面知道是誰
+        const urlMap = {
+            cleaning: "index_cleaning.html",
+            homework: "homework.html",
+            pdf_tools: "tools.html",
+            votes: "votes.html"
+        };
+        location.href = `${urlMap[service]}?user=${me.id}`;
+    }
+
+    function toggleAuth(isReg) {
+        document.getElementById('loginView').style.display = isReg ? 'none' : 'block';
+        document.getElementById('regView').style.display = isReg ? 'block' : 'none';
+    }
+
+    function logout() { location.reload(); }
+</script>
+</body>
+</html>
