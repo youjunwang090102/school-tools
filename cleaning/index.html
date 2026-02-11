@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v4.0</title>
+    <title>班級勤務管理系統 v4.1</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -21,20 +21,19 @@
         .captcha-row { display: flex; gap: 10px; align-items: center; }
         canvas { background: #f7fafc; border-radius: 10px; cursor: pointer; border: 1px solid #e2e8f0; }
         
-        /* 管理面板 */
+        /* 管理面板樣式 */
         .admin-dashboard { background: #f8faff; border: 2px solid #e0e7ff; border-radius: 20px; padding: 15px; margin-top: 20px; }
         .stu-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 10px; }
         .stu-card { background: white; border: 1px solid #dee2e6; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .stu-card b { color: #2d3748; flex: 1; }
         .stu-info { text-align: right; flex: 2; font-size: 0.9rem; }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; margin-left: 5px; }
 
         .main-card { background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white; padding: 30px; border-radius: 25px; text-align: center; margin-bottom: 20px; }
         .warning-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-size: 0.9rem; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100; justify-content:center; align-items:center; }
-        .modal-body { background:white; padding:25px; border-radius:20px; width:85%; max-width:380px; max-height: 90vh; overflow-y: auto; }
+        .modal-body { background:white; padding:25px; border-radius:20px; width:85%; max-width:380px; }
     </style>
 </head>
 <body>
@@ -51,7 +50,7 @@
         <div id="loginView" class="view active">
             <input type="number" id="loginId" placeholder="座號">
             <input type="password" id="loginPw" placeholder="密碼">
-            <div id="captchaArea" class="captcha-row">
+            <div class="captcha-row">
                 <input type="text" id="loginCaptcha" placeholder="驗證碼">
                 <canvas id="captchaCanvas" width="100" height="48" onclick="drawCaptcha()"></canvas>
             </div>
@@ -73,14 +72,20 @@
             <button onclick="doRegister()" style="background:var(--s)">建立帳號</button>
         </div>
 
+        <div id="resetPwView" class="view">
+            <h2 style="color:var(--d)">🔒 安全重設密碼</h2>
+            <p>管理員已將您的密碼重置為預設值。為了安全，請設定一個只有您知道的新密碼：</p>
+            <input type="password" id="newResetPw" placeholder="輸入新密碼">
+            <button onclick="confirmResetPw()">更新密碼並進入</button>
+        </div>
+
         <div id="dashboardView" class="view">
             <div id="welcomeTitle" style="font-weight:bold; margin-bottom:10px;"></div>
-            <div id="studentWarning" class="warning-box" style="display:none;">⚠️ 重要警告：<span id="warnText"></span></div>
+            <div id="studentWarning" class="warning-box" style="display:none;">⚠️ 警告：<span id="warnText"></span></div>
             
             <div class="main-card">
-                <div style="font-size:0.9rem; opacity:0.8;">目前工作</div>
                 <div id="myJob" style="font-size:2rem; font-weight:900; margin:10px 0;">讀取中...</div>
-                <div id="myScore" style="font-size:0.9rem;">我的點數：0</div>
+                <div id="myScore" style="font-size:0.9rem;">累計點數：0</div>
             </div>
 
             <div id="adminSection" style="display:none;">
@@ -90,13 +95,6 @@
                 </div>
             </div>
             <button onclick="location.reload()" style="background:#718096; margin-top:20px;">登出系統</button>
-        </div>
-
-        <div id="resetPwView" class="view">
-            <h2>🔒 安全重設密碼</h2>
-            <p style="color:red">管理員已重設您的帳號，請設定新密碼後登入。</p>
-            <input type="password" id="newResetPw" placeholder="請輸入新密碼">
-            <button onclick="confirmResetPw()">儲存並登入</button>
         </div>
     </div>
 </div>
@@ -115,7 +113,7 @@
         <button onclick="confirmAssign()" style="background:var(--p)">儲存更新</button>
         
         <div id="advancedAdmin" style="display:none; border-top:1px solid #eee; margin-top:10px; padding-top:10px;">
-            <button onclick="triggerReset()" style="background:#f39c12">強制該生重設密碼</button>
+            <button onclick="triggerReset()" style="background:#f39c12">還原為預設密碼 (座號三次)</button>
             <button onclick="deleteStudent()" style="background:#000; margin-top:5px;">刪除學生帳號</button>
         </div>
         <button onclick="closeModal()" style="background:#eee; color:#333; margin-top:10px;">關閉</button>
@@ -123,7 +121,8 @@
 </div>
 
 <script>
-    const firebaseConfig = { /* 老師請保留原本的 Config */
+    // Firebase 初始化 (請確保 Config 完整)
+    const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
         projectId: "vote-6668",
@@ -135,7 +134,6 @@
     const db = firebase.firestore();
 
     let me = null, selectedId = null, capText = "";
-    let unsubUser = null, unsubGrid = null;
 
     function setTab(m) {
         document.getElementById('loginView').className = 'view ' + (m==='login'?'active':'');
@@ -184,96 +182,77 @@
         } else { alert("座號或密碼錯誤"); }
     }
 
-    // 核心：即時同步功能
     function startRealtimeSync() {
         document.getElementById('authTabs').style.display = 'none';
         document.getElementById('loginView').style.display = 'none';
         document.getElementById('dashboardView').className = 'view active';
         
-        // 1. 監聽「自己」的資料變動
-        unsubUser = db.collection("students").doc(me.id).onSnapshot(doc => {
+        db.collection("students").doc(me.id).onSnapshot(doc => {
             const data = doc.data();
-            document.getElementById('welcomeTitle').innerText = `${doc.id} ${data.name} (${data.role})`;
+            document.getElementById('welcomeTitle').innerText = `${doc.id} ${data.name}`;
             document.getElementById('myJob').innerText = data.duty_zone || "未分配";
             document.getElementById('myScore').innerText = `我的點數：${data.score || 0}`;
-            if(data.warning) {
-                document.getElementById('studentWarning').style.display = 'block';
-                document.getElementById('warnText').innerText = data.warning;
-            } else {
-                document.getElementById('studentWarning').style.display = 'none';
-            }
+            document.getElementById('studentWarning').style.display = data.warning ? 'block' : 'none';
+            document.getElementById('warnText').innerText = data.warning || "";
         });
 
-        // 2. 如果是管理員，監聽「全班」資料變動
         if(['teacher','inner_manager','outer_manager','admin'].includes(me.role)) {
             document.getElementById('adminSection').style.display = 'block';
             refreshJobs();
-            unsubGrid = db.collection("students").orderBy(firebase.firestore.FieldPath.documentId())
-                .onSnapshot(snap => {
-                    const grid = document.getElementById('stuGrid');
-                    grid.innerHTML = "";
-                    snap.forEach(doc => {
-                        const d = doc.data();
-                        grid.innerHTML += `
-                            <div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')">
-                                <b>${doc.id} ${d.name}</b>
-                                <div class="stu-info">
-                                    <span style="color:#718096">${d.duty_zone || '待分配'}</span>
-                                    <span class="score-badge">${d.score || 0}</span>
-                                </div>
-                            </div>`;
-                    });
+            db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
+                const grid = document.getElementById('stuGrid'); grid.innerHTML = "";
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    grid.innerHTML += `<div class="stu-card" onclick="openModal('${doc.id}', '${d.name}')">
+                        <b>${doc.id} ${d.name}</b>
+                        <div class="stu-info">${d.duty_zone || '待分配'}<span class="score-badge">${d.score || 0}</span></div>
+                    </div>`;
                 });
+            });
         }
+    }
+
+    // 🏆 重設密碼邏輯：座號重複三次
+    window.triggerReset = async function() {
+        const defaultPw = selectedId + selectedId + selectedId; // 1號 -> 010101
+        if(!confirm(`確定要將密碼還原為預設值「${defaultPw}」嗎？`)) return;
+        await db.collection("students").doc(selectedId).update({ 
+            password: defaultPw, 
+            needsReset: true 
+        });
+        alert("已還原密碼並強制學生下次登入時更改。");
+        closeModal();
     }
 
     async function confirmResetPw() {
         const newPw = document.getElementById('newResetPw').value;
         if(newPw.length < 3) { alert("新密碼太短"); return; }
         await db.collection("students").doc(me.id).update({ password: newPw, needsReset: false });
-        alert("密碼重設成功，請重新登入。");
-        location.reload();
+        alert("設定成功，請使用新密碼登入"); location.reload();
     }
 
     window.openModal = function(id, name) {
-        selectedId = id;
-        document.getElementById('targetName').innerText = `${id} ${name} 管理`;
+        selectedId = id; document.getElementById('targetName').innerText = `${id} ${name} 管理`;
         document.getElementById('advancedAdmin').style.display = (['teacher','admin'].includes(me.role)) ? 'block' : 'none';
         document.getElementById('modal').style.display = 'flex';
     }
-
-    window.triggerReset = async function() {
-        if(!confirm("確定要強制此學生下次登入時重設密碼嗎？")) return;
-        await db.collection("students").doc(selectedId).update({ needsReset: true });
-        alert("已送出重設密碼要求。");
-        closeModal();
-    }
-
-    // 常用函數維持
     window.closeModal = function() { document.getElementById('modal').style.display = 'none'; }
     window.changeScore = async function(val) { await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(val) }); }
     window.deleteStudent = async function() {
-        if(!confirm(`確定要徹底刪除 ${selectedId} 號學生嗎？`)) return;
-        await db.collection("students").doc(selectedId).delete();
-        closeModal();
+        if(confirm("確定刪除？")) { await db.collection("students").doc(selectedId).delete(); closeModal(); }
     }
     window.confirmAssign = async function() {
         const j1 = document.getElementById('jobPicker').value, j2 = document.getElementById('newJob').value.trim();
         const final = j2 || j1, warn = document.getElementById('warnInput').value;
-        const upData = {};
-        if(final) upData.duty_zone = final;
-        upData.warning = warn;
         if(j2) await db.collection("duty_options").doc(j2).set({ active: true });
-        await db.collection("students").doc(selectedId).update(upData);
+        await db.collection("students").doc(selectedId).update({ duty_zone: final || "未分配", warning: warn });
         closeModal();
     }
     async function refreshJobs() {
-        const picker = document.getElementById('jobPicker');
-        picker.innerHTML = '<option value="">-- 選擇已有工作 --</option>';
+        const picker = document.getElementById('jobPicker'); picker.innerHTML = '<option value="">-- 選項 --</option>';
         const snap = await db.collection("duty_options").get();
         snap.forEach(doc => { picker.innerHTML += `<option value="${doc.id}">${doc.id}</option>`; });
     }
-
     window.onload = drawCaptcha;
 </script>
 </body>
