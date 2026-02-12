@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>P2P 一對多螢幕分享</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; text-align: center; }
+        .container { max-width: 900px; margin: auto; padding: 20px; }
+        video { width: 100%; border: 2px solid #444; border-radius: 12px; background: #000; margin-top: 20px; }
+        .panel { background: #2a2a2a; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-host { background: #28a745; color: white; }
+        .btn-join { background: #007bff; color: white; }
+        #viewer-count { color: #aaa; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📡 廣播模式：螢幕分享</h2>
+    
+    <div class="panel">
+        <p>你的 ID: <strong id="my-id">連線中...</strong></p>
+        <div id="host-controls">
+            <button class="btn btn-host" id="start-broadcast">開始直播螢幕</button>
+            <p id="viewer-count">當前觀眾: 0</p>
+        </div>
+        <hr style="border: 0.5px solid #444; margin: 20px 0;">
+        <div id="viewer-controls">
+            <input type="text" id="target-id" placeholder="輸入主講人 ID" style="padding: 9px; border-radius: 5px;">
+            <button class="btn btn-join" id="join-broadcast">進入觀看</button>
+        </div>
+    </div>
+
+    <video id="display-video" autoplay playsinline controls></video>
+</div>
+
+<script>
+    const peer = new Peer();
+    const myIdDisplay = document.getElementById('my-id');
+    const videoElem = document.getElementById('display-video');
+    const viewerCountElem = document.getElementById('viewer-count');
+    
+    let localStream = null;
+    let connectedPeers = {}; // 記錄所有連進來的觀眾
+
+    peer.on('open', id => myIdDisplay.innerText = id);
+
+    // --- 主講人邏輯 ---
+    document.getElementById('start-broadcast').addEventListener('click', async () => {
+        try {
+            localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            videoElem.srcObject = localStream;
+            
+            // 當主講人已經在直播時，若有新的觀眾「呼叫」進來，自動接聽並傳送畫面
+            peer.on('call', call => {
+                call.answer(localStream);
+                handleNewConnection(call);
+            });
+
+            alert("直播已啟動！現在請觀眾輸入你的 ID 即可看到畫面。");
+        } catch (err) {
+            console.error("啟動失敗", err);
+        }
+    });
+
+    function handleNewConnection(call) {
+        connectedPeers[call.peer] = call;
+        updateViewerCount();
+        call.on('close', () => {
+            delete connectedPeers[call.peer];
+            updateViewerCount();
+        });
+    }
+
+    function updateViewerCount() {
+        viewerCountElem.innerText = `當前觀眾: ${Object.keys(connectedPeers).length}`;
+    }
+
+    // --- 觀眾邏輯 ---
+    document.getElementById('join-broadcast').addEventListener('click', () => {
+        const hostId = document.getElementById('target-id').value;
+        if (!hostId) return alert("請輸入主講人 ID");
+
+        // 撥打給主講人（觀眾不需傳送自己的串流，所以傳 null 或空流）
+        const call = peer.call(hostId, null);
+        
+        call.on('stream', remoteStream => {
+            videoElem.srcObject = remoteStream;
+            console.log("成功接收畫面");
+        });
+
+        call.on('error', err => {
+            console.error("連線錯誤", err);
+            alert("連線失敗，請檢查 ID 是否正確");
+        });
+    });
+
+</script>
+</body>
+</html>
