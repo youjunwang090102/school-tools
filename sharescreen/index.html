@@ -2,109 +2,112 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>P2P 跨裝置螢幕分享</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P 強力連線版</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #e0e0e0; text-align: center; padding: 20px; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto 20px; border: 1px solid #333; }
-        video { width: 100%; max-width: 800px; border-radius: 8px; background: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        input { padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2b2b2b; color: white; width: 200px; }
-        button { padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; margin: 5px; }
+        body { font-family: sans-serif; background: #121212; color: #e0e0e0; text-align: center; padding: 10px; }
+        .box { background: #1e1e1e; padding: 15px; border-radius: 12px; max-width: 500px; margin: 0 auto 20px; border: 1px solid #333; }
+        video { width: 100%; max-width: 800px; border-radius: 8px; background: #000; }
+        input { padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2b2b2b; color: white; width: 80%; margin-bottom: 10px; }
+        button { padding: 12px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; margin: 5px; width: 45%; }
         .btn-host { background: #cf6679; color: black; }
         .btn-join { background: #03dac6; color: black; }
-        #status { color: #bb86fc; margin: 10px 0; }
+        #log { font-size: 12px; color: #888; text-align: left; height: 100px; overflow-y: auto; background: #000; padding: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h2>📡 跨裝置 P2P 直播測試</h2>
+    <h3>📡 P2P 直播 (相容性強化版)</h3>
 
     <div class="box">
-        <p>你的 ID: <strong id="my-id">連線中...</strong></p>
-        <div id="status">系統就緒</div>
-        <hr style="border:0; border-top:1px solid #333; margin: 20px 0;">
+        <div>你的 ID: <strong id="my-id">取得中...</strong></div>
+        <div id="log">系統日誌匯總...<br></div>
+        <hr style="border:0; border-top:1px solid #333; margin: 15px 0;">
         
-        <button class="btn-host" id="start-host">1. 我要當主講人 (分享螢幕)</button>
-        
-        <br><br>
-        
-        <input type="text" id="target-id" placeholder="貼上主講人的 ID">
-        <button class="btn-join" id="start-join">2. 我要當觀眾 (輸入ID連線)</button>
+        <button class="btn-host" id="start-host">1. 分享螢幕</button>
+        <div style="margin-top: 10px;">
+            <input type="text" id="target-id" placeholder="貼上對方的 ID">
+            <button class="btn-join" id="start-join" style="width: 90%;">2. 連線觀看 / 接收畫面</button>
+        </div>
     </div>
 
     <video id="main-video" autoplay playsinline controls></video>
 
 <script>
-    // 加入 STUN 伺服器設定，幫助穿透防火牆與 NAT
-    const peerConfig = {
+    const logElem = document.getElementById('log');
+    function addLog(msg) {
+        logElem.innerHTML += `> ${msg}<br>`;
+        logElem.scrollTop = logElem.scrollHeight;
+    }
+
+    // 配置多組 STUN 伺服器
+    const peer = new Peer({
         config: {
             'iceServers': [
                 { url: 'stun:stun.l.google.com:19302' },
-                { url: 'stun:stun1.l.google.com:19302' }
+                { url: 'stun:stun1.l.google.com:19302' },
+                { url: 'stun:stun2.l.google.com:19302' }
             ]
         }
-    };
+    });
 
-    const peer = new Peer(peerConfig);
     const videoElem = document.getElementById('main-video');
-    const statusElem = document.getElementById('status');
     let localStream = null;
 
     peer.on('open', id => {
         document.getElementById('my-id').innerText = id;
+        addLog("伺服器連線成功，ID 已就緒");
     });
 
-    // --- 主講人邏輯 ---
+    // 主講人邏輯
     document.getElementById('start-host').addEventListener('click', async () => {
         try {
-            // 取得螢幕串流
-            localStream = await navigator.mediaDevices.getDisplayMedia({ 
-                video: { cursor: "always" }, 
-                audio: true 
-            });
+            localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
             videoElem.srcObject = localStream;
-            statusElem.innerText = "直播中，等待觀眾連線...";
+            addLog("螢幕擷取成功，等待連線...");
 
-            // 監聽是否有觀眾連入
+            // 監聽連線
             peer.on('call', call => {
-                console.log("偵測到觀眾連入:", call.peer);
-                // 接通並將自己的畫面傳給觀眾
-                call.answer(localStream); 
-                statusElem.innerText = "已有觀眾連入觀看！";
+                addLog("偵測到觀眾呼叫，正在傳送串流...");
+                call.answer(localStream);
+                call.on('stream', () => addLog("串流傳輸中"));
             });
-
         } catch (err) {
-            statusElem.innerText = "錯誤: " + err.message;
+            addLog("失敗: " + err.message);
         }
     });
 
-    // --- 觀眾邏輯 ---
+    // 觀眾邏輯
     document.getElementById('start-join').addEventListener('click', () => {
         const hostId = document.getElementById('target-id').value;
-        if (!hostId) return alert("請輸入主講人 ID");
+        if (!hostId) return alert("請輸入 ID");
 
-        statusElem.innerText = "正在連線主講人...";
+        addLog("嘗試連線至: " + hostId);
         
-        /* 重點：為了觸發 WebRTC 握手，觀眾端必須發起 call。
-           即使觀眾不分享畫面，PeerJS 建議傳送一個 MediaStream 或處理應答。
-        */
-        const call = peer.call(hostId, new MediaStream()); 
+        // 注意：WebRTC 必須要有 Stream 物件才能建立 Call
+        // 我們建立一個空的音軌來欺騙瀏覽器啟動連線過程
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 1;
+        const dummyStream = canvas.captureStream();
+
+        const call = peer.call(hostId, dummyStream);
 
         call.on('stream', remoteStream => {
-            console.log("收到主講人畫面！");
+            addLog("成功接收到影像串流！");
             videoElem.srcObject = remoteStream;
-            statusElem.innerText = "已成功接收畫面";
+            // 嘗試自動播放
+            videoElem.play().catch(e => addLog("請手動點擊播放影片"));
         });
 
-        call.on('error', err => {
-            statusElem.innerText = "連線失敗: " + err;
-        });
+        setTimeout(() => {
+            if (!videoElem.srcObject) {
+                addLog("警告：連線時間過長，可能是防火牆阻擋 (NAT Traversal Failed)");
+            }
+        }, 10000);
     });
 
-    peer.on('error', err => {
-        console.error("PeerJS Error:", err);
-        statusElem.innerText = "錯誤: " + err.type;
-    });
+    peer.on('error', err => addLog("錯誤類型: " + err.type));
 </script>
 </body>
 </html>
