@@ -9,12 +9,13 @@
         const CONFIG_BANNER_TEXT = "💡 班級公物請愛惜使用，若有損壞請立即通報總務股長。";
         const CONFIG_LOG_CONTENT = `
             <strong>優化時間：2026/02/12</strong><br><br>
-            • <b>桌面端佈局優化</b>：頂部標題列現在會根據螢幕寬度自動延展，與內容對齊。<br>
-            • <b>選單狀態持久化</b>：修復重新整理後選單高亮消失的問題。<br>
-            • <b>幾何美學</b>：方塊模式現在是完美的 1:1 正方形。<br>
-            • <b>智能邊框設計</b>：淺色用深框、深色用淺框，層次更鮮明。
+            • <b>設備適配標題</b>：手機與電腦版採用完全不同的排列邏輯。<br>
+            • <b>雙向切換動畫</b>：無論列表變方塊還是方塊變列表，皆有絲滑過渡。<br>
+            • <b>正方形幾何</b>：方塊模式嚴格鎖定 1:1 比例。<br>
+            • <b>智能外框</b>：底部選單邊框隨深淺模式動態對比。
         `;
     </script>
+
     <style>
         :root {
             --p: #4361ee; --s: #2ec4b6; --a: #ff9f1c; --t: #ef233c;
@@ -26,7 +27,7 @@
             --text: #1e293b;
             --sub-text: #64748b;
             --border: rgba(0,0,0,0.06);
-            --glass-bg: rgba(255, 255, 255, 0.6); 
+            --glass-bg: rgba(255, 255, 255, 0.7); 
             --banner-bg: #fff9db;
             --banner-text: #856404;
             --nav-border: rgba(30, 41, 59, 0.15); 
@@ -44,104 +45,110 @@
             --nav-border: rgba(255, 255, 255, 0.2);
         }
 
-        body { margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; transition: background 0.3s; }
+        body { margin: 0; padding: 0; font-family: 'PingFang TC', sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%); border-bottom: 1px solid var(--border); }
+        /* --- 響應式標題列設計 --- */
+        .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border-bottom: 1px solid var(--border); }
         .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 8px 15px; font-size: 0.7rem; text-align: center; font-weight: 800; letter-spacing: 0.5px; }
 
-        /* --- 電腦版標題列邏輯修正 --- */
+        /* 手機版標題排列 (Mobile First) */
         .header { 
-            padding: 20px; 
+            padding: 15px 20px; 
             display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            max-width: 1200px; /* 與內容區寬度同步 */
+            flex-direction: column; /* 手機端垂直堆疊 */
+            gap: 15px;
+            max-width: 1200px;
             margin: 0 auto; 
             width: 100%; 
-            box-sizing: border-box; 
+            box-sizing: border-box;
         }
 
+        .header-top-row { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+        .header-bottom-row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; }
+
         .header-titles h1 { 
-            margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.8px; 
+            margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: -0.8px; 
             background: linear-gradient(135deg, var(--p), var(--g));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-        .header-titles p { margin: 3px 0 0; font-size: 0.7rem; color: var(--sub-text); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .header-titles p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); font-weight: 700; letter-spacing: 1px; }
 
-        /* 電腦版加大標題 */
-        @media (min-width: 1024px) {
-            .header { padding: 25px 30px; }
+        /* 電腦版標題排列 (Desktop Override) */
+        @media (min-width: 768px) {
+            .header { flex-direction: row; justify-content: space-between; align-items: center; padding: 25px 30px; }
+            .header-top-row { width: auto; }
+            .header-bottom-row { width: auto; justify-content: flex-end; }
             .header-titles h1 { font-size: 1.8rem; }
-            .header-titles p { font-size: 0.8rem; }
         }
 
-        .header-right { display: flex; flex-direction: column; gap: 8px; width: 110px; } 
-        .controls-row { display: flex; gap: 8px; width: 100%; height: 34px; }
-        .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.06); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
-        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 8px; cursor: pointer; opacity: 0.3; display: flex; align-items: center; justify-content: center; }
-        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        /* 按鈕與控制項 */
+        .controls-group { display: flex; gap: 8px; align-items: center; }
+        .layout-switcher { display: flex; background: rgba(0,0,0,0.06); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
+        .layout-btn { width: 34px; height: 32px; background: none; border: none; border-radius: 8px; cursor: pointer; opacity: 0.3; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode .layout-btn.active { background: #334155; }
         .layout-btn svg { width: 14px; height: 14px; fill: var(--text); }
         
-        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .square-btn svg { width: 16px; height: 16px; fill: var(--text); }
-        .header-author { font-size: 0.5rem; color: var(--sub-text); font-weight: 800; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; border: 1px solid var(--border); height: 34px; line-height: 34px; flex: 1; }
+        .square-btn { width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .square-btn:active { transform: scale(0.9); }
+        .header-author { font-size: 0.7rem; color: var(--sub-text); font-weight: 800; background: rgba(0,0,0,0.03); border-radius: 8px; padding: 0 15px; border: 1px solid var(--border); height: 36px; line-height: 36px; }
 
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding-top: 20px; padding-bottom: 140px; }
-        .menu-list { width: 100%; max-width: 1200px; padding: 0 16px; margin: 0 auto; box-sizing: border-box; display: grid; }
-        .category-group { display: none; }
-        .category-group.active { display: contents; }
+        /* --- 列表與方塊過度動畫 --- */
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding-top: 15px; padding-bottom: 140px; }
+        .menu-list { width: 100%; max-width: 1200px; padding: 0 16px; margin: 0 auto; box-sizing: border-box; display: grid; transition: all 0.4s ease; }
 
-        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-        
-        /* 完美的正方形方塊 */
-        .menu-list.grid-mode { 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 12px;
-        }
+        /* 列表模式狀態 */
+        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+        /* 方塊模式狀態 */
+        .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (min-width: 768px) {
-            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 24px; }
+            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 20px; }
         }
 
-        .menu-item { background: var(--card); border-radius: 24px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
-        .menu-item:hover { transform: translateY(-5px); border-color: var(--p); background: white; box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
-        body.dark-mode .menu-item:hover { background: #1e293b; }
+        /* 項目基礎樣式與轉場動畫 */
+        .menu-item { 
+            background: var(--card); border-radius: 24px; border: 1px solid var(--border); 
+            text-decoration: none; color: inherit; display: flex; 
+            position: relative; overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, background 0.3s, box-shadow 0.3s;
+            animation: fadeIn 0.5s ease backwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .list-mode .menu-item { padding: 20px; align-items: center; }
+        .menu-item:hover { transform: translateY(-5px) scale(1.02); border-color: var(--p); background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+
+        .list-mode .menu-item { padding: 18px; align-items: center; }
         .grid-mode .menu-item { flex-direction: column; padding: 10px; text-align: center; justify-content: center; align-items: center; aspect-ratio: 1 / 1; }
 
-        .icon-box { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); flex-shrink: 0; }
-        .list-mode .icon-box { width: 52px; height: 52px; margin-right: 18px; font-size: 26px; border-radius: 16px; }
-        .grid-mode .icon-box { width: 48px; height: 48px; margin-bottom: 10px; font-size: 30px; border-radius: 50%; }
+        /* 切換時的視覺緩動 */
+        .switching .menu-item { opacity: 0; transform: scale(0.9); }
 
-        .info h2 { margin: 0; font-size: 0.95rem; font-weight: 800; }
-        .info p { margin: 5px 0 0; font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; }
-        .grid-mode .info p { display: none; }
+        .icon-box { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); flex-shrink: 0; transition: 0.4s; }
+        .list-mode .icon-box { width: 48px; height: 48px; margin-right: 15px; font-size: 24px; border-radius: 14px; }
+        .grid-mode .icon-box { width: 50px; height: 50px; margin-bottom: 8px; font-size: 28px; border-radius: 50%; }
+
+        .info h2 { margin: 0; font-size: 0.88rem; font-weight: 800; transition: 0.3s; }
+        .info p { margin: 4px 0 0; font-size: 0.72rem; color: var(--sub-text); line-height: 1.3; transition: 0.3s; }
+        .grid-mode .info p { opacity: 0; height: 0; margin: 0; overflow: hidden; }
 
         .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.6; }
         .grid-mode .menu-item::before { width: 100%; height: 4px; top: 0; left: 0; }
 
-        /* 彈窗 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal { background: var(--bg); width: 85%; max-width: 380px; border-radius: 30px; padding: 30px; border: 1px solid var(--border); text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.25); }
-        .close-modal { margin-top: 20px; width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; }
-
-        /* --- 智能選單列 --- */
+        /* 底部導覽智能外框 */
         .bottom-nav-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 2000; }
         .bottom-nav { 
-            background: rgba(255, 255, 255, 0.1); 
-            backdrop-filter: blur(30px) saturate(180%); 
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border-radius: 100px; 
-            display: flex; 
-            padding: 6px; 
-            border: 1.5px solid var(--nav-border); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.08); 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-radius: 100px; display: flex; padding: 6px; border: 1.5px solid var(--nav-border); box-shadow: 0 15px 35px rgba(0,0,0,0.08); 
         }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.95rem; font-weight: 900; color: var(--sub-text); cursor: pointer; border-radius: 100px; transition: 0.3s; }
         .nav-item.active { color: white; background: var(--p); box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4); }
 
-        /* 色系 */
+        /* 彈窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal { background: var(--bg); width: 85%; max-width: 380px; border-radius: 30px; padding: 30px; border: 1px solid var(--border); text-align: center; }
+        .close-modal { margin-top: 20px; width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; }
+
+        /* 顏色系列 */
         .calendar { color: var(--cal); } .timer { color: var(--t); } .homework { color: var(--homework); }
         .teacher-help { color: var(--help); } .unknownmail { color: var(--unknownmail); } .whisper { color: var(--whi); } .board { color: var(--m); }
         .duty { color: var(--duty); } .seat { color: var(--p); } .vote { color: var(--v); } .group { color: var(--g); }
@@ -153,19 +160,22 @@
     <div class="fixed-top">
         <div class="notice-banner" id="bannerElement"></div>
         <div class="header">
-            <div class="header-titles">
-                <h1>班級數位平台</h1>
-                <p>Smart Classroom Hub</p>
-            </div>
-            <div class="header-right">
-                <div class="controls-row">
+            <div class="header-top-row">
+                <div class="header-titles">
+                    <h1>班級數位平台</h1>
+                    <p>Smart Classroom Hub</p>
+                </div>
+                </div>
+            
+            <div class="header-bottom-row">
+                <div class="controls-group">
                     <div class="layout-switcher">
-                        <button class="layout-btn" id="listBtn"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
-                        <button class="layout-btn" id="gridBtn"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></button>
+                        <button class="layout-btn" id="listBtn" title="列表模式"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
+                        <button class="layout-btn" id="gridBtn" title="方塊模式"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></button>
                     </div>
                     <button class="square-btn" id="themeBtn"><svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg></button>
                 </div>
-                <div class="author-box-row" style="display:flex; gap:8px;">
+                <div class="controls-group">
                     <div class="header-author">© 2026 王宥鈞</div>
                     <button class="square-btn" onclick="openLog()"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></button>
                 </div>
@@ -177,7 +187,7 @@
         <div class="modal">
             <h3 id="modalTitle">標題</h3>
             <div id="modalBody" style="text-align: left; font-size: 0.82rem; color: var(--sub-text); line-height: 1.6;">內容</div>
-            <button class="close-modal" id="modalCloseBtn">完成</button>
+            <button class="close-modal" id="modalCloseBtn">我知道了</button>
         </div>
     </div>
 
@@ -194,7 +204,6 @@
                 <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全且多元的訊息傳遞</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>活絡互動與願望分享</p></div></a>
                 <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>開放式的數位決策論壇</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('學習筆記', event)"><div class="icon-box">✍️</div><div class="info"><h2>重點筆記</h2></div></a>
             </div>
             <div id="cat-task" class="category-group">
                 <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>數位化檢查與動態評核</p></div></a>
@@ -205,8 +214,6 @@
             <div id="cat-score" class="category-group">
                 <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>加權平均快速核算</p></div></a>
                 <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>全方位學期數據計算</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('排名追蹤', event)"><div class="icon-box">🥇</div><div class="info"><h2>排名追蹤</h2></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討分析', event)"><div class="icon-box">🔬</div><div class="info"><h2>檢討分析</h2></div></a>
             </div>
         </div>
     </div>
@@ -238,18 +245,15 @@
         function comingSoon(name, event) {
             if(event) event.preventDefault();
             document.getElementById('modalTitle').innerText = '🚧 施工中';
-            document.getElementById('modalBody').innerHTML = `<strong>${name}</strong> 目前尚未開放。我們正在努力優化此功能的穩定性。`;
+            document.getElementById('modalBody').innerHTML = `<strong>${name}</strong> 目前尚未開放。`;
             modalOverlay.style.display = 'flex';
         }
 
         function closeModal() {
             modalOverlay.style.display = 'none';
-            document.body.style.pointerEvents = 'none';
-            setTimeout(() => { document.body.style.pointerEvents = 'auto'; }, 100);
         }
 
-        modalCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
-        modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) closeModal(); });
+        modalCloseBtn.addEventListener('click', closeModal);
 
         function switchTab(catId, el) {
             document.querySelectorAll('.category-group').forEach(group => group.classList.remove('active'));
@@ -261,14 +265,25 @@
             if(targetEl) targetEl.classList.add('active');
 
             localStorage.setItem('activeTab', catId);
-            document.getElementById('scrollArea').scrollTo({ top: 0 });
+            document.getElementById('scrollArea').scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // --- 優化後的雙向切換動畫邏輯 ---
         function setLayout(mode) {
-            menuList.className = 'menu-list ' + mode;
-            document.getElementById('listBtn').classList.toggle('active', mode === 'list-mode');
-            document.getElementById('gridBtn').classList.toggle('active', mode === 'grid-mode');
-            localStorage.setItem('layout', mode);
+            // 加上切換中的 class 觸發消失動畫
+            menuList.classList.add('switching');
+            
+            setTimeout(() => {
+                menuList.className = 'menu-list ' + mode;
+                document.getElementById('listBtn').classList.toggle('active', mode === 'list-mode');
+                document.getElementById('gridBtn').classList.toggle('active', mode === 'grid-mode');
+                localStorage.setItem('layout', mode);
+                
+                // 移除 class 觸發出現動畫
+                setTimeout(() => {
+                    menuList.classList.remove('switching');
+                }, 50);
+            }, 300); // 動畫過渡時間
         }
 
         function applyTheme() {
