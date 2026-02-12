@@ -3,521 +3,527 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LuminaOS Sequoia Pro | 權威開發者旗艦版</title>
+    <title>LuminaOS Sequoia Pro | Elite Developer Edition</title>
     
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
     <style>
-        /* --- 系統級變數與復刻 macOS 顏色 --- */
+        /* --- macOS Sequoia Core Design Tokens --- */
         :root {
-            --sys-blue: #007AFF;
-            --sys-red: #FF5F57;
-            --sys-yellow: #FEBC2E;
-            --sys-green: #28C840;
-            --bg-active: rgba(255, 255, 255, 0.7);
-            --bg-blur: blur(40px) saturate(200%);
-            --shadow: 0 30px 60px rgba(0,0,0,0.3);
-            --border: 1px solid rgba(255,255,255,0.2);
+            --sf-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            --active-blur: blur(50px) saturate(210%);
+            --win-bg: rgba(255, 255, 255, 0.72);
+            --win-border: rgba(255, 255, 255, 0.4);
+            --sys-accent: #007AFF;
             --dock-bg: rgba(255, 255, 255, 0.25);
+            --shadow-win: 0 40px 100px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.05);
+            --shadow-dock: 0 10px 30px rgba(0,0,0,0.2);
+            --transition-spring: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto;
-            background: #000; overflow: hidden; user-select: none;
-        }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; -webkit-user-drag: none; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: var(--sf-font); overflow: hidden; background: #000; }
 
-        /* 動態桌布 - 模仿 Sequoia 經典渲染 */
-        #desktop {
-            width: 100vw; height: 100vh;
-            background: radial-gradient(circle at 0% 0%, #3e1e5e 0%, #1a0b2e 50%, #000 100%);
-            position: relative; overflow: hidden;
+        /* --- Desktop Fluid Background (Dynamic Sequoia) --- */
+        .desktop-engine {
+            position: fixed; inset: 0; z-index: -1;
+            background: linear-gradient(125deg, #1e3c72 0%, #2a5298 20%, #7028e4 50%, #e5b2ca 80%, #ff9a9e 100%);
+            background-size: 400% 400%; animation: sequoiaFlow 30s ease infinite;
         }
+        @keyframes sequoiaFlow { 0% {background-position: 0% 50%} 50% {background-position: 100% 50%} 100% {background-position: 0% 50%} }
 
-        /* --- 視窗管理架構 --- */
-        .window {
-            position: absolute; min-width: 400px; min-height: 300px;
-            background: var(--bg-active); backdrop-filter: var(--bg-blur);
-            border-radius: 12px; box-shadow: var(--shadow);
-            border: var(--border); display: flex; flex-direction: column;
-            opacity: 0; transform: scale(0.95);
-            transition: opacity 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 100;
-        }
-        .window.active { opacity: 1; transform: scale(1); }
-        .window.minimized { transform: scale(0) translateY(1000px); opacity: 0; pointer-events: none; }
-
-        /* 標題列與手繪按鈕 */
-        .title-bar {
-            height: 40px; display: flex; align-items: center; padding: 0 16px;
-            border-bottom: 1px solid rgba(0,0,0,0.05); cursor: default;
-        }
-        .controls { display: flex; gap: 8px; width: 60px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); position: relative; cursor: pointer; }
-        .dot::after { content: ''; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; font-size: 8px; color: rgba(0,0,0,0.5); font-weight: 800; }
-        .dot:hover::after { opacity: 1; }
-        .dot-close { background: var(--sys-red); } .dot-close::after { content: '×'; }
-        .dot-min { background: var(--sys-yellow); } .dot-min::after { content: '−'; }
-        .dot-max { background: var(--sys-green); } .dot-max::after { content: '+'; }
+        /* --- Window Server Management (The Core) --- */
+        .window-manager { position: relative; width: 100%; height: 100%; padding-top: 30px; }
         
-        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #333; }
-
-        /* 視窗縮放把手 */
-        .resizer { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: nwse-resize; }
-
-        /* --- 應用程式內容區 --- */
-        .win-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .win-frame {
+            position: absolute; min-width: 450px; min-height: 350px;
+            background: var(--win-bg); backdrop-filter: var(--active-blur);
+            border-radius: 12px; border: 1px solid var(--win-border);
+            box-shadow: var(--shadow-win); display: flex; flex-direction: column;
+            visibility: hidden; transform: scale(0.8) translateY(50px); opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s;
+            overflow: hidden;
+        }
+        .win-frame.visible { visibility: visible; transform: scale(1) translateY(0); opacity: 1; }
+        .win-frame.maximized { inset: 10px !important; width: calc(100vw - 20px) !important; height: calc(100vh - 100px) !important; transition: all 0.3s ease; }
+        .win-frame.minimized { transform: scale(0.1) translateY(800px) skewX(20deg); opacity: 0; pointer-events: none; }
         
-        /* 側邊導覽列 */
-        .win-sidebar { width: 200px; background: rgba(0,0,0,0.03); border-right: 1px solid rgba(0,0,0,0.05); padding: 20px 12px; }
-        .nav-item { 
+        /* Title Bar & Control Dots */
+        .win-header { height: 42px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(0,0,0,0.06); cursor: default; }
+        .traffic-lights { display: flex; gap: 8px; width: 52px; }
+        .t-dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; cursor: pointer; }
+        .t-dot:hover::before { opacity: 1; }
+        .t-dot::before { opacity: 0; transition: 0.2s; }
+        .close { background: #FF5F57; } .close::before { content: '×'; }
+        .min { background: #FEBC2E; } .min::before { content: '−'; }
+        .max { background: #28C840; } .max::before { content: '+'; }
+        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #444; }
+
+        /* --- System Navigation --- */
+        .win-container { display: flex; flex: 1; overflow: hidden; }
+        .win-sidebar { width: 180px; background: rgba(0,0,0,0.04); border-right: 1px solid rgba(0,0,0,0.05); padding: 15px 8px; }
+        .win-content { flex: 1; background: #FFF; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; }
+        
+        .side-btn { 
             padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px;
-            display: flex; align-items: center; gap: 10px; cursor: pointer; color: #444;
+            cursor: pointer; transition: 0.2s; color: #444; display: flex; align-items: center; gap: 8px;
         }
-        .nav-item.active { background: rgba(0,0,0,0.08); color: #000; font-weight: 600; }
-        .nav-icon { width: 18px; height: 18px; border-radius: 4px; background: var(--sys-blue); }
+        .side-btn:hover { background: rgba(0,0,0,0.05); }
+        .side-btn.active { background: rgba(0,122,255,0.12); color: var(--sys-accent); font-weight: 600; }
+        .icon-box { width: 18px; height: 18px; border-radius: 4px; }
 
-        /* 主工作區 */
-        .win-main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; background: #fff; }
+        /* --- Resizing & Snapping --- */
+        .resizer-r { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+        .resizer-b { position: absolute; bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+        .resizer-rb { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: nwse-resize; z-index: 10; }
 
-        /* --- 手繪 CSS 圖示與 UI 組件 --- */
-        .icon-gear { width: 20px; height: 20px; border: 4px dotted #666; border-radius: 50%; }
-        .icon-chart { width: 20px; height: 20px; display: flex; align-items: flex-end; gap: 2px; }
-        .icon-chart div { width: 4px; background: #666; border-radius: 1px; }
-
-        .apple-input {
-            width: 100%; border: 1.5px solid #E5E5E5; padding: 10px 14px; border-radius: 8px;
-            font-size: 14px; margin-bottom: 12px; background: #FAFAFA; transition: 0.2s;
-        }
-        .apple-input:focus { border-color: var(--sys-blue); outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
-
-        .apple-btn {
-            background: var(--sys-blue); color: #fff; border: none; padding: 8px 20px;
-            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
-        }
-        .apple-btn-outline { background: #E9E9EB; color: #000; }
-
-        /* --- Dock 導航列 --- */
-        .dock-wrapper {
+        /* --- macOS Dock --- */
+        .dock-bar {
             position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
             background: var(--dock-bg); backdrop-filter: blur(25px);
             padding: 8px; border-radius: 20px; display: flex; align-items: flex-end;
-            gap: 12px; border: var(--border); z-index: 1000;
+            gap: 12px; border: 1px solid rgba(255,255,255,0.2); box-shadow: var(--shadow-dock);
+            z-index: 9999;
         }
-        .dock-item {
-            width: 50px; height: 50px; border-radius: 12px; position: relative;
+        .dock-app {
+            width: 50px; height: 50px; border-radius: 12px; cursor: pointer;
             transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), margin 0.2s;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .dock-item:hover { transform: scale(1.4) translateY(-15px); margin: 0 10px; }
-        .dock-item-img { width: 100%; height: 100%; border-radius: 12px; background: linear-gradient(180deg, #fff, #ddd); box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        .dock-dot { width: 4px; height: 4px; background: rgba(255,255,255,0.6); border-radius: 50%; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); opacity: 0; }
-        .dock-dot.active { opacity: 1; }
+        .dock-app:hover { transform: scale(1.4) translateY(-15px); margin: 0 12px; }
+        .dock-app-icon { width: 100%; height: 100%; border-radius: 12px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 26px; display: flex; align-items: center; justify-content: center; }
+        .app-dot { width: 4px; height: 4px; background: #fff; border-radius: 50%; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); opacity: 0; }
+        .app-dot.running { opacity: 1; }
 
-        /* --- 手機模式：iOS 指令中心 --- */
-        #mobile-ios {
-            position: fixed; inset: 0; background: #F2F2F7; display: none; flex-direction: column; z-index: 9000;
-        }
-        .ios-status-bar { height: 44px; display: flex; justify-content: space-between; padding: 0 20px; align-items: center; font-size: 14px; font-weight: 600; }
-        .ios-card { background: #fff; border-radius: 16px; margin: 10px 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .ios-option { padding: 18px; border-radius: 12px; background: #fff; margin-bottom: 12px; border: 1px solid #E5E5E5; display: flex; justify-content: space-between; }
-        .ios-option.selected { border: 2.5px solid var(--sys-blue); background: rgba(0,122,255,0.05); }
+        /* --- Functional UI Components --- */
+        .apple-input { width: 100%; border: 1.5px solid #e5e5e5; padding: 12px 14px; border-radius: 10px; font-size: 14px; transition: 0.2s; background: #fafafa; }
+        .apple-input:focus { border-color: var(--sys-accent); outline: none; background: #fff; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        .apple-btn { background: var(--sys-accent); color: #fff; border: none; padding: 10px 24px; border-radius: 10px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        .apple-btn:hover { filter: brightness(1.1); }
+        .apple-btn:active { transform: scale(0.96); }
 
-        /* 功能性類別 */
+        /* --- Result Charts --- */
+        .chart-container { flex: 1; min-height: 280px; margin-top: 20px; position: relative; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .stat-card { background: #F2F2F7; padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-val { font-size: 24px; font-weight: 800; color: var(--sys-accent); }
+        .stat-lbl { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 4px; }
+
+        /* --- iOS 18 Mobile Experience --- */
+        #mobile-shell { position: fixed; inset: 0; background: #F2F2F7; display: none; flex-direction: column; z-index: 10000; }
+        .ios-header { padding: 60px 25px 20px; background: #fff; border-bottom: 0.5px solid #d1d1d6; }
+        .ios-content { flex: 1; padding: 20px; overflow-y: auto; }
+        .ios-option-card { background: #fff; padding: 20px; border-radius: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+        .ios-option-card.selected { border-color: var(--sys-accent); background: rgba(0,122,255,0.05); }
+
         .hidden { display: none !important; }
-        .flex { display: flex; }
-        .chart-wrap { flex: 1; position: relative; min-height: 250px; }
-
     </style>
 </head>
 <body>
 
-<div id="desktop">
-    <div id="win-master" class="window active" style="width: 900px; height: 600px; top: 100px; left: 150px;">
-        <div class="title-bar" onmousedown="handleDragStart(event, 'win-master')">
-            <div class="controls">
-                <div class="dot dot-close" onclick="closeWindow('win-master')"></div>
-                <div class="dot dot-min" onclick="minimizeWindow('win-master')"></div>
-                <div class="dot dot-max"></div>
+<div class="desktop-engine"></div>
+
+<div class="window-manager" id="wm">
+    <div id="win-teacher" class="win-frame" style="width: 1000px; height: 650px; top: 10%; left: 10%;">
+        <div class="win-header" onmousedown="Core.dragStart(event, 'win-teacher')">
+            <div class="traffic-lights">
+                <div class="t-dot close" onclick="Core.closeWin('win-teacher')"></div>
+                <div class="t-dot min" onclick="Core.minWin('win-teacher')"></div>
+                <div class="t-dot max" onclick="Core.maxWin('win-teacher')"></div>
             </div>
-            <div class="win-title">Lumina Master Center</div>
+            <div class="win-title">Control Center — Sequoia Core</div>
         </div>
-        <div class="win-body flex" style="flex-direction: row;">
-            <div class="win-sidebar">
-                <div class="nav-item active" onclick="switchView('config')">
-                    <div class="nav-icon" style="background: #5856D6;"></div> 配置任務
-                </div>
-                <div class="nav-item" onclick="switchView('analytics')">
-                    <div class="nav-icon" style="background: #FF2D55;"></div> 即時分析
-                </div>
-                <div class="nav-item" onclick="switchView('broadcast')">
-                    <div class="nav-icon" style="background: #34C759;"></div> 連線狀態
-                </div>
-            </div>
-            <div class="win-main" id="master-content">
-                <div id="v-config">
-                    <h1 style="font-size: 24px; margin-bottom: 20px;">任務配置</h1>
-                    <label style="font-size: 12px; color: #888; font-weight: 700;">投票題目</label>
-                    <input type="text" id="t-topic" class="apple-input" placeholder="例如：今日課程吸收率" oninput="state.topic = this.value">
+        <div class="win-container">
+            <aside class="win-sidebar">
+                <div class="side-btn active" onclick="Core.switchTab('config')"><div class="icon-box" style="background:#007AFF"></div> 任務部署</div>
+                <div class="side-btn" onclick="Core.switchTab('analytics')"><div class="icon-box" style="background:#FF2D55"></div> 實時分析</div>
+                <div class="side-btn" onclick="Core.switchTab('connections')"><div class="icon-box" style="background:#34C759"></div> 連線管理</div>
+                <div style="margin-top:20px; padding:10px; font-size:10px; color:#999; border-top:1px solid rgba(0,0,0,0.05)">SYS_VERSION: 15.0.1</div>
+            </aside>
+            <main class="win-content" id="master-view">
+                <div id="view-config">
+                    <h1 style="font-size: 28px; letter-spacing: -0.5px; margin-bottom: 10px;">發布互動任務</h1>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 30px;">設定題目與選項，同步至所有接入終端。</p>
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                        <label style="font-size: 12px; color: #888; font-weight: 700;">選項管理</label>
-                        <button class="apple-btn-outline apple-btn" style="padding: 4px 10px;" onclick="addOption()">+ 新增</button>
+                    <label style="font-size: 12px; font-weight: 700; color: #888;">投票題目 (TOPIC)</label>
+                    <input type="text" id="in-topic" class="apple-input" placeholder="例如：今日技術架構的理解難度？" style="margin-top:8px;">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #888;">候選項 (OPTIONS)</label>
+                        <button class="apple-btn" style="padding:4px 12px; font-size:12px;" onclick="Core.addOption()">+ 新增</button>
                     </div>
-                    <div id="t-option-list" style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 10px;"></div>
+                    <div id="opt-list" style="margin-top:12px; max-height: 220px; overflow-y:auto;"></div>
                     
-                    <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:30px; padding-top:20px; border-top:1px solid #f2f2f7;">
                         <div>
-                            <label style="font-size: 12px; color: #888;">設定時間 (秒)</label>
-                            <input type="number" id="t-duration" class="apple-input" value="60">
+                            <label style="font-size: 12px; color: #888;">計時 (秒)</label>
+                            <input type="number" id="in-timer" class="apple-input" value="60" style="margin-top:8px;">
                         </div>
-                        <div style="display: flex; align-items: flex-end;">
-                            <button id="btn-start" class="apple-btn" style="width: 100%; height: 42px;" onclick="startVoting()">🚀 發布指令</button>
-                            <button id="btn-stop" class="apple-btn hidden" style="width: 100%; height: 42px; background: var(--sys-red);" onclick="stopVoting()">停止投票</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="v-analytics" class="hidden">
-                    <h1 id="main-topic-title" style="font-size: 24px;">數據分析</h1>
-                    <div class="chart-wrap">
-                        <canvas id="masterChart"></canvas>
-                    </div>
-                    <div style="display: flex; gap: 20px; margin-top: 20px;">
-                        <div style="background: #F2F2F7; padding: 15px; border-radius: 12px; flex: 1;">
-                            <div style="font-size: 11px; color: #888;">房號代碼</div>
-                            <div id="room-id-val" style="font-size: 24px; font-weight: 800; color: var(--sys-blue);">----</div>
-                        </div>
-                        <div style="background: #F2F2F7; padding: 15px; border-radius: 12px; flex: 1;">
-                            <div style="font-size: 11px; color: #888;">已參與人數</div>
-                            <div id="vote-count-val" style="font-size: 24px; font-weight: 800;">0</div>
+                        <div style="display:flex; align-items:flex-end;">
+                            <button id="btn-deploy" class="apple-btn" style="width:100%; height:46px; font-size:16px;" onclick="Core.launchVoting()">🚀 部署並啟動</button>
+                            <button id="btn-stop" class="apple-btn hidden" style="width:100%; height:46px; background:#FF3B30;" onclick="Core.stopVoting()">🛑 終止任務</button>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <div id="view-analytics" class="hidden">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1 id="disp-topic" style="font-size: 24px; margin:0;">等待數據傳入...</h1>
+                        <div id="disp-clock" style="font-family:monospace; font-size:32px; font-weight:800; color:var(--sys-accent);">00:00</div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-val" id="st-room">----</div><div class="stat-lbl">房號代碼</div></div>
+                        <div class="stat-card"><div class="stat-val" id="st-votes">0</div><div class="stat-lbl">已投票數</div></div>
+                        <div class="stat-card"><div class="stat-val" id="st-online">0</div><div class="stat-lbl">在線設備</div></div>
+                    </div>
+                </div>
+            </main>
         </div>
-        <div class="resizer" onmousedown="handleResizeStart(event, 'win-master')"></div>
+        <div class="resizer-rb" onmousedown="Core.resizeStart(event, 'win-teacher')"></div>
     </div>
 
-    <div id="win-student-login" class="window" style="width: 350px; height: 450px; top: 150px; left: 600px;">
-        <div class="title-bar" onmousedown="handleDragStart(event, 'win-student-login')">
-            <div class="controls"><div class="dot dot-close" onclick="closeWindow('win-student-login')"></div></div>
-            <div class="win-title">Join Mission</div>
+    <div id="win-join" class="win-frame" style="width: 400px; height: 500px; top: 15%; left: 60%;">
+        <div class="win-header" onmousedown="Core.dragStart(event, 'win-join')">
+            <div class="traffic-lights"><div class="t-dot close" onclick="Core.closeWin('win-join')"></div></div>
+            <div class="win-title">Join Terminal</div>
         </div>
-        <div class="win-main" style="text-align: center; justify-content: center;">
-            <canvas id="t-qr" style="width: 150px; height: 150px; margin: 0 auto 20px; border-radius: 10px;"></canvas>
-            <p style="font-size: 13px; color: #666;">掃描 QR Code 或輸入房號</p>
-            <input type="text" id="s-room-input" class="apple-input" placeholder="Room ID" style="text-align: center; font-size: 24px;">
-            <button class="apple-btn" style="width: 100%;" onclick="initStudent()">進入終端</button>
-        </div>
-    </div>
-
-    <div class="dock-wrapper">
-        <div class="dock-item" onclick="toggleWindow('win-master')">
-            <div class="dock-item-img" style="background: linear-gradient(135deg, #007AFF, #00C7FF);">🏠</div>
-            <div class="dock-dot active"></div>
-        </div>
-        <div class="dock-item" onclick="toggleWindow('win-student-login')">
-            <div class="dock-item-img" style="background: linear-gradient(135deg, #34C759, #00D2FF);">📡</div>
-            <div class="dock-dot"></div>
-        </div>
-        <div class="dock-item">
-            <div class="dock-item-img" style="background: linear-gradient(135deg, #FF9500, #FFCC00);">⚙️</div>
+        <div class="win-content" style="align-items:center; justify-content:center; text-align:center;">
+            <canvas id="qr-canvas" style="width:200px; height:200px; margin-bottom:20px;"></canvas>
+            <h3 style="margin:0;">掃描快速接入</h3>
+            <p style="font-size:13px; color:#888;">或手動輸入 ID:</p>
+            <div id="manual-id" style="font-size:32px; font-weight:800; color:var(--sys-accent); letter-spacing:4px;">----</div>
         </div>
     </div>
 </div>
 
-<div id="mobile-ios">
-    <div class="ios-status-bar">
-        <span>9:41</span>
-        <div style="display: flex; gap: 5px;">📶 🔋</div>
+<div class="dock-bar">
+    <div class="dock-app" onclick="Core.openWin('win-teacher')">
+        <div class="dock-app-icon" style="background: linear-gradient(180deg, #5AC8FA, #007AFF); color:#fff;">📊</div>
+        <div class="app-dot running" id="dot-teacher"></div>
     </div>
-    <div style="padding: 20px 20px 10px;">
-        <h1 id="m-topic" style="font-size: 34px; margin: 0;">Lumina 任務</h1>
-        <p id="m-status" style="color: #888; margin-top: 5px;">準備連線...</p>
+    <div class="dock-app" onclick="Core.openWin('win-join')">
+        <div class="dock-app-icon" style="background: linear-gradient(180deg, #FF9500, #FF5E3A); color:#fff;">📱</div>
+        <div class="app-dot" id="dot-join"></div>
     </div>
-    <div class="ios-card" style="text-align: center;">
-        <div id="m-timer" style="font-size: 56px; font-weight: 800;">00:60</div>
-        <p style="font-size: 12px; color: #888; text-transform: uppercase;">剩餘時間</p>
+    <div style="width:1px; height:30px; background:rgba(255,255,255,0.2); margin:0 5px;"></div>
+    <div class="dock-app">
+        <div class="dock-app-icon" style="background: #E5E5EA;">⚙️</div>
     </div>
-    <div id="m-options" style="flex: 1; overflow-y: auto; padding-top: 10px;"></div>
-    <div id="m-results" class="hidden" style="padding-bottom: 40px;">
-        <div class="ios-card">
-            <h3 style="margin-top: 0;">任務統計</h3>
-            <div id="m-res-list"></div>
+</div>
+
+<div id="mobile-shell">
+    <header class="ios-header">
+        <h1 id="ios-topic" style="margin:0; font-size:32px; letter-spacing:-1px;">Lumina 任務</h1>
+        <div id="ios-status" style="font-size:13px; color:var(--sys-accent); margin-top:5px; font-weight:600;">正在接入指揮中心...</div>
+    </header>
+    <div class="ios-content">
+        <div style="background:#fff; border-radius:18px; padding:25px; text-align:center; margin-bottom:20px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+            <div id="ios-timer" style="font-size:64px; font-weight:800; letter-spacing:-2px;">00:00</div>
+            <div style="font-size:12px; color:#888; font-weight:700; text-transform:uppercase;">Time Remaining</div>
+        </div>
+        <div id="ios-opts"></div>
+        <div id="ios-res" class="hidden">
+            <h2 style="margin:30px 0 15px;">實時統計結果</h2>
+            <div id="ios-res-list"></div>
         </div>
     </div>
 </div>
 
 <script>
 /**
- * LuminaOS Sequoia Pro 引擎
- * 所有操作模仿系統原生行為
+ * LuminaOS Sequoia Engine v15.0 - Professional System Architecture
+ * Developed by World-Class Architect
  */
 
-let state = {
-    roomID: '',
-    topic: '目前的學習進度為何？',
-    options: ['完全理解', '需要複習', '完全跟不上'],
-    votes: {},
-    voterMap: {},
-    isLive: false,
-    timeLeft: '00:60',
-    showResult: false,
-    onlineCount: 0
-};
+const Core = (() => {
+    let state = {
+        roomID: '',
+        topic: '您對目前架構的實施信心？',
+        options: ['極具信心', '基本理解', '需要優化', '完全不懂'],
+        votes: {},
+        voterMap: {},
+        isLive: false,
+        timeLeft: '00:00',
+        showResult: false,
+        online: 0,
+        activeTab: 'config'
+    };
 
-let peer, conn, myChart, timerInt;
+    let peer, myChart, timerInt;
+    let zStack = 1000;
 
-// --- 視窗管理系統 (Window Server) ---
-let zIndexCounter = 1000;
-function focusWindow(id) {
-    const el = document.getElementById(id);
-    zIndexCounter++;
-    el.style.zIndex = zIndexCounter;
-}
+    // --- Window Server Logic ---
+    const openWin = (id) => {
+        const win = document.getElementById(id);
+        win.classList.remove('minimized');
+        win.classList.add('visible');
+        focusWin(id);
+        document.getElementById('dot-' + id.split('-')[1]).classList.add('running');
+    };
 
-function handleDragStart(e, id) {
-    focusWindow(id);
-    const el = document.getElementById(id);
-    let startX = e.clientX - el.offsetLeft;
-    let startY = e.clientY - el.offsetTop;
+    const closeWin = (id) => {
+        const win = document.getElementById(id);
+        win.classList.remove('visible');
+        document.getElementById('dot-' + id.split('-')[1]).classList.remove('running');
+    };
 
-    function move(e) {
-        el.style.left = (e.clientX - startX) + 'px';
-        el.style.top = (e.clientY - startY) + 'px';
-    }
-    function end() {
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', end);
-    }
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', end);
-}
+    const minWin = (id) => {
+        document.getElementById(id).classList.add('minimized');
+    };
 
-function handleResizeStart(e, id) {
-    const el = document.getElementById(id);
-    let startW = el.offsetWidth;
-    let startH = el.offsetHeight;
-    let startX = e.clientX;
-    let startY = e.clientY;
+    const maxWin = (id) => {
+        document.getElementById(id).classList.toggle('maximized');
+        if(myChart) setTimeout(() => myChart.resize(), 400);
+    };
 
-    function move(e) {
-        el.style.width = (startW + (e.clientX - startX)) + 'px';
-        el.style.height = (startH + (e.clientY - startY)) + 'px';
-        if(myChart) myChart.resize();
-    }
-    function end() {
-        document.removeEventListener('mousemove', move);
-        document.removeEventListener('mouseup', end);
-    }
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', end);
-}
+    const focusWin = (id) => {
+        zStack++;
+        document.getElementById(id).style.zIndex = zStack;
+    };
 
-function toggleWindow(id) {
-    const win = document.getElementById(id);
-    if(win.classList.contains('hidden')) {
-        win.classList.remove('hidden');
-        setTimeout(() => win.classList.add('active'), 10);
-    } else {
-        win.classList.toggle('minimized');
-    }
-    focusWindow(id);
-}
+    const dragStart = (e, id) => {
+        focusWin(id);
+        const win = document.getElementById(id);
+        if(win.classList.contains('maximized')) return;
+        let startX = e.clientX - win.offsetLeft;
+        let startY = e.clientY - win.offsetTop;
+        
+        const move = (ev) => {
+            win.style.left = (ev.clientX - startX) + 'px';
+            win.style.top = (ev.clientY - startY) + 'px';
+        };
+        const end = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', end);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', end);
+    };
 
-// --- 老師端邏輯 ---
-function initMaster() {
-    state.roomID = Math.floor(1000 + Math.random() * 8999).toString();
-    peer = new Peer('LUMINA-' + state.roomID);
+    const resizeStart = (e, id) => {
+        const win = document.getElementById(id);
+        let startW = win.offsetWidth;
+        let startH = win.offsetHeight;
+        let startX = e.clientX;
+        let startY = e.clientY;
 
-    peer.on('open', () => {
-        document.getElementById('room-id-val').innerText = state.roomID;
-        QRCode.toCanvas(document.getElementById('t-qr'), window.location.origin + window.location.pathname + '?r=' + state.roomID);
+        const move = (ev) => {
+            win.style.width = (startW + (ev.clientX - startX)) + 'px';
+            win.style.height = (startH + (ev.clientY - startY)) + 'px';
+            if(myChart) myChart.resize();
+        };
+        const end = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', end);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', end);
+    };
+
+    // --- App Logic ---
+    const initMaster = () => {
+        state.roomID = Math.floor(1000 + Math.random() * 8999).toString();
+        peer = new Peer('LUMINA-' + state.roomID);
+
+        peer.on('open', () => {
+            document.getElementById('st-room').innerText = state.roomID;
+            document.getElementById('manual-id').innerText = state.roomID;
+            const joinUrl = window.location.origin + window.location.pathname + '?r=' + state.roomID;
+            QRCode.toCanvas(document.getElementById('qr-canvas'), joinUrl);
+            renderOptions();
+            initChart();
+            broadcastLoop();
+            openWin('win-teacher');
+        });
+
+        peer.on('connection', conn => {
+            conn.on('data', data => {
+                if(data.type === 'vote' && state.isLive) {
+                    if(state.voterMap[conn.peer]) state.votes[state.voterMap[conn.peer]]--;
+                    state.voterMap[conn.peer] = data.val;
+                    state.votes[data.val] = (state.votes[data.val] || 0) + 1;
+                    updateUI();
+                }
+            });
+        });
+    };
+
+    const addOption = () => {
+        state.options.push("New Option " + (state.options.length + 1));
         renderOptions();
-        initChart();
-        startBroadcast();
-    });
+    };
 
-    peer.on('connection', c => {
-        c.on('data', d => {
-            if(d.type === 'vote' && state.isLive) {
-                if(state.voterMap[c.peer]) state.votes[state.voterMap[c.peer]]--;
-                state.voterMap[c.peer] = d.val;
-                state.votes[d.val] = (state.votes[d.val] || 0) + 1;
-                updateChart();
-            }
-        });
-    });
-}
-
-function renderOptions() {
-    const list = document.getElementById('t-option-list');
-    list.innerHTML = state.options.map((opt, i) => `
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" class="apple-input" value="${opt}" oninput="state.options[${i}]=this.value" style="margin:0">
-            <button class="apple-btn-outline apple-btn" style="color:var(--sys-red)" onclick="state.options.splice(${i},1); renderOptions();">✕</button>
-        </div>
-    `).join('');
-}
-
-function addOption() {
-    state.options.push("新選項 " + (state.options.length + 1));
-    renderOptions();
-}
-
-function switchView(view) {
-    document.getElementById('v-config').classList.toggle('hidden', view !== 'config');
-    document.getElementById('v-analytics').classList.toggle('hidden', view !== 'analytics');
-    
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.toggle('active', item.innerText.includes(view === 'config' ? '配置' : '分析'));
-    });
-    
-    if(view === 'analytics') {
-        document.getElementById('main-topic-title').innerText = state.topic;
-        setTimeout(updateChart, 50);
-    }
-}
-
-function initChart() {
-    const ctx = document.getElementById('masterChart').getContext('2d');
-    myChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: state.options,
-            datasets: [{ data: [], backgroundColor: '#007AFF', borderRadius: 8 }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: { x: { beginAtZero: true }, y: { ticks: { font: { weight: 'bold' } } } }
-        }
-    });
-}
-
-function updateChart() {
-    if(!myChart) return;
-    myChart.data.labels = state.options;
-    myChart.data.datasets[0].data = state.options.map(o => state.votes[o] || 0);
-    myChart.update();
-    document.getElementById('vote-count-val').innerText = Object.keys(state.voterMap).length;
-}
-
-function startVoting() {
-    state.isLive = true; state.showResult = false;
-    state.voterMap = {}; state.options.forEach(o => state.votes[o] = 0);
-    switchView('analytics');
-    
-    document.getElementById('btn-start').classList.add('hidden');
-    document.getElementById('btn-stop').classList.remove('hidden');
-
-    let total = parseInt(document.getElementById('t-duration').value);
-    timerInt = setInterval(() => {
-        total--;
-        let s = total.toString().padStart(2, '0');
-        state.timeLeft = `00:${s}`;
-        if(total <= 0) stopVoting();
-    }, 1000);
-}
-
-function stopVoting() {
-    state.isLive = false; state.showResult = true;
-    clearInterval(timerInt);
-    document.getElementById('btn-start').classList.remove('hidden');
-    document.getElementById('btn-stop').classList.add('hidden');
-    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-}
-
-function startBroadcast() {
-    setInterval(() => {
-        const payload = { ...state, type: 'sync' };
-        Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(payload); }));
-    }, 800);
-}
-
-// --- 裝置偵測與學生端 ---
-function initStudent() {
-    const rid = document.getElementById('s-room-input').value;
-    if(!rid) return;
-    
-    document.getElementById('desktop').classList.add('hidden');
-    document.getElementById('mobile-ios').style.display = 'flex';
-    
-    peer = new Peer();
-    peer.on('open', () => {
-        const s_conn = peer.connect('LUMINA-' + rid);
-        s_conn.on('open', () => {
-            document.getElementById('m-status').innerText = "已連線至房號：" + rid;
-        });
-        s_conn.on('data', d => {
-            if(d.type === 'sync') syncIOS(d, s_conn);
-        });
-    });
-}
-
-let myVote = "";
-function syncIOS(data, conn) {
-    document.getElementById('m-topic').innerText = data.topic;
-    document.getElementById('m-timer').innerText = data.timeLeft;
-    
-    const optArea = document.getElementById('m-options');
-    const resArea = document.getElementById('m-results');
-
-    if(data.showResult) {
-        optArea.classList.add('hidden');
-        resArea.classList.remove('hidden');
-        const total = Object.keys(data.voterMap).length || 1;
-        document.getElementById('m-res-list').innerHTML = data.options.map(o => {
-            const v = data.votes[o] || 0;
-            const p = Math.round(v/total*100);
-            return `
-                <div style="margin-bottom:15px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-weight:600;">
-                        <span>${o}</span><span>${v} 票 (${p}%)</span>
-                    </div>
-                    <div style="height:10px; background:#E5E5EA; border-radius:10px; overflow:hidden;">
-                        <div style="height:100%; width:${p}%; background:var(--sys-blue); transition:1s;"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } else {
-        optArea.classList.remove('hidden');
-        resArea.classList.add('hidden');
-        optArea.innerHTML = data.options.map(o => `
-            <div class="ios-option ${myVote === o ? 'selected' : ''}" onclick="handleIOSVote('${o}', ${data.isLive}, '${conn.peer}')">
-                <span style="font-size:17px; font-weight:500;">${o}</span>
-                ${myVote === o ? '<span style="color:var(--sys-blue)">✓</span>' : ''}
+    const renderOptions = () => {
+        const container = document.getElementById('opt-list');
+        container.innerHTML = state.options.map((opt, i) => `
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="text" class="apple-input" value="${opt}" oninput="Core.updateOpt(${i}, this.value)" style="margin:0">
+                <button class="apple-btn" style="background:#f2f2f7; color:#FF3B30;" onclick="Core.removeOpt(${i})">✕</button>
             </div>
         `).join('');
-    }
-}
+    };
 
-function handleIOSVote(val, live, peerID) {
-    if(!live) return;
-    myVote = val;
-    const teacherConn = Object.values(peer.connections)[0][0]; // 取得當前唯一的連線
-    teacherConn.send({ type: 'vote', val: val });
-}
+    const updateOpt = (i, val) => state.options[i] = val;
+    const removeOpt = (i) => { state.options.splice(i, 1); renderOptions(); };
 
-// 啟動檢測
-window.onload = () => {
-    // 簡單裝置檢測
-    if(/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-        document.getElementById('desktop').classList.add('hidden');
-        document.getElementById('mobile-ios').style.display = 'flex';
-        const r = new URLSearchParams(window.location.search).get('r');
-        if(r) {
-            document.getElementById('s-room-input').value = r;
-            initStudent();
+    const switchTab = (tab) => {
+        state.activeTab = tab;
+        document.getElementById('view-config').classList.toggle('hidden', tab !== 'config');
+        document.getElementById('view-analytics').classList.toggle('hidden', tab !== 'analytics');
+        document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        if(tab === 'analytics') setTimeout(() => myChart.resize(), 50);
+    };
+
+    const launchVoting = () => {
+        state.topic = document.getElementById('in-topic').value || state.topic;
+        state.isLive = true;
+        state.showResult = false;
+        state.voterMap = {};
+        state.options.forEach(o => state.votes[o] = 0);
+        
+        document.getElementById('btn-deploy').classList.add('hidden');
+        document.getElementById('btn-stop').classList.remove('hidden');
+        document.getElementById('disp-topic').innerText = state.topic;
+        switchTab('analytics');
+
+        let duration = parseInt(document.getElementById('in-timer').value);
+        timerInt = setInterval(() => {
+            duration--;
+            let m = Math.floor(duration/60).toString().padStart(2,'0');
+            let s = (duration%60).toString().padStart(2,'0');
+            state.timeLeft = `${m}:${s}`;
+            document.getElementById('disp-clock').innerText = state.timeLeft;
+            if(duration <= 0) stopVoting();
+        }, 1000);
+    };
+
+    const stopVoting = () => {
+        state.isLive = false;
+        state.showResult = true;
+        clearInterval(timerInt);
+        document.getElementById('btn-deploy').classList.remove('hidden');
+        document.getElementById('btn-stop').classList.add('hidden');
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    };
+
+    const initChart = () => {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: state.options,
+                datasets: [{ data: [], backgroundColor: '#007AFF', borderRadius: 8, barThickness: 40 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { grid:{display:false}, beginAtZero: true }, y: { grid:{display:false}, ticks:{ font:{size:14, weight:'600'} } } }
+            }
+        });
+    };
+
+    const updateUI = () => {
+        if(myChart) {
+            myChart.data.labels = state.options;
+            myChart.data.datasets[0].data = state.options.map(o => state.votes[o] || 0);
+            myChart.update();
         }
+        document.getElementById('st-votes').innerText = Object.keys(state.voterMap).length;
+        document.getElementById('st-online').innerText = Object.keys(peer.connections).length;
+    };
+
+    const broadcastLoop = () => {
+        setInterval(() => {
+            const data = { ...state, type: 'sync' };
+            Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(data); }));
+            updateUI();
+        }, 800);
+    };
+
+    // --- Student Logic ---
+    let myVote = '';
+    const initStudent = (rid) => {
+        document.querySelector('.window-manager').style.display = 'none';
+        document.querySelector('.dock-bar').style.display = 'none';
+        document.getElementById('mobile-shell').style.display = 'flex';
+        
+        const sPeer = new Peer();
+        sPeer.on('open', () => {
+            const conn = sPeer.connect('LUMINA-' + rid);
+            conn.on('open', () => {
+                document.getElementById('ios-status').innerText = "已連線至房號：" + rid;
+            });
+            conn.on('data', data => {
+                if(data.type === 'sync') syncIOS(data, conn);
+            });
+        });
+    };
+
+    const syncIOS = (data, conn) => {
+        document.getElementById('ios-topic').innerText = data.topic;
+        document.getElementById('ios-timer').innerText = data.timeLeft;
+        const optCont = document.getElementById('ios-opts');
+        const resCont = document.getElementById('ios-res');
+
+        if(data.showResult) {
+            optCont.classList.add('hidden');
+            resCont.classList.remove('hidden');
+            const total = Object.keys(data.voterMap).length || 1;
+            document.getElementById('ios-res-list').innerHTML = data.options.map(o => {
+                const p = Math.round((data.votes[o]||0)/total*100);
+                return `
+                    <div style="margin-bottom:20px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:700;">
+                            <span>${o}</span><span>${p}%</span>
+                        </div>
+                        <div style="height:12px; background:#E5E5EA; border-radius:10px; overflow:hidden;">
+                            <div style="height:100%; width:${p}%; background:var(--sys-accent); transition:1s cubic-bezier(0.2,1,0.2,1);"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            optCont.classList.remove('hidden');
+            resCont.classList.add('hidden');
+            optCont.innerHTML = data.options.map(o => `
+                <div class="ios-option-card ${myVote===o?'selected':''}" onclick="Core.castVote('${o}', ${data.isLive})">
+                    <span style="font-size:18px; font-weight:600;">${o}</span>
+                    ${myVote===o?'<span style="color:var(--sys-accent); font-weight:800;">✓</span>':''}
+                </div>
+            `).join('');
+        }
+    };
+
+    const castVote = (val, live) => {
+        if(!live) return;
+        myVote = val;
+        // 發送給老師端
+        const teacherConn = Object.values(peer.connections)[0][0];
+        teacherConn.send({ type: 'vote', val: val });
+    };
+
+    return { 
+        openWin, closeWin, minWin, maxWin, dragStart, resizeStart,
+        initMaster, addOption, updateOpt, removeOpt, switchTab, 
+        launchVoting, stopVoting, initStudent, castVote
+    };
+})();
+
+window.onload = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const r = urlParams.get('r');
+    if(r) {
+        Core.initStudent(r);
+    } else {
+        Core.initMaster();
     }
-    initMaster();
 };
 </script>
 </body>
