@@ -41,20 +41,23 @@
         .header-titles h1 { margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
         .header-titles p { margin: 4px 0 0; font-size: 0.8rem; color: var(--sub-text); font-weight: 500; }
 
-        /* --- 右側等寬控制區 --- */
-        .header-right { display: flex; flex-direction: column; gap: 8px; width: 120px; } /* 固定寬度確保上下對齊 */
+        /* --- 右側控制區：精確 120px 寬度 --- */
+        .header-right { display: flex; flex-direction: column; gap: 8px; width: 120px; } 
         
-        .controls { display: flex; gap: 6px; width: 100%; }
+        .controls-row { display: flex; gap: 8px; width: 100%; height: 34px; }
         .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
-        .layout-btn { flex: 1; height: 30px; background: none; border: none; border-radius: 7px; cursor: pointer; opacity: 0.4; display: flex; align-items: center; justify-content: center; }
+        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 7px; cursor: pointer; opacity: 0.4; display: flex; align-items: center; justify-content: center; }
         .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode .layout-btn.active { background: #334155; }
         .layout-btn svg { width: 14px; height: 14px; fill: var(--text); }
-        .theme-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
 
-        .author-box { display: flex; gap: 5px; width: 100%; }
-        .header-author { flex: 1; font-size: 0.55rem; color: var(--sub-text); font-weight: 700; background: rgba(0,0,0,0.03); padding: 4px 0; border-radius: 8px; text-align: center; border: 1px solid var(--border); white-space: nowrap; line-height: 24px; }
-        .log-btn { width: 34px; height: 34px; background: var(--p); color: white; border: none; font-size: 0.55rem; font-weight: 800; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .square-btn svg { width: 16px; height: 16px; fill: var(--text); }
+        .log-trigger { background: var(--p); }
+        .log-trigger svg { fill: white; }
+
+        .author-box-row { display: flex; gap: 8px; width: 100%; }
+        .header-author { flex: 1; font-size: 0.55rem; color: var(--sub-text); font-weight: 700; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; border: 1px solid var(--border); height: 34px; line-height: 34px; white-space: nowrap; }
 
         /* --- 內容捲動區 --- */
         .scroll-content { flex-grow: 1; overflow-y: auto; padding-bottom: 140px; }
@@ -69,11 +72,11 @@
         .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
-        /* 卡片與 Emoji 對齊修正 */
+        /* 卡片設計 */
         .menu-item { background: var(--card); border-radius: 22px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.3s; position: relative; overflow: hidden; }
         .menu-item:hover { transform: translateY(-3px); border-color: var(--p); background: white; }
 
-        .list-mode .menu-item { padding: 18px; align-items: center; flex-direction: row !important; } /* 強制橫向 */
+        .list-mode .menu-item { padding: 18px; align-items: center; flex-direction: row !important; }
         .grid-mode .menu-item { flex-direction: column; padding: 22px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; align-items: center; }
 
         .icon-box { border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); flex-shrink: 0; }
@@ -82,7 +85,7 @@
 
         .info { flex: 1; display: flex; flex-direction: column; }
         .info h2 { margin: 0; font-size: 0.95rem; font-weight: 800; }
-        .info p { margin: 4px 0 0; font-size: 0.78rem; color: var(--sub-text); line-height: 1.4; }
+        .info p { margin: 4px 0 0; font-size: 0.78rem; color: var(--sub-text); line-height: 1.2; }
         .grid-mode .info p { display: none; }
 
         .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.8; }
@@ -115,23 +118,27 @@
                 <p>導師教學利器 ＆ 學生學習助手</p>
             </div>
             <div class="header-right">
-                <div class="controls">
+                <div class="controls-row">
                     <div class="layout-switcher">
                         <button class="layout-btn" id="listBtn"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
                         <button class="layout-btn" id="gridBtn"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></button>
                     </div>
-                    <button class="theme-btn" id="themeBtn">🌙</button>
+                    <button class="square-btn" id="themeBtn" title="切換模式">
+                        <svg id="themeIcon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+                    </button>
                 </div>
-                <div class="author-box">
+                <div class="author-box-row">
                     <div class="header-author">© 2026 王宥鈞</div>
-                    <button class="log-btn" onclick="openLog()">日誌</button>
+                    <button class="square-btn log-trigger" onclick="openLog()" title="更新日誌">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modalOverlay">
-        <div class="modal" id="modalContent">
+        <div class="modal">
             <h3 id="modalTitle">標題</h3>
             <div id="modalBody" style="text-align: left; font-size: 0.85rem; color: var(--sub-text); line-height: 1.6;">內容</div>
             <button class="close-modal" onclick="closeModal()">關閉</button>
@@ -144,31 +151,35 @@
             <div id="cat-notice" class="category-group">
                 <div class="category-label">🔔 提醒系列</div>
                 <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合重要時程與同步動態</p></div></a>
+                <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考倒數管理</h2><p>精確計算考點剩餘時間</p></div></a>
                 <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新測驗與作業進度</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜')"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2><p>記錄優良表現與個人佳績</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜')"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2><p>記錄優良表現與獲獎紀錄</p></div></a>
             </div>
 
             <div id="cat-interact" class="category-group">
                 <div class="category-label">🤝 互動系列</div>
                 <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>導師與學生深度溝通渠道</p></div></a>
+                <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">㊙️</div><div class="info"><h2>加密匿名信箱</h2><p>安全且多元的訊息傳遞</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">✨</div><div class="info"><h2>班級匿名許願池</h2><p>活絡互動與願望分享</p></div></a>
                 <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公共事務討論區</h2><p>開放式的數位決策論壇</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('班級相簿')"><div class="icon-box">🖼️</div><div class="info"><h2>班級回憶相簿</h2><p>典藏校園生活的點滴瞬間</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('重點筆記')"><div class="icon-box">✍️</div><div class="info"><h2>考前重點筆記</h2><p>各科核心知識點彙整</p></div></a>
             </div>
 
             <div id="cat-task" class="category-group">
                 <div class="category-label">⚙️ 班務處理</div>
                 <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>環境勤務追蹤</h2><p>數位化檢查與動態評核</p></div></a>
                 <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機化公平排序選位</p></div></a>
+                <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>重要事務一鍵即時表決</p></div></a>
                 <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>多重算法公平一鍵分組</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('午餐登記')"><div class="icon-box">🍱</div><div class="info"><h2>每日午餐登記</h2><p>簡化統計流程，快速訂餐</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('座位圖')"><div class="icon-box">🗺️</div><div class="info"><h2>班級座位導覽</h2><p>快速定位同學與股長位置</p></div></a>
             </div>
 
             <div id="cat-score" class="category-group">
                 <div class="category-label">📊 成績系列</div>
                 <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算</p></div></a>
                 <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>全方位學期數據計算</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('錯題本')"><div class="icon-box">🧠</div><div class="info"><h2>個人數位錯題本</h2><p>針對弱點進行高效複習</p></div></a>
+                <a href="rank/index.html" class="menu-item exam"><div class="icon-box">🥇</div><div class="info"><h2>進步獎追蹤</h2><p>鼓勵個人表現之成長分析</p></div></a>
+                <a href="analysis/index.html" class="menu-item soon"><div class="icon-box">🔬</div><div class="info"><h2>考後檢討報告</h2><p>弱點科目數據反饋建議</p></div></a>
             </div>
 
         </div>
@@ -189,19 +200,19 @@
         const gridBtn = document.getElementById('gridBtn');
         const themeBtn = document.getElementById('themeBtn');
         const scrollArea = document.getElementById('scrollArea');
-        const modalOverlay = document.getElementById('modalOverlay');
+        const modalOverlay = document.querySelector('.modal-overlay');
 
         let isDarkMode = localStorage.getItem('theme') === 'dark';
 
         function openLog() {
-            document.getElementById('modalTitle').innerText = '🚀 系統更新日誌';
-            document.getElementById('modalBody').innerHTML = '<strong>最後更新：2026/02/12</strong><br><br>1. 實現控制按鈕與版權資訊組的精確等寬對齊。<br>2. 修正「公共事務討論區」列表模式排版。<br>3. 恢復初始橫幅內容：切身公物使用提醒。<br>4. 新增多個服務預留入口並支援 Coming Soon 提示。<br>5. 優化日誌按鈕比例。';
+            document.getElementById('modalTitle').innerText = '📁 系統優化檔案';
+            document.getElementById('modalBody').innerHTML = '<strong>優化時間：2026/02/12</strong><br><br>1. <b>圖示化日誌</b>：移除文字，改用文件 SVG 圖示。<br>2. <b>完美對齊</b>：對齊按鈕群與版權文字，寬度嚴格控制於 120px。<br>3. <b>功能擴充</b>：新增「座位導覽」、「榮譽榜」等 Coming Soon 項目。<br>4. <b>介面精煉</b>：強化深淺色模式的視覺對比。';
             modalOverlay.style.display = 'flex';
         }
 
         function comingSoon(name) {
-            document.getElementById('modalTitle').innerText = '🚧 即將推出';
-            document.getElementById('modalBody').innerHTML = `很抱歉，<strong>${name}</strong> 功能目前仍在開發階段，敬請期待！`;
+            document.getElementById('modalTitle').innerText = '🚧 Coming Soon';
+            document.getElementById('modalBody').innerHTML = `<strong>${name}</strong> 功能正在數位實驗室中進行開發，目前暫未提供儲存空間與連結，敬請期待。`;
             modalOverlay.style.display = 'flex';
         }
 
@@ -225,7 +236,6 @@
 
         function applyTheme() {
             document.body.classList.toggle('dark-mode', isDarkMode);
-            themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         }
 
