@@ -2,110 +2,129 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>P2P 專業雲端教室</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P 教學平台 v2</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --primary: #6200ee; --bg: #121212; }
-        body { font-family: 'PingFang TC', sans-serif; background: var(--bg); color: white; display: flex; height: 100vh; margin: 0; }
-        .main-area { flex: 1; display: flex; flex-direction: column; padding: 20px; }
-        .side-bar { width: 300px; background: #1e1e1e; border-left: 1px solid #333; display: flex; flex-direction: column; }
-        video { width: 100%; border-radius: 12px; background: #000; flex-grow: 1; object-fit: contain; }
-        .controls { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        #chat-msgs { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; }
-        .chat-input { padding: 10px; border-top: 1px solid #333; display: flex; }
-        input { background: #333; border: none; color: white; padding: 8px; border-radius: 4px; flex: 1; }
-        button { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
-        .msg { margin-bottom: 8px; }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; height: 100vh; }
+        #video-area { flex: 1; position: relative; display: flex; flex-direction: column; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #111; }
+        #side-panel { width: 300px; background: #1a1a1a; display: flex; flex-direction: column; border-left: 1px solid #333; }
+        .controls { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; z-index: 10; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; font-size: 14px; }
+        .chat-input-area { padding: 15px; background: #222; display: flex; gap: 5px; }
+        input { flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; }
+        button { padding: 8px 12px; border-radius: 4px; border: none; background: #6200ee; color: white; cursor: pointer; }
+        .msg { margin-bottom: 10px; line-height: 1.4; }
+        .msg-system { color: #888; font-style: italic; }
         .msg-me { color: #03dac6; }
+        .msg-other { color: #ffab40; }
     </style>
 </head>
 <body>
 
-<div class="main-area">
+<div id="video-area">
     <div class="controls">
-        <span>教室 ID: <strong id="my-id">...</strong></span>
-        <button onclick="copyInviteLink()">複製邀請連結</button>
-        <button id="start-host" style="background:#cf6679">啟動教學模式</button>
+        <div>我的 ID: <span id="my-id">連線中...</span></div>
+        <button id="btn-host" style="background: #cf6679; margin-top:5px;">開始直播螢幕</button>
+        <button id="btn-copy" style="display:none;">複製教室連結</button>
     </div>
-    <video id="main-video" autoplay playsinline controls></video>
+    <video id="remote-video" autoplay playsinline controls></video>
 </div>
 
-<div class="side-bar">
-    <div id="chat-msgs">
-        <div class="msg">系統：教室已建立。</div>
+<div id="side-panel">
+    <div id="chat-window">
+        <div class="msg msg-system">系統：歡迎進入教室。</div>
     </div>
-    <div class="chat-input">
-        <input type="text" id="chat-msg" placeholder="輸入訊息...">
-        <button id="send-btn">傳送</button>
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="輸入訊息...">
+        <button id="btn-send">傳送</button>
     </div>
 </div>
 
 <script>
     const peer = new Peer({ config: {'iceServers': [{ url: 'stun:stun.l.google.com:19302' }]}});
-    let activeConnections = [];
+    let currentConn = null; // 用於聊天的連線
     let localStream = null;
 
+    // 1. 初始化
     peer.on('open', id => {
         document.getElementById('my-id').innerText = id;
-        // 檢查網址是否有 hash，有的話自動填入 (這就是自動邀請功能)
+        // 如果網址有 Hash (#)，代表是學生點連結進來的
         if(window.location.hash) {
             const hostId = window.location.hash.substring(1);
-            addMsg("系統", "偵測到邀請碼，準備連線...");
-            joinClass(hostId);
+            startJoining(hostId);
         }
     });
 
-    function addMsg(user, text) {
-        const div = document.createElement('div');
-        div.className = 'msg';
-        div.innerHTML = `<b class="${user==='我'?'msg-me':''}">${user}:</b> ${text}`;
-        const container = document.getElementById('chat-msgs');
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
+    // 2. 主講人邏輯：點擊直播
+    document.getElementById('btn-host').addEventListener('click', async () => {
+        try {
+            localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            document.getElementById('remote-video').srcObject = localStream;
+            document.getElementById('btn-copy').style.display = 'inline-block';
+            addLog("系統", "螢幕分享已啟動，等待學生加入...");
 
-    function copyInviteLink() {
-        const id = document.getElementById('my-id').innerText;
-        const link = window.location.origin + window.location.pathname + "#" + id;
-        navigator.clipboard.writeText(link);
-        alert("邀請連結已複製！發送給學生即可。");
-    }
+            // 監聽聊天的連線 (Data)
+            peer.on('connection', conn => {
+                currentConn = conn;
+                setupChatListeners(conn);
+            });
 
-    // 主講人啟動
-    document.getElementById('start-host').addEventListener('click', async () => {
-        localStream = await navigator.mediaDevices.getDisplayMedia({video:true, audio:true});
-        document.getElementById('main-video').srcObject = localStream;
-        
-        peer.on('connection', conn => { // 監聽文字連線
-            setupChat(conn);
-        });
-        
-        peer.on('call', call => { // 監聽視訊連線
-            call.answer(localStream);
-        });
+            // 監聽視訊的撥打 (Call)
+            peer.on('call', call => {
+                call.answer(localStream); // 把螢幕畫面丟給學生
+            });
+        } catch (e) { alert("無法分享螢幕: " + e); }
     });
 
-    // 學生加入
-    function joinClass(hostId) {
+    // 3. 學生邏輯：加入教室
+    function startJoining(hostId) {
+        addLog("系統", "正在連線至主講人...");
+        
+        // 建立聊天連線
         const conn = peer.connect(hostId);
-        setupChat(conn);
+        currentConn = conn;
+        setupChatListeners(conn);
+
+        // 建立視訊連線
         const call = peer.call(hostId, new MediaStream());
         call.on('stream', stream => {
-            document.getElementById('main-video').srcObject = stream;
+            document.getElementById('remote-video').srcObject = stream;
+            addLog("系統", "已接收到主講人畫面");
         });
     }
 
-    function setupChat(conn) {
-        activeConnections.push(conn);
-        conn.on('data', data => addMsg("學生", data));
-        conn.on('open', () => addMsg("系統", "與對方建立即時連線"));
+    // 4. 聊天通訊基礎
+    function setupChatListeners(conn) {
+        conn.on('open', () => addLog("系統", "聊天頻道已建立"));
+        conn.on('data', data => addLog("對方", data));
     }
 
-    document.getElementById('send-btn').addEventListener('click', () => {
-        const val = document.getElementById('chat-msg').value;
-        activeConnections.forEach(conn => conn.send(val));
-        addMsg("我", val);
-        document.getElementById('chat-msg').value = "";
+    document.getElementById('btn-send').addEventListener('click', sendMessage);
+    document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+
+    function sendMessage() {
+        const msg = document.getElementById('chat-input').value;
+        if(!msg || !currentConn) return;
+        currentConn.send(msg);
+        addLog("我", msg);
+        document.getElementById('chat-input').value = "";
+    }
+
+    function addLog(user, text) {
+        const win = document.getElementById('chat-window');
+        const div = document.createElement('div');
+        div.className = `msg ${user === '系統' ? 'msg-system' : (user === '我' ? 'msg-me' : 'msg-other')}`;
+        div.innerHTML = `<b>${user}:</b> ${text}`;
+        win.appendChild(div);
+        win.scrollTop = win.scrollHeight;
+    }
+
+    document.getElementById('btn-copy').addEventListener('click', () => {
+        const url = window.location.origin + window.location.pathname + "#" + peer.id;
+        navigator.clipboard.writeText(url);
+        alert("邀請連結已複製，請傳送給學生！");
     });
 </script>
 </body>
