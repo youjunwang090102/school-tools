@@ -6,16 +6,21 @@
     <title>班級數位平台</title>
     <style>
         :root {
+            /* 顏色系統 */
             --p: #4361ee; --s: #2ec4b6; --a: #ff9f1c; --t: #ef233c;
             --g: #7209b7; --m: #ffd60a; --v: #38b000; --cal: #5856D6;
             --whi: #AF52DE; --help: #ff758c; --duty: #4cc9f0;
             --homework: #b5a442; --unknownmail: #0081a7;
+
+            /* 淺色模式 */
             --bg: #f8fafc;
             --card: rgba(255, 255, 255, 0.85);
             --text: #1e293b;
             --sub-text: #64748b;
             --border: rgba(0,0,0,0.06);
             --glass-bg: rgba(248, 250, 252, 0.7);
+            --banner-bg: #fff9db;
+            --banner-text: #856404;
         }
 
         body.dark-mode {
@@ -25,6 +30,8 @@
             --sub-text: #94a3b8;
             --border: rgba(255,255,255,0.1);
             --glass-bg: rgba(15, 23, 42, 0.7);
+            --banner-bg: rgba(45, 38, 0, 0.8);
+            --banner-text: #ffd43b;
         }
 
         body {
@@ -35,9 +42,10 @@
             display: flex; flex-direction: column;
             height: 100dvh; width: 100vw;
             overflow: hidden;
+            transition: background-color 0.3s;
         }
 
-        /* --- 頂部區域 --- */
+        /* --- 頂部強化毛玻璃區 --- */
         .fixed-top {
             flex-shrink: 0; z-index: 1000;
             background: var(--glass-bg);
@@ -46,20 +54,38 @@
             border-bottom: 1px solid var(--border);
         }
 
+        .notice-banner {
+            background-color: var(--banner-bg);
+            color: var(--banner-text);
+            padding: 6px 15px;
+            font-size: 0.75rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
         .header {
-            padding: 12px 18px;
+            padding: 10px 18px;
             display: flex; justify-content: space-between; align-items: center;
             max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box;
         }
 
-        .header-titles h1 { margin: 0; font-size: 1.25rem; font-weight: 850; }
-        .header-titles p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); }
+        .header-titles h1 { margin: 0; font-size: 1.25rem; font-weight: 850; letter-spacing: -0.5px; }
+        .header-titles p { 
+            margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); 
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .header-author { opacity: 0.5; font-size: 0.65rem; font-weight: 400; }
 
         .controls { display: flex; align-items: center; gap: 10px; }
+
+        /* 圖示切換器 */
         .layout-switcher { display: flex; background: rgba(0,0,0,0.06); padding: 3px; border-radius: 10px; }
         body.dark-mode .layout-switcher { background: rgba(255,255,255,0.08); }
 
-        .layout-btn { background: none; border: none; padding: 5px 8px; border-radius: 7px; cursor: pointer; opacity: 0.4; }
+        .layout-btn { 
+            background: none; border: none; padding: 5px 8px; border-radius: 7px; 
+            cursor: pointer; opacity: 0.35; transition: 0.2s; display: flex; align-items: center;
+        }
         .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         body.dark-mode .layout-btn.active { background: #334155; }
         .layout-btn svg { width: 16px; height: 16px; fill: var(--text); }
@@ -67,15 +93,16 @@
         .theme-btn {
             background: var(--card); border: 1px solid var(--border);
             width: 34px; height: 34px; border-radius: 10px;
-            font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            padding: 0; transition: 0.2s;
         }
 
-        /* --- 內容捲動區 --- */
+        /* --- 捲動內容區 --- */
         .scroll-content {
             flex-grow: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 100px; /* 為底部導覽留空間 */
+            padding-bottom: 110px; /* 為底部導覽留白 */
         }
 
         .menu-list {
@@ -83,90 +110,118 @@
             box-sizing: border-box; display: grid; gap: 12px;
         }
 
-        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-        .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-
-        @media (min-width: 768px) {
-            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
-            .header-titles h1 { font-size: 1.6rem; }
-        }
-
-        /* 分類標籤樣式 */
-        .category-group { display: none; } /* 預設隱藏，由 JS 控制顯示 */
+        /* 分類過濾邏輯 */
+        .category-group { display: none; }
         .category-group.active { display: contents; }
 
+        /* 模式排版 */
+        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+        
+        .menu-list.grid-mode { 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px;
+        }
+
+        @media (min-width: 768px) {
+            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 16px; }
+            .header-titles h1 { font-size: 1.5rem; }
+            .header-titles p { font-size: 0.8rem; }
+        }
+
+        /* 系列區隔線 */
         .category-label {
-            grid-column: 1 / -1; margin: 10px 0 5px 5px;
-            font-size: 0.8rem; color: var(--sub-text); font-weight: 800;
+            grid-column: 1 / -1; margin: 15px 0 5px 5px;
+            font-size: 0.75rem; color: var(--sub-text); font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px;
             display: flex; align-items: center; gap: 10px;
         }
         .category-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
-        /* 卡片樣式 */
+        /* 服務標籤卡片 */
         .menu-item {
             background: var(--card); border-radius: 16px; border: 1px solid var(--border);
-            text-decoration: none; color: inherit; display: flex; transition: 0.2s;
+            text-decoration: none; color: inherit; display: flex; transition: all 0.2s ease;
             position: relative; overflow: hidden;
         }
+
+        .menu-item:hover { transform: translateY(-3px); border-color: var(--p); background: white; }
+        body.dark-mode .menu-item:hover { background: #1e293b; }
+
+        /* 清單模式 */
         .list-mode .menu-item { padding: 16px; align-items: center; }
+        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 12px; font-size: 20px; }
+        
+        /* 方塊模式 (正方形) */
         .grid-mode .menu-item { 
-            flex-direction: column; padding: 15px 5px; text-align: center; justify-content: center; align-items: center;
+            flex-direction: column; padding: 15px 5px; text-align: center; 
+            justify-content: center; align-items: center;
             aspect-ratio: 1 / 1; 
         }
+        .grid-mode .icon-box { width: 38px; height: 38px; margin-bottom: 8px; font-size: 22px; }
+        .grid-mode .info h2 { font-size: 0.8rem; line-height: 1.2; }
+        .grid-mode .info p { display: none; }
 
-        .icon-box { border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); flex-shrink: 0; }
-        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 12px; font-size: 20px; }
-        .grid-mode .icon-box { width: 40px; height: 40px; margin-bottom: 8px; font-size: 24px; }
+        .icon-box {
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.03); flex-shrink: 0;
+        }
 
         .info h2 { margin: 0; font-size: 0.95rem; font-weight: 750; }
         .info p { margin: 3px 0 0; font-size: 0.75rem; color: var(--sub-text); line-height: 1.3; }
-        .grid-mode .info p { display: none; }
+
+        /* 左側線條 */
+        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 3px; height: 100%; background: currentColor; opacity: 0.6; }
+        .grid-mode .menu-item::before { width: 100%; height: 3px; top: 0; left: 0; }
+
+        .calendar { color: var(--cal); } .timer { color: var(--t); }
+        .homework { color: var(--homework); } .teacher-help { color: var(--help); }
+        .unknownmail { color: var(--unknownmail); } .whisper { color: var(--whi); }
+        .board { color: var(--m); } .duty { color: var(--duty); }
+        .seat { color: var(--p); } .vote { color: var(--v); }
+        .group { color: var(--g); } .exam { color: var(--s); }
+        .final { color: var(--a); }
 
         /* --- 底部橢圓導覽列 --- */
         .bottom-nav-container {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; z-index: 2000;
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 420px; z-index: 2000;
         }
 
         .bottom-nav {
             background: var(--glass-bg);
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
             border: 1px solid var(--border);
             border-radius: 50px;
             display: flex; justify-content: space-around; align-items: center;
-            padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 5px; box-shadow: 0 12px 30px rgba(0,0,0,0.12);
         }
 
         .nav-item {
             flex: 1; text-align: center; padding: 10px 0;
-            font-size: 0.85rem; font-weight: 600; color: var(--sub-text);
-            cursor: pointer; z-index: 2; transition: 0.3s;
-            border-radius: 40px;
+            font-size: 0.82rem; font-weight: 700; color: var(--sub-text);
+            cursor: pointer; transition: 0.3s; border-radius: 40px;
         }
 
-        .nav-item.active { color: white; background: var(--p); }
-        body.dark-mode .nav-item.active { background: var(--p); }
-
-        /* 顏色標註 */
-        .calendar { border-left: 4px solid var(--cal); } .timer { border-left: 4px solid var(--t); }
-        .homework { border-left: 4px solid var(--homework); } .teacher-help { border-left: 4px solid var(--help); }
-        .unknownmail { border-left: 4px solid var(--unknownmail); } .whisper { border-left: 4px solid var(--whi); }
-        .board { border-left: 4px solid var(--m); } .duty { border-left: 4px solid var(--duty); }
-        .seat { border-left: 4px solid var(--p); } .vote { border-left: 4px solid var(--v); }
-        .group { border-left: 4px solid var(--g); } .exam { border-left: 4px solid var(--s); }
-        .final { border-left: 4px solid var(--a); }
+        .nav-item.active { color: white; background: var(--p); box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
 
     </style>
 </head>
 <body>
 
     <div class="fixed-top">
+        <div class="notice-banner">
+            💡 留言板與許願池消耗量高，請節約使用確保服務穩定。
+        </div>
         <div class="header">
             <div class="header-titles">
                 <h1>班級數位平台</h1>
-                <p>導師教學利器 ＆ 學生學習助手</p>
+                <p>
+                    導師教學利器 ＆ 學生學習助手
+                    <span class="header-author">| © 2026 王宥鈞</span>
+                </p>
             </div>
+            
             <div class="controls">
                 <div class="layout-switcher">
                     <button class="layout-btn active" id="listBtn">
@@ -187,13 +242,13 @@
             <div id="cat-notice" class="category-group active">
                 <div class="category-label">🔔 提醒系列</div>
                 <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合重要時程，同步校內最新動態</p></div></a>
-                <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考倒數管理</h2><p>精確計算考點剩餘時間</p></div></a>
+                <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考倒數管理</h2><p>精確計算統測學測剩餘時間</p></div></a>
                 <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新各科作業與測驗進度</p></div></a>
             </div>
 
             <div id="cat-interact" class="category-group">
                 <div class="category-label">🤝 互動系列</div>
-                <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>導師與學生間的深度溝通渠道</p></div></a>
+                <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>建立導師與學生間的深度溝通渠道</p></div></a>
                 <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">🤫</div><div class="info"><h2>加密匿名信箱</h2><p>安全的多元訊息傳遞工具</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">🤫</div><div class="info"><h2>班級匿名許願池</h2><p>活絡班級互動氛圍</p></div></a>
                 <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公共事務討論區</h2><p>班級決策的開放式數位論壇</p></div></a>
@@ -202,15 +257,15 @@
             <div id="cat-task" class="category-group">
                 <div class="category-label">⚙️ 班務處理</div>
                 <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>環境勤務追蹤</h2><p>數位化檢查與動態記點評核</p></div></a>
-                <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機化公平排序</p></div></a>
+                <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>現場隨機化公平排序選位</p></div></a>
                 <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>重要班級事務一鍵表決</p></div></a>
-                <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>一鍵生成專案分組</p></div></a>
+                <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>公平算法，一鍵生成專案分組</p></div></a>
             </div>
 
             <div id="cat-score" class="category-group">
                 <div class="category-label">📊 成績系列</div>
-                <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算</p></div></a>
-                <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>整合數據之綜合計算</p></div></a>
+                <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算，掌握趨勢</p></div></a>
+                <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>整合平時與期末數據之綜合計算</p></div></a>
             </div>
 
         </div>
@@ -218,10 +273,10 @@
 
     <div class="bottom-nav-container">
         <div class="bottom-nav">
-            <div class="nav-item active" onclick="showCategory('cat-notice', this)">提醒</div>
-            <div class="nav-item" onclick="showCategory('cat-interact', this)">互動</div>
-            <div class="nav-item" onclick="showCategory('cat-task', this)">班務</div>
-            <div class="nav-item" onclick="showCategory('cat-score', this)">成績</div>
+            <div class="nav-item active" onclick="switchTab('cat-notice', this)">提醒</div>
+            <div class="nav-item" onclick="switchTab('cat-interact', this)">互動</div>
+            <div class="nav-item" onclick="switchTab('cat-task', this)">班務</div>
+            <div class="nav-item" onclick="switchTab('cat-score', this)">成績</div>
         </div>
     </div>
 
@@ -232,22 +287,18 @@
         const themeBtn = document.getElementById('themeBtn');
         const scrollArea = document.getElementById('scrollArea');
 
-        // 切換分類
-        function showCategory(catId, element) {
-            // 隱藏所有組別
-            document.querySelectorAll('.category-group').forEach(el => el.classList.remove('active'));
-            // 顯示選擇組別
+        // 1. 分類切換邏輯
+        function switchTab(catId, el) {
+            document.querySelectorAll('.category-group').forEach(group => group.classList.remove('active'));
             document.getElementById(catId).classList.add('active');
             
-            // 更新按鈕樣式
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
             
-            // 回到頂部
             scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 佈局切換
+        // 2. 佈局切換邏輯
         listBtn.addEventListener('click', () => {
             menuList.classList.replace('grid-mode', 'list-mode');
             listBtn.classList.add('active'); gridBtn.classList.remove('active');
@@ -258,15 +309,15 @@
             gridBtn.classList.add('active'); listBtn.classList.remove('active');
         });
 
-        // 主題切換
+        // 3. 深淺色主題切換
         let isDarkMode = localStorage.getItem('theme') === 'dark';
-        function updateTheme() {
+        function applyTheme() {
             document.body.classList.toggle('dark-mode', isDarkMode);
             themeBtn.textContent = isDarkMode ? '☀️' : '🌙';
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         }
-        themeBtn.addEventListener('click', () => { isDarkMode = !isDarkMode; updateTheme(); });
-        updateTheme();
+        themeBtn.addEventListener('click', () => { isDarkMode = !isDarkMode; applyTheme(); });
+        applyTheme();
     </script>
 </body>
 </html>
