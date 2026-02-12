@@ -9,10 +9,10 @@
         const CONFIG_BANNER_TEXT = "💡 班級公物請愛惜使用，若有損壞請立即通報總務股長。";
         const CONFIG_LOG_CONTENT = `
             <strong>優化時間：2026/02/12</strong><br><br>
-            • <b>去冗餘設計</b>：移除所有類別標題文字，畫面更純淨。<br>
-            • <b>飽滿方塊</b>：調整手機版三欄比例，填補空白區域，縮減無效間距。<br>
-            • <b>極致透明</b>：底部導覽列透明度優化，保留光澤邊框辨識度。<br>
-            • <b>邏輯修正</b>：全數 Coming Soon 項目已對齊彈窗機制。
+            • <b>選單狀態持久化</b>：修復重新整理後選單高亮消失的問題。<br>
+            • <b>幾何美學</b>：方塊模式現在是完美的 1:1 正方形。<br>
+            • <b>智能邊框設計</b>：淺色用深框、深色用淺框，層次更鮮明。<br>
+            • <b>標題美化</b>：引入漸層色標題與優化的間距。
         `;
     </script>
     <style>
@@ -22,112 +22,118 @@
             --whi: #AF52DE; --help: #ff758c; --duty: #4cc9f0;
             --homework: #b5a442; --unknownmail: #0081a7;
             --bg: #f8fafc;
-            --card: rgba(255, 255, 255, 0.4); 
+            --card: rgba(255, 255, 255, 0.5); 
             --text: #1e293b;
             --sub-text: #64748b;
-            --border: rgba(0,0,0,0.08);
-            --glass-bg: rgba(248, 250, 252, 0.3); 
+            --border: rgba(0,0,0,0.06);
+            --glass-bg: rgba(255, 255, 255, 0.6); 
             --banner-bg: #fff9db;
             --banner-text: #856404;
+            /* 淺色模式下的選單邊框 */
+            --nav-border: rgba(30, 41, 59, 0.15); 
         }
 
         body.dark-mode {
             --bg: #020617;
-            --card: rgba(15, 23, 42, 0.3);
-            --text: #f1f5f9;
+            --card: rgba(30, 41, 59, 0.4);
+            --text: #f8fafc;
             --sub-text: #94a3b8;
             --border: rgba(255,255,255,0.06);
-            --glass-bg: rgba(2, 6, 23, 0.1);
+            --glass-bg: rgba(15, 23, 42, 0.7);
             --banner-bg: #2d2a15;
             --banner-text: #ffec99;
+            /* 深色模式下的選單邊框 */
+            --nav-border: rgba(255, 255, 255, 0.2);
         }
 
-        body { margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; }
+        body { margin: 0; padding: 0; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; transition: background 0.3s; }
 
-        .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-bottom: 1px solid var(--border); }
-        .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 10px 15px; font-size: 0.75rem; text-align: center; font-weight: 800; }
+        /* --- 升級後的標題列 --- */
+        .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(25px) saturate(180%); -webkit-backdrop-filter: blur(25px) saturate(180%); border-bottom: 1px solid var(--border); }
+        .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 8px 15px; font-size: 0.7rem; text-align: center; font-weight: 800; letter-spacing: 0.5px; }
 
-        .header { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-        .header-titles h1 { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; }
-        .header-titles p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); font-weight: 600; opacity: 0.8; }
+        .header { padding: 22px 20px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .header-titles h1 { 
+            margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.8px; 
+            background: linear-gradient(135deg, var(--p), var(--g));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-titles p { margin: 3px 0 0; font-size: 0.75rem; color: var(--sub-text); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.8; }
 
-        /* 右側對齊控制區 */
-        .header-right { display: flex; flex-direction: column; gap: 6px; width: 110px; } 
-        .controls-row { display: flex; gap: 6px; width: 100%; height: 32px; }
-        .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 8px; border: 1px solid var(--border); }
-        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 6px; cursor: pointer; opacity: 0.3; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .header-right { display: flex; flex-direction: column; gap: 8px; width: 110px; } 
+        .controls-row { display: flex; gap: 8px; width: 100%; height: 34px; }
+        .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.06); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
+        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 8px; cursor: pointer; opacity: 0.3; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         body.dark-mode .layout-btn.active { background: #334155; }
-        .layout-btn svg { width: 13px; height: 13px; fill: var(--text); }
-        .square-btn { width: 32px; height: 32px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .square-btn svg { width: 15px; height: 15px; fill: var(--text); }
-        .author-box-row { display: flex; gap: 6px; width: 100%; }
-        .header-author { flex: 1; font-size: 0.5rem; color: var(--sub-text); font-weight: 800; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; border: 1px solid var(--border); height: 32px; line-height: 32px; letter-spacing: 0.5px; }
+        .layout-btn svg { width: 14px; height: 14px; fill: var(--text); }
+        
+        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .square-btn svg { width: 16px; height: 16px; fill: var(--text); }
+        .header-author { font-size: 0.5rem; color: var(--sub-text); font-weight: 800; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; border: 1px solid var(--border); height: 34px; line-height: 34px; flex: 1; }
 
-        /* 內容捲動區 - 移除 category-label */
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding-top: 15px; padding-bottom: 120px; }
-        .menu-list { width: 100%; max-width: 1200px; padding: 0 15px; margin: 0 auto; box-sizing: border-box; display: grid; }
-
+        /* 內容區 */
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding-top: 20px; padding-bottom: 140px; scroll-behavior: smooth; }
+        .menu-list { width: 100%; max-width: 1200px; padding: 0 16px; margin: 0 auto; box-sizing: border-box; display: grid; }
         .category-group { display: none; }
         .category-group.active { display: contents; }
 
-        /* 列表模式：增加飽滿感 */
-        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+        /* 模式切換 */
+        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
         
-        /* 方塊模式：手機 3 欄，極致空間利用 */
+        /* 完美的正方形方塊 */
         .menu-list.grid-mode { 
             grid-template-columns: repeat(3, 1fr); 
-            gap: 10px;
+            gap: 12px;
         }
-
         @media (min-width: 768px) {
-            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 150px); justify-content: center; gap: 20px; }
+            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 20px; }
         }
 
-        .menu-item { background: var(--card); border-radius: 20px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.2s cubic-bezier(0.2, 0, 0.2, 1); position: relative; overflow: hidden; }
-        .menu-item:hover { transform: translateY(-2px); border-color: var(--p); background: white; }
+        .menu-item { background: var(--card); border-radius: 24px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+        .menu-item:hover { transform: translateY(-4px) scale(1.02); border-color: var(--p); background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         body.dark-mode .menu-item:hover { background: #1e293b; }
 
-        .list-mode .menu-item { padding: 16px; align-items: center; }
-        
-        /* 方塊模式內容調整：減少空白，增加圖示佔比 */
-        .grid-mode .menu-item { flex-direction: column; padding: 18px 6px; text-align: center; justify-content: center; align-items: center; min-height: 105px; }
+        .list-mode .menu-item { padding: 18px; align-items: center; }
+        .grid-mode .menu-item { 
+            flex-direction: column; padding: 10px; text-align: center; 
+            justify-content: center; align-items: center; 
+            aspect-ratio: 1 / 1; /* 這是關鍵：強制正方形 */
+        }
 
-        .icon-box { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); flex-shrink: 0; }
-        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 12px; font-size: 22px; border-radius: 12px; }
-        .grid-mode .icon-box { width: 42px; height: 42px; margin-bottom: 8px; font-size: 26px; border-radius: 50%; } /* 方塊模式圖示圓形化更協調 */
+        .icon-box { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); flex-shrink: 0; transition: 0.3s; }
+        .list-mode .icon-box { width: 48px; height: 48px; margin-right: 15px; font-size: 24px; border-radius: 14px; }
+        .grid-mode .icon-box { width: 44px; height: 44px; margin-bottom: 10px; font-size: 28px; border-radius: 50%; }
 
-        .info { flex: 1; pointer-events: none; }
-        .info h2 { margin: 0; font-size: 0.85rem; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
-        .info p { margin: 4px 0 0; font-size: 0.7rem; color: var(--sub-text); line-height: 1.2; }
+        .info h2 { margin: 0; font-size: 0.88rem; font-weight: 800; letter-spacing: -0.2px; }
+        .info p { margin: 4px 0 0; font-size: 0.72rem; color: var(--sub-text); line-height: 1.3; }
         .grid-mode .info p { display: none; }
 
-        /* 左側彩色條裝飾 */
-        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.7; }
-        .grid-mode .menu-item::before { width: 100%; height: 3px; top: 0; left: 0; }
+        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.6; }
+        .grid-mode .menu-item::before { width: 100%; height: 4px; top: 0; left: 0; }
 
-        /* 彈窗樣式 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal { background: var(--bg); width: 82%; max-width: 360px; border-radius: 24px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; }
-        .close-modal { margin-top: 18px; width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+        /* 彈窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal { background: var(--bg); width: 85%; max-width: 380px; border-radius: 30px; padding: 30px; border: 1px solid var(--border); text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.25); }
+        .close-modal { margin-top: 20px; width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .close-modal:active { transform: scale(0.96); }
 
-        /* 底部導覽列：極透明 + 纖細邊框 */
-        .bottom-nav-container { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2000; }
+        /* --- 智能選單列 --- */
+        .bottom-nav-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 2000; }
         .bottom-nav { 
-            background: rgba(255, 255, 255, 0.05); 
-            backdrop-filter: blur(30px) saturate(150%); 
-            -webkit-backdrop-filter: blur(30px) saturate(150%);
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(30px) saturate(180%); 
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
             border-radius: 100px; 
             display: flex; 
-            padding: 5px; 
-            border: 1px solid rgba(255,255,255,0.25); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
+            padding: 6px; 
+            border: 1.5px solid var(--nav-border); /* 智能變色外框 */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08); 
         }
-        body.dark-mode .bottom-nav { background: rgba(0, 0, 0, 0.12); border: 1px solid rgba(255,255,255,0.08); }
-        .nav-item { flex: 1; text-align: center; padding: 10px 0; font-size: 0.9rem; font-weight: 800; color: var(--sub-text); cursor: pointer; border-radius: 100px; transition: 0.2s; }
-        .nav-item.active { color: white; background: var(--p); box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.95rem; font-weight: 900; color: var(--sub-text); cursor: pointer; border-radius: 100px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-item.active { color: white; background: var(--p); box-shadow: 0 6px 15px rgba(67, 97, 238, 0.4); }
 
-        /* 顏色主題 */
+        /* 色系 */
         .calendar { color: var(--cal); } .timer { color: var(--t); } .homework { color: var(--homework); }
         .teacher-help { color: var(--help); } .unknownmail { color: var(--unknownmail); } .whisper { color: var(--whi); } .board { color: var(--m); }
         .duty { color: var(--duty); } .seat { color: var(--p); } .vote { color: var(--v); } .group { color: var(--g); }
@@ -141,7 +147,7 @@
         <div class="header">
             <div class="header-titles">
                 <h1>班級數位平台</h1>
-                <p>導師教學利器 ＆ 學生學習助手</p>
+                <p>Smart Classroom Hub</p>
             </div>
             <div class="header-right">
                 <div class="controls-row">
@@ -149,15 +155,11 @@
                         <button class="layout-btn" id="listBtn"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
                         <button class="layout-btn" id="gridBtn"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></button>
                     </div>
-                    <button class="square-btn" id="themeBtn">
-                        <svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
-                    </button>
+                    <button class="square-btn" id="themeBtn"><svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg></button>
                 </div>
-                <div class="author-box-row">
+                <div class="author-box-row" style="display:flex; gap:8px;">
                     <div class="header-author">© 2026 王宥鈞</div>
-                    <button class="square-btn" onclick="openLog()">
-                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                    </button>
+                    <button class="square-btn" onclick="openLog()"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></button>
                 </div>
             </div>
         </div>
@@ -167,43 +169,37 @@
         <div class="modal">
             <h3 id="modalTitle">標題</h3>
             <div id="modalBody" style="text-align: left; font-size: 0.82rem; color: var(--sub-text); line-height: 1.6;">內容</div>
-            <button class="close-modal" id="modalCloseBtn">關閉</button>
+            <button class="close-modal" id="modalCloseBtn">完成</button>
         </div>
     </div>
 
     <div class="scroll-content" id="scrollArea">
         <div class="menu-list" id="menuList">
-            
             <div id="cat-notice" class="category-group">
                 <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>整合重要時程與同步動態</p></div></a>
                 <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>精確計算考點剩餘時間</p></div></a>
                 <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>即時更新測驗與作業進度</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜', event)"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2><p>記錄優良表現與獲獎紀錄</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜', event)"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2></div></a>
             </div>
-
             <div id="cat-interact" class="category-group">
                 <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>導師與學生深度溝通渠道</p></div></a>
                 <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全且多元的訊息傳遞</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>活絡互動與願望分享</p></div></a>
                 <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>開放式的數位決策論壇</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('學習筆記', event)"><div class="icon-box">✍️</div><div class="info"><h2>重點筆記</h2><p>各科核心知識點彙整</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('學習筆記', event)"><div class="icon-box">✍️</div><div class="info"><h2>重點筆記</h2></div></a>
             </div>
-
             <div id="cat-task" class="category-group">
                 <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>數位化檢查與動態評核</p></div></a>
                 <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>隨機化公平排序選位</p></div></a>
                 <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票</h2><p>重要事務一鍵即時表決</p></div></a>
                 <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>分組模組</h2><p>多重算法公平一鍵分組</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('班級座位圖', event)"><div class="icon-box">🗺️</div><div class="info"><h2>座位導覽</h2><p>快速定位同學位置</p></div></a>
             </div>
-
             <div id="cat-score" class="category-group">
                 <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>加權平均快速核算</p></div></a>
                 <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>全方位學期數據計算</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('排名追蹤', event)"><div class="icon-box">🥇</div><div class="info"><h2>排名追蹤</h2><p>進度數據與目標反饋</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討分析', event)"><div class="icon-box">🔬</div><div class="info"><h2>檢討分析</h2><p>弱點科目成長建議</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('排名追蹤', event)"><div class="icon-box">🥇</div><div class="info"><h2>排名追蹤</h2></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討分析', event)"><div class="icon-box">🔬</div><div class="info"><h2>檢討分析</h2></div></a>
             </div>
-
         </div>
     </div>
 
@@ -220,6 +216,7 @@
         const bannerElement = document.getElementById('bannerElement');
         const modalOverlay = document.getElementById('modalOverlay');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const menuList = document.getElementById('menuList');
 
         bannerElement.innerText = CONFIG_BANNER_TEXT;
         let isDarkMode = localStorage.getItem('theme') === 'dark';
@@ -246,17 +243,24 @@
         modalCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
         modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) closeModal(); });
 
+        // --- 修復：重新整理後高亮保留 ---
         function switchTab(catId, el) {
             document.querySelectorAll('.category-group').forEach(group => group.classList.remove('active'));
-            document.getElementById(catId).classList.add('active');
+            const activeGroup = document.getElementById(catId);
+            if(activeGroup) activeGroup.classList.add('active');
+
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            if(el) el.classList.add('active');
+            
+            // 如果 el 存在則使用 el，否則透過 data-id 尋找（用於重新整理時）
+            const targetEl = el || document.querySelector(`.nav-item[data-id="${catId}"]`);
+            if(targetEl) targetEl.classList.add('active');
+
             localStorage.setItem('activeTab', catId);
             document.getElementById('scrollArea').scrollTo({ top: 0 });
         }
 
         function setLayout(mode) {
-            document.getElementById('menuList').className = 'menu-list ' + mode;
+            menuList.className = 'menu-list ' + mode;
             document.getElementById('listBtn').classList.toggle('active', mode === 'list-mode');
             document.getElementById('gridBtn').classList.toggle('active', mode === 'grid-mode');
             localStorage.setItem('layout', mode);
@@ -271,9 +275,13 @@
         document.getElementById('gridBtn').addEventListener('click', () => setLayout('grid-mode'));
         document.getElementById('themeBtn').addEventListener('click', () => { isDarkMode = !isDarkMode; applyTheme(); });
 
+        // 初始化
         setLayout(localStorage.getItem('layout') || 'list-mode');
-        switchTab(localStorage.getItem('activeTab') || 'cat-notice');
         applyTheme();
+        
+        // 關鍵初始化邏輯
+        const savedTab = localStorage.getItem('activeTab') || 'cat-notice';
+        switchTab(savedTab); 
     </script>
 </body>
 </html>
