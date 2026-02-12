@@ -3,364 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina macOS Sequoia | 權威級投票系統</title>
+    <title>LuminaOS Sequoia Pro | 權威開發者旗艦版</title>
     
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    
+
     <style>
-        /* --- macOS Design System (San Francisco Font & Colors) --- */
+        /* --- 系統級變數與復刻 macOS 顏色 --- */
         :root {
-            --window-bg: rgba(255, 255, 255, 0.75);
-            --window-border: rgba(255, 255, 255, 0.3);
-            --accent: #007AFF;
-            --text-main: #1d1d1f;
-            --text-dim: #86868b;
-            --glass: blur(30px) saturate(180%);
-            --shadow: 0 20px 60px rgba(0,0,0,0.2);
-            --spring: cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            --sys-blue: #007AFF;
+            --sys-red: #FF5F57;
+            --sys-yellow: #FEBC2E;
+            --sys-green: #28C840;
+            --bg-active: rgba(255, 255, 255, 0.7);
+            --bg-blur: blur(40px) saturate(200%);
+            --shadow: 0 30px 60px rgba(0,0,0,0.3);
+            --border: 1px solid rgba(255,255,255,0.2);
+            --dock-bg: rgba(255, 255, 255, 0.25);
         }
 
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif; }
-        
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; overflow: hidden; color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto;
+            background: #000; overflow: hidden; user-select: none;
         }
 
-        /* macOS 動態桌布背景 */
-        .desktop-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: linear-gradient(135deg, #FF9A9E 0%, #FAD0C4 20%, #A18CD1 50%, #FBC2EB 80%, #84FAB0 100%);
-            background-size: 400% 400%;
-            animation: fluidBG 20s ease infinite;
+        /* 動態桌布 - 模仿 Sequoia 經典渲染 */
+        #desktop {
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 0% 0%, #3e1e5e 0%, #1a0b2e 50%, #000 100%);
+            position: relative; overflow: hidden;
         }
-        @keyframes fluidBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* --- macOS 視窗系統 --- */
+        /* --- 視窗管理架構 --- */
         .window {
-            position: absolute; background: var(--window-bg); backdrop-filter: var(--glass);
-            border: 1px solid var(--window-border); border-radius: 12px;
-            box-shadow: var(--shadow); display: flex; flex-direction: column;
-            overflow: hidden; transition: transform 0.3s var(--spring), opacity 0.3s;
-            z-index: 10;
+            position: absolute; min-width: 400px; min-height: 300px;
+            background: var(--bg-active); backdrop-filter: var(--bg-blur);
+            border-radius: 12px; box-shadow: var(--shadow);
+            border: var(--border); display: flex; flex-direction: column;
+            opacity: 0; transform: scale(0.95);
+            transition: opacity 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
         }
-        
-        /* 標題列 */
+        .window.active { opacity: 1; transform: scale(1); }
+        .window.minimized { transform: scale(0) translateY(1000px); opacity: 0; pointer-events: none; }
+
+        /* 標題列與手繪按鈕 */
         .title-bar {
-            height: 44px; display: flex; align-items: center; padding: 0 15px;
-            cursor: grab; user-select: none; border-bottom: 1px solid rgba(0,0,0,0.05);
+            height: 40px; display: flex; align-items: center; padding: 0 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.05); cursor: default;
         }
-        .title-bar:active { cursor: grabbing; }
-        .traffic-lights { display: flex; gap: 8px; margin-right: 20px; }
-        .light { width: 12px; height: 12px; border-radius: 50%; }
-        .red { background: #FF5F57; } .yellow { background: #FEBC2E; } .green { background: #28C840; }
-        .title-text { font-size: 13px; font-weight: 600; color: #444; flex: 1; text-align: center; margin-right: 50px; }
+        .controls { display: flex; gap: 8px; width: 60px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); position: relative; cursor: pointer; }
+        .dot::after { content: ''; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; font-size: 8px; color: rgba(0,0,0,0.5); font-weight: 800; }
+        .dot:hover::after { opacity: 1; }
+        .dot-close { background: var(--sys-red); } .dot-close::after { content: '×'; }
+        .dot-min { background: var(--sys-yellow); } .dot-min::after { content: '−'; }
+        .dot-max { background: var(--sys-green); } .dot-max::after { content: '+'; }
+        
+        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #333; }
 
-        /* 內容區塊 */
-        .content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-        .sidebar-view { width: 180px; background: rgba(0,0,0,0.03); border-right: 1px solid rgba(0,0,0,0.05); padding: 20px 10px; }
-        .main-view { flex: 1; padding: 30px; display: flex; flex-direction: column; position: relative; }
+        /* 視窗縮放把手 */
+        .resizer { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: nwse-resize; }
 
-        /* --- UI 元件 --- */
+        /* --- 應用程式內容區 --- */
+        .win-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* 側邊導覽列 */
+        .win-sidebar { width: 200px; background: rgba(0,0,0,0.03); border-right: 1px solid rgba(0,0,0,0.05); padding: 20px 12px; }
+        .nav-item { 
+            padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px;
+            display: flex; align-items: center; gap: 10px; cursor: pointer; color: #444;
+        }
+        .nav-item.active { background: rgba(0,0,0,0.08); color: #000; font-weight: 600; }
+        .nav-icon { width: 18px; height: 18px; border-radius: 4px; background: var(--sys-blue); }
+
+        /* 主工作區 */
+        .win-main { flex: 1; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; background: #fff; }
+
+        /* --- 手繪 CSS 圖示與 UI 組件 --- */
+        .icon-gear { width: 20px; height: 20px; border: 4px dotted #666; border-radius: 50%; }
+        .icon-chart { width: 20px; height: 20px; display: flex; align-items: flex-end; gap: 2px; }
+        .icon-chart div { width: 4px; background: #666; border-radius: 1px; }
+
         .apple-input {
-            background: #FFF; border: 1px solid #d2d2d7; padding: 10px 12px;
-            border-radius: 8px; font-size: 14px; width: 100%; transition: 0.2s;
-            margin-bottom: 10px;
+            width: 100%; border: 1.5px solid #E5E5E5; padding: 10px 14px; border-radius: 8px;
+            font-size: 14px; margin-bottom: 12px; background: #FAFAFA; transition: 0.2s;
         }
-        .apple-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        .apple-input:focus { border-color: var(--sys-blue); outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
 
         .apple-btn {
-            background: linear-gradient(180deg, #5AC8FA 0%, #007AFF 100%);
-            color: white; border: none; padding: 8px 16px; border-radius: 8px;
-            font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.2s;
+            background: var(--sys-blue); color: #fff; border: none; padding: 8px 20px;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
         }
-        .apple-btn:hover { filter: brightness(1.1); }
-        .apple-btn:active { transform: scale(0.98); }
+        .apple-btn-outline { background: #E9E9EB; color: #000; }
 
-        /* --- macOS Dock --- */
-        .dock-container {
-            position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px);
-            padding: 8px; border-radius: 20px; display: flex; gap: 12px;
-            border: 1px solid rgba(255,255,255,0.2); z-index: 1000;
+        /* --- Dock 導航列 --- */
+        .dock-wrapper {
+            position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+            background: var(--dock-bg); backdrop-filter: blur(25px);
+            padding: 8px; border-radius: 20px; display: flex; align-items: flex-end;
+            gap: 12px; border: var(--border); z-index: 1000;
         }
-        .dock-icon {
-            width: 50px; height: 50px; background: #FFF; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; transition: transform 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        .dock-item {
+            width: 50px; height: 50px; border-radius: 12px; position: relative;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), margin 0.2s;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
-        .dock-icon:hover { transform: translateY(-15px) scale(1.2); }
-        .dock-dot { width: 4px; height: 4px; background: #333; border-radius: 50%; margin-top: 2px; }
+        .dock-item:hover { transform: scale(1.4) translateY(-15px); margin: 0 10px; }
+        .dock-item-img { width: 100%; height: 100%; border-radius: 12px; background: linear-gradient(180deg, #fff, #ddd); box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .dock-dot { width: 4px; height: 4px; background: rgba(255,255,255,0.6); border-radius: 50%; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); opacity: 0; }
+        .dock-dot.active { opacity: 1; }
 
-        /* --- 數據圖與通知 --- */
-        #chart-container { flex: 1; min-height: 0; margin-top: 20px; position: relative; }
-        
-        .notification {
-            position: fixed; top: 20px; right: 20px; width: 320px;
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(20px);
-            border-radius: 18px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            z-index: 9999; animation: slideIn 0.5s var(--spring);
+        /* --- 手機模式：iOS 指令中心 --- */
+        #mobile-ios {
+            position: fixed; inset: 0; background: #F2F2F7; display: none; flex-direction: column; z-index: 9000;
         }
-        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+        .ios-status-bar { height: 44px; display: flex; justify-content: space-between; padding: 0 20px; align-items: center; font-size: 14px; font-weight: 600; }
+        .ios-card { background: #fff; border-radius: 16px; margin: 10px 20px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .ios-option { padding: 18px; border-radius: 12px; background: #fff; margin-bottom: 12px; border: 1px solid #E5E5E5; display: flex; justify-content: space-between; }
+        .ios-option.selected { border: 2.5px solid var(--sys-blue); background: rgba(0,122,255,0.05); }
 
-        /* --- 學生端專用：偽 iOS 介面 --- */
-        .ios-shell {
-            width: 100%; height: 100%; display: none; flex-direction: column;
-            background: #F2F2F7;
-        }
-        .ios-header { padding: 50px 20px 20px; background: #FFF; border-bottom: 1px solid #d2d2d7; }
-        .ios-content { flex: 1; overflow-y: auto; padding: 20px; }
-        .ios-card { background: #FFF; border-radius: 14px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-
+        /* 功能性類別 */
         .hidden { display: none !important; }
-        .scroll-v { overflow-y: auto; max-height: 300px; padding-right: 5px; }
-        .scroll-v::-webkit-scrollbar { width: 6px; }
-        .scroll-v::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 10px; }
-
-        /* 修正重疊問題：統計列 */
-        .mac-stats-bar {
-            display: flex; gap: 30px; margin-top: 20px; padding-top: 15px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-        .stat-box { display: flex; flex-direction: column; }
-        .stat-val { font-size: 24px; font-weight: 700; color: var(--accent); }
-        .stat-lbl { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
+        .flex { display: flex; }
+        .chart-wrap { flex: 1; position: relative; min-height: 250px; }
 
     </style>
 </head>
 <body>
 
-<div class="desktop-bg"></div>
-
-<div id="desktop-icons" style="padding: 40px; display: grid; gap: 30px; justify-items: center; width: fit-content;">
-    <div class="dock-icon" onclick="openWindow('teacher-win')" style="width: 70px; height: 70px; font-size: 40px;">👨‍🏫</div>
-    <div style="color: white; font-size: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Teacher Center</div>
-    
-    <div class="dock-icon" onclick="openStudentLogin()" style="width: 70px; height: 70px; font-size: 40px;">📱</div>
-    <div style="color: white; font-size: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Student Join</div>
-</div>
-
-<div id="teacher-win" class="window hidden" style="width: 900px; height: 600px; top: 10%; left: 15%;">
-    <div class="title-bar" onmousedown="dragStart(event, 'teacher-win')">
-        <div class="traffic-lights">
-            <div class="light red" onclick="closeWindow('teacher-win')"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
-        </div>
-        <div class="title-text">Lumina Center — Finder</div>
-    </div>
-    <div class="content-area" style="flex-direction: row;">
-        <div class="sidebar-view">
-            <div style="font-size: 11px; font-weight: 700; color: #888; margin-left: 10px; margin-bottom: 10px;">FAVORITES</div>
-            <div id="side-ctrl" class="apple-btn" style="background: rgba(0,122,255,0.1); color: var(--accent); width: 100%; text-align: left; margin-bottom: 5px;" onclick="switchTab('ctrl')">🔘 控制面板</div>
-            <div id="side-data" class="apple-btn" style="background: transparent; color: #444; width: 100%; text-align: left;" onclick="switchTab('data')">📊 實時數據</div>
-        </div>
-
-        <div id="tab-ctrl" class="main-view">
-            <h2 style="margin: 0 0 20px 0;">投票任務配置</h2>
-            
-            <div class="scroll-v" style="flex: 1;">
-                <label style="font-size: 12px; font-weight: 600;">核心題目 (Topic)</label>
-                <input type="text" id="t-input-topic" class="apple-input" placeholder="輸入你想問的問題..." oninput="syncToMain()">
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px;">
-                    <label style="font-size: 12px; font-weight: 600;">選項設定 (Options)</label>
-                    <button class="apple-btn" onclick="addOption()" style="padding: 4px 10px; font-size: 12px;">+ 新增</button>
-                </div>
-                <div id="t-opt-list"></div>
+<div id="desktop">
+    <div id="win-master" class="window active" style="width: 900px; height: 600px; top: 100px; left: 150px;">
+        <div class="title-bar" onmousedown="handleDragStart(event, 'win-master')">
+            <div class="controls">
+                <div class="dot dot-close" onclick="closeWindow('win-master')"></div>
+                <div class="dot dot-min" onclick="minimizeWindow('win-master')"></div>
+                <div class="dot dot-max"></div>
             </div>
-
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; gap: 20px; align-items: flex-end;">
-                <div style="flex: 1;">
-                    <label style="font-size: 12px;">計時 (分:秒)</label>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="number" id="t-min" class="apple-input" value="1" style="margin:0">
-                        <input type="number" id="t-sec" class="apple-input" value="0" style="margin:0">
+            <div class="win-title">Lumina Master Center</div>
+        </div>
+        <div class="win-body flex" style="flex-direction: row;">
+            <div class="win-sidebar">
+                <div class="nav-item active" onclick="switchView('config')">
+                    <div class="nav-icon" style="background: #5856D6;"></div> 配置任務
+                </div>
+                <div class="nav-item" onclick="switchView('analytics')">
+                    <div class="nav-icon" style="background: #FF2D55;"></div> 即時分析
+                </div>
+                <div class="nav-item" onclick="switchView('broadcast')">
+                    <div class="nav-icon" style="background: #34C759;"></div> 連線狀態
+                </div>
+            </div>
+            <div class="win-main" id="master-content">
+                <div id="v-config">
+                    <h1 style="font-size: 24px; margin-bottom: 20px;">任務配置</h1>
+                    <label style="font-size: 12px; color: #888; font-weight: 700;">投票題目</label>
+                    <input type="text" id="t-topic" class="apple-input" placeholder="例如：今日課程吸收率" oninput="state.topic = this.value">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                        <label style="font-size: 12px; color: #888; font-weight: 700;">選項管理</label>
+                        <button class="apple-btn-outline apple-btn" style="padding: 4px 10px;" onclick="addOption()">+ 新增</button>
+                    </div>
+                    <div id="t-option-list" style="margin-top: 10px; max-height: 200px; overflow-y: auto; padding-right: 10px;"></div>
+                    
+                    <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="font-size: 12px; color: #888;">設定時間 (秒)</label>
+                            <input type="number" id="t-duration" class="apple-input" value="60">
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button id="btn-start" class="apple-btn" style="width: 100%; height: 42px;" onclick="startVoting()">🚀 發布指令</button>
+                            <button id="btn-stop" class="apple-btn hidden" style="width: 100%; height: 42px; background: var(--sys-red);" onclick="stopVoting()">停止投票</button>
+                        </div>
                     </div>
                 </div>
-                <button id="btn-start" class="apple-btn" style="height: 42px; padding: 0 40px;" onclick="startSession()">🚀 啟動投票</button>
-                <button id="btn-stop" class="apple-btn hidden" style="height: 42px; background: #FF3B30;" onclick="endSession()">🛑 終止</button>
+
+                <div id="v-analytics" class="hidden">
+                    <h1 id="main-topic-title" style="font-size: 24px;">數據分析</h1>
+                    <div class="chart-wrap">
+                        <canvas id="masterChart"></canvas>
+                    </div>
+                    <div style="display: flex; gap: 20px; margin-top: 20px;">
+                        <div style="background: #F2F2F7; padding: 15px; border-radius: 12px; flex: 1;">
+                            <div style="font-size: 11px; color: #888;">房號代碼</div>
+                            <div id="room-id-val" style="font-size: 24px; font-weight: 800; color: var(--sys-blue);">----</div>
+                        </div>
+                        <div style="background: #F2F2F7; padding: 15px; border-radius: 12px; flex: 1;">
+                            <div style="font-size: 11px; color: #888;">已參與人數</div>
+                            <div id="vote-count-val" style="font-size: 24px; font-weight: 800;">0</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="resizer" onmousedown="handleResizeStart(event, 'win-master')"></div>
+    </div>
 
-        <div id="tab-data" class="main-view hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 id="display-topic" style="margin: 0;">等待投票開始...</h2>
-                <div id="display-timer" style="font-family: monospace; font-size: 24px; font-weight: 700;">01:00</div>
-            </div>
+    <div id="win-student-login" class="window" style="width: 350px; height: 450px; top: 150px; left: 600px;">
+        <div class="title-bar" onmousedown="handleDragStart(event, 'win-student-login')">
+            <div class="controls"><div class="dot dot-close" onclick="closeWindow('win-student-login')"></div></div>
+            <div class="win-title">Join Mission</div>
+        </div>
+        <div class="win-main" style="text-align: center; justify-content: center;">
+            <canvas id="t-qr" style="width: 150px; height: 150px; margin: 0 auto 20px; border-radius: 10px;"></canvas>
+            <p style="font-size: 13px; color: #666;">掃描 QR Code 或輸入房號</p>
+            <input type="text" id="s-room-input" class="apple-input" placeholder="Room ID" style="text-align: center; font-size: 24px;">
+            <button class="apple-btn" style="width: 100%;" onclick="initStudent()">進入終端</button>
+        </div>
+    </div>
 
-            <div id="chart-container">
-                <canvas id="mainChart"></canvas>
-            </div>
-
-            <div class="mac-stats-bar">
-                <div class="stat-box">
-                    <span class="stat-lbl">Room Code</span>
-                    <span class="stat-val" id="room-code-val">----</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-lbl">Total Votes</span>
-                    <span class="stat-val" id="stat-voted">0</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-lbl">Participants</span>
-                    <span class="stat-val" id="stat-online">0</span>
-                </div>
-                <div style="flex: 1; text-align: right;">
-                    <canvas id="qr-code" style="width: 60px; height: 60px;"></canvas>
-                </div>
-            </div>
+    <div class="dock-wrapper">
+        <div class="dock-item" onclick="toggleWindow('win-master')">
+            <div class="dock-item-img" style="background: linear-gradient(135deg, #007AFF, #00C7FF);">🏠</div>
+            <div class="dock-dot active"></div>
+        </div>
+        <div class="dock-item" onclick="toggleWindow('win-student-login')">
+            <div class="dock-item-img" style="background: linear-gradient(135deg, #34C759, #00D2FF);">📡</div>
+            <div class="dock-dot"></div>
+        </div>
+        <div class="dock-item">
+            <div class="dock-item-img" style="background: linear-gradient(135deg, #FF9500, #FFCC00);">⚙️</div>
         </div>
     </div>
 </div>
 
-<div id="student-ios" class="ios-shell">
-    <div class="ios-header">
-        <h1 id="s-topic" style="margin: 0; font-size: 28px; letter-spacing: -1px;">Lumina</h1>
-        <div id="s-status" style="font-size: 13px; color: var(--accent); margin-top: 5px;">連線中...</div>
+<div id="mobile-ios">
+    <div class="ios-status-bar">
+        <span>9:41</span>
+        <div style="display: flex; gap: 5px;">📶 🔋</div>
     </div>
-    <div class="ios-content">
-        <div class="ios-card" style="text-align: center;">
-            <div id="s-timer" style="font-size: 48px; font-weight: 800; color: #1d1d1f;">00:00</div>
-            <div style="font-size: 12px; color: #888; text-transform: uppercase;">Time Remaining</div>
-        </div>
-        
-        <div id="s-options-grid"></div>
-
-        <div id="s-result-view" class="hidden">
-            <h3 style="margin: 30px 0 15px;">投票統計結果</h3>
-            <div id="s-res-data"></div>
+    <div style="padding: 20px 20px 10px;">
+        <h1 id="m-topic" style="font-size: 34px; margin: 0;">Lumina 任務</h1>
+        <p id="m-status" style="color: #888; margin-top: 5px;">準備連線...</p>
+    </div>
+    <div class="ios-card" style="text-align: center;">
+        <div id="m-timer" style="font-size: 56px; font-weight: 800;">00:60</div>
+        <p style="font-size: 12px; color: #888; text-transform: uppercase;">剩餘時間</p>
+    </div>
+    <div id="m-options" style="flex: 1; overflow-y: auto; padding-top: 10px;"></div>
+    <div id="m-results" class="hidden" style="padding-bottom: 40px;">
+        <div class="ios-card">
+            <h3 style="margin-top: 0;">任務統計</h3>
+            <div id="m-res-list"></div>
         </div>
     </div>
 </div>
-
-<div class="dock-container">
-    <div class="dock-icon" title="Teacher Control" onclick="openWindow('teacher-win')">🍎</div>
-    <div class="dock-icon" title="Browser" style="filter: hue-rotate(180deg);">🌐</div>
-    <div class="dock-icon" title="System Settings">⚙️</div>
-    <div style="width: 1px; height: 30px; background: rgba(0,0,0,0.1); margin: 0 5px;"></div>
-    <div class="dock-icon" title="Trash">🗑️</div>
-</div>
-
-<div id="notif-area"></div>
 
 <script>
 /**
- * Lumina macOS Sequoia 旗艦原始碼
- * 開發者：網頁設計權威 Gemini
+ * LuminaOS Sequoia Pro 引擎
+ * 所有操作模仿系統原生行為
  */
 
-let peer, conn, myChart, timerInt;
 let state = {
     roomID: '',
-    topic: '您對今日課程的掌握程度？',
-    options: ['完全理解', '略懂一二', '還在思考', '需要協助'],
+    topic: '目前的學習進度為何？',
+    options: ['完全理解', '需要複習', '完全跟不上'],
     votes: {},
     voterMap: {},
     isLive: false,
-    timeLeft: '01:00',
+    timeLeft: '00:60',
     showResult: false,
-    activeTab: 'ctrl'
+    onlineCount: 0
 };
 
-// --- macOS 視窗管理引擎 ---
-function openWindow(id) {
+let peer, conn, myChart, timerInt;
+
+// --- 視窗管理系統 (Window Server) ---
+let zIndexCounter = 1000;
+function focusWindow(id) {
+    const el = document.getElementById(id);
+    zIndexCounter++;
+    el.style.zIndex = zIndexCounter;
+}
+
+function handleDragStart(e, id) {
+    focusWindow(id);
+    const el = document.getElementById(id);
+    let startX = e.clientX - el.offsetLeft;
+    let startY = e.clientY - el.offsetTop;
+
+    function move(e) {
+        el.style.left = (e.clientX - startX) + 'px';
+        el.style.top = (e.clientY - startY) + 'px';
+    }
+    function end() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', end);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+}
+
+function handleResizeStart(e, id) {
+    const el = document.getElementById(id);
+    let startW = el.offsetWidth;
+    let startH = el.offsetHeight;
+    let startX = e.clientX;
+    let startY = e.clientY;
+
+    function move(e) {
+        el.style.width = (startW + (e.clientX - startX)) + 'px';
+        el.style.height = (startH + (e.clientY - startY)) + 'px';
+        if(myChart) myChart.resize();
+    }
+    function end() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', end);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+}
+
+function toggleWindow(id) {
     const win = document.getElementById(id);
-    win.classList.remove('hidden');
-    win.style.opacity = '0';
-    win.style.transform = 'scale(0.9) translateY(20px)';
-    setTimeout(() => {
-        win.style.opacity = '1';
-        win.style.transform = 'scale(1) translateY(0)';
-    }, 10);
+    if(win.classList.contains('hidden')) {
+        win.classList.remove('hidden');
+        setTimeout(() => win.classList.add('active'), 10);
+    } else {
+        win.classList.toggle('minimized');
+    }
+    focusWindow(id);
 }
 
-function closeWindow(id) {
-    const win = document.getElementById(id);
-    win.style.opacity = '0';
-    win.style.transform = 'scale(0.9) translateY(20px)';
-    setTimeout(() => win.classList.add('hidden'), 3000);
-}
-
-// 視窗拖拽邏輯
-let activeDragWin = null;
-let offset = [0,0];
-function dragStart(e, id) {
-    activeDragWin = document.getElementById(id);
-    offset = [ e.clientX - activeDragWin.offsetLeft, e.clientY - activeDragWin.offsetTop ];
-    document.addEventListener('mousemove', dragMove);
-    document.addEventListener('mouseup', dragEnd);
-}
-function dragMove(e) {
-    if(!activeDragWin) return;
-    activeDragWin.style.left = (e.clientX - offset[0]) + 'px';
-    activeDragWin.style.top = (e.clientY - offset[1]) + 'px';
-}
-function dragEnd() { activeDragWin = null; }
-
-// 分頁切換
-function switchTab(tab) {
-    state.activeTab = tab;
-    document.getElementById('tab-ctrl').classList.toggle('hidden', tab !== 'ctrl');
-    document.getElementById('tab-data').classList.toggle('hidden', tab !== 'data');
-    
-    // 更新側邊欄按鈕樣式
-    document.getElementById('side-ctrl').style.background = tab === 'ctrl' ? 'rgba(0,122,255,0.1)' : 'transparent';
-    document.getElementById('side-ctrl').style.color = tab === 'ctrl' ? 'var(--accent)' : '#444';
-    document.getElementById('side-data').style.background = tab === 'data' ? 'rgba(0,122,255,0.1)' : 'transparent';
-    document.getElementById('side-data').style.color = tab === 'data' ? 'var(--accent)' : '#444';
-
-    if(tab === 'data') setTimeout(updateChart, 100);
-}
-
-// --- 核心連線引擎 (PeerJS) ---
-function initTeacher() {
+// --- 老師端邏輯 ---
+function initMaster() {
     state.roomID = Math.floor(1000 + Math.random() * 8999).toString();
     peer = new Peer('LUMINA-' + state.roomID);
 
     peer.on('open', () => {
-        document.getElementById('room-code-val').innerText = state.roomID;
-        QRCode.toCanvas(document.getElementById('qr-code'), window.location.origin + window.location.pathname + '?r=' + state.roomID);
-        pushNotification("系統已上線", "教師指揮中心已建立，房號: " + state.roomID);
+        document.getElementById('room-id-val').innerText = state.roomID;
+        QRCode.toCanvas(document.getElementById('t-qr'), window.location.origin + window.location.pathname + '?r=' + state.roomID);
         renderOptions();
         initChart();
-        startHeartbeat();
+        startBroadcast();
     });
 
     peer.on('connection', c => {
-        pushNotification("新連線", "一位學生已進入教室終端");
-        c.on('data', data => {
-            if(data.type === 'vote' && state.isLive) {
+        c.on('data', d => {
+            if(d.type === 'vote' && state.isLive) {
                 if(state.voterMap[c.peer]) state.votes[state.voterMap[c.peer]]--;
-                state.voterMap[c.peer] = data.val;
-                state.votes[data.val] = (state.votes[data.val] || 0) + 1;
+                state.voterMap[c.peer] = d.val;
+                state.votes[d.val] = (state.votes[d.val] || 0) + 1;
                 updateChart();
             }
         });
     });
 }
 
-function startHeartbeat() {
-    setInterval(() => {
-        const payload = { ...state, type: 'sync' };
-        Object.values(peer.connections).forEach(conns => {
-            conns.forEach(c => { if(c.open) c.send(payload); });
-        });
-        document.getElementById('stat-online').innerText = Object.keys(peer.connections).length;
-    }, 800);
-}
-
-// --- UI 控制與圖表 ---
 function renderOptions() {
-    const list = document.getElementById('t-opt-list');
+    const list = document.getElementById('t-option-list');
     list.innerHTML = state.options.map((opt, i) => `
-        <div style="display:flex; gap:10px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
             <input type="text" class="apple-input" value="${opt}" oninput="state.options[${i}]=this.value" style="margin:0">
-            <button class="apple-btn" style="background:#f2f2f7; color:#FF3B30;" onclick="state.options.splice(${i},1); renderOptions();">✕</button>
+            <button class="apple-btn-outline apple-btn" style="color:var(--sys-red)" onclick="state.options.splice(${i},1); renderOptions();">✕</button>
         </div>
     `).join('');
 }
@@ -370,31 +370,32 @@ function addOption() {
     renderOptions();
 }
 
-function syncToMain() {
-    state.topic = document.getElementById('t-input-topic').value;
-    document.getElementById('display-topic').innerText = state.topic;
+function switchView(view) {
+    document.getElementById('v-config').classList.toggle('hidden', view !== 'config');
+    document.getElementById('v-analytics').classList.toggle('hidden', view !== 'analytics');
+    
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.innerText.includes(view === 'config' ? '配置' : '分析'));
+    });
+    
+    if(view === 'analytics') {
+        document.getElementById('main-topic-title').innerText = state.topic;
+        setTimeout(updateChart, 50);
+    }
 }
 
 function initChart() {
-    const ctx = document.getElementById('mainChart').getContext('2d');
+    const ctx = document.getElementById('masterChart').getContext('2d');
     myChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: state.options,
-            datasets: [{
-                data: [],
-                backgroundColor: 'rgba(0, 122, 255, 0.7)',
-                borderRadius: 8,
-                barThickness: 30
-            }]
+            datasets: [{ data: [], backgroundColor: '#007AFF', borderRadius: 8 }]
         },
         options: {
             responsive: true, maintainAspectRatio: false, indexAxis: 'y',
             plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { display: false }, beginAtZero: true },
-                y: { ticks: { font: { size: 14, weight: '600' } } }
-            }
+            scales: { x: { beginAtZero: true }, y: { ticks: { font: { weight: 'bold' } } } }
         }
     });
 }
@@ -404,117 +405,119 @@ function updateChart() {
     myChart.data.labels = state.options;
     myChart.data.datasets[0].data = state.options.map(o => state.votes[o] || 0);
     myChart.update();
-    document.getElementById('stat-voted').innerText = Object.keys(state.voterMap).length;
+    document.getElementById('vote-count-val').innerText = Object.keys(state.voterMap).length;
 }
 
-function startSession() {
-    state.isLive = true;
-    state.showResult = false;
-    state.voterMap = {};
-    state.options.forEach(o => state.votes[o] = 0);
+function startVoting() {
+    state.isLive = true; state.showResult = false;
+    state.voterMap = {}; state.options.forEach(o => state.votes[o] = 0);
+    switchView('analytics');
     
     document.getElementById('btn-start').classList.add('hidden');
     document.getElementById('btn-stop').classList.remove('hidden');
-    switchTab('data');
 
-    let total = (parseInt(document.getElementById('t-min').value)*60) + parseInt(document.getElementById('t-sec').value);
+    let total = parseInt(document.getElementById('t-duration').value);
     timerInt = setInterval(() => {
         total--;
-        let m = Math.floor(total/60).toString().padStart(2,'0');
-        let s = (total%60).toString().padStart(2,'0');
-        state.timeLeft = `${m}:${s}`;
-        document.getElementById('display-timer').innerText = state.timeLeft;
-        if(total <= 0) endSession();
+        let s = total.toString().padStart(2, '0');
+        state.timeLeft = `00:${s}`;
+        if(total <= 0) stopVoting();
     }, 1000);
 }
 
-function endSession() {
-    state.isLive = false;
-    state.showResult = true;
+function stopVoting() {
+    state.isLive = false; state.showResult = true;
     clearInterval(timerInt);
     document.getElementById('btn-start').classList.remove('hidden');
     document.getElementById('btn-stop').classList.add('hidden');
-    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 }
 
-// --- 學生端：偽 iOS 核心 ---
-let s_conn, s_myVote = '';
-function openStudentLogin() {
-    const rid = prompt("Enter 4-digit Room Code:");
+function startBroadcast() {
+    setInterval(() => {
+        const payload = { ...state, type: 'sync' };
+        Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(payload); }));
+    }, 800);
+}
+
+// --- 裝置偵測與學生端 ---
+function initStudent() {
+    const rid = document.getElementById('s-room-input').value;
     if(!rid) return;
-    document.getElementById('desktop-icons').classList.add('hidden');
-    document.getElementById('student-ios').style.display = 'flex';
+    
+    document.getElementById('desktop').classList.add('hidden');
+    document.getElementById('mobile-ios').style.display = 'flex';
     
     peer = new Peer();
     peer.on('open', () => {
-        s_conn = peer.connect('LUMINA-' + rid);
+        const s_conn = peer.connect('LUMINA-' + rid);
         s_conn.on('open', () => {
-            document.getElementById('s-status').innerText = "Connected to " + rid;
+            document.getElementById('m-status').innerText = "已連線至房號：" + rid;
         });
-        s_conn.on('data', data => {
-            if(data.type === 'sync') syncIOS(data);
+        s_conn.on('data', d => {
+            if(d.type === 'sync') syncIOS(d, s_conn);
         });
     });
 }
 
-function syncIOS(data) {
-    document.getElementById('s-topic').innerText = data.topic;
-    document.getElementById('s-timer').innerText = data.timeLeft;
+let myVote = "";
+function syncIOS(data, conn) {
+    document.getElementById('m-topic').innerText = data.topic;
+    document.getElementById('m-timer').innerText = data.timeLeft;
     
-    const grid = document.getElementById('s-options-grid');
-    const resView = document.getElementById('s-result-view');
+    const optArea = document.getElementById('m-options');
+    const resArea = document.getElementById('m-results');
 
     if(data.showResult) {
-        grid.classList.add('hidden');
-        resView.classList.remove('hidden');
+        optArea.classList.add('hidden');
+        resArea.classList.remove('hidden');
         const total = Object.keys(data.voterMap).length || 1;
-        document.getElementById('s-res-data').innerHTML = data.options.map(o => {
+        document.getElementById('m-res-list').innerHTML = data.options.map(o => {
             const v = data.votes[o] || 0;
             const p = Math.round(v/total*100);
             return `
-                <div class="ios-card">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="font-weight:600;">${o}</span>
-                        <span style="color:var(--accent);">${p}%</span>
+                <div style="margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-weight:600;">
+                        <span>${o}</span><span>${v} 票 (${p}%)</span>
                     </div>
-                    <div style="height:8px; background:#F2F2F7; border-radius:10px; overflow:hidden;">
-                        <div style="height:100%; width:${p}%; background:var(--accent); transition:1s;"></div>
+                    <div style="height:10px; background:#E5E5EA; border-radius:10px; overflow:hidden;">
+                        <div style="height:100%; width:${p}%; background:var(--sys-blue); transition:1s;"></div>
                     </div>
                 </div>
             `;
         }).join('');
     } else {
-        grid.classList.remove('hidden');
-        resView.classList.add('hidden');
-        grid.innerHTML = data.options.map(o => `
-            <div class="ios-card" style="cursor:pointer; border:${s_myVote===o?'2px solid var(--accent)':'2px solid transparent'}" onclick="castVote('${o}', ${data.isLive})">
+        optArea.classList.remove('hidden');
+        resArea.classList.add('hidden');
+        optArea.innerHTML = data.options.map(o => `
+            <div class="ios-option ${myVote === o ? 'selected' : ''}" onclick="handleIOSVote('${o}', ${data.isLive}, '${conn.peer}')">
                 <span style="font-size:17px; font-weight:500;">${o}</span>
+                ${myVote === o ? '<span style="color:var(--sys-blue)">✓</span>' : ''}
             </div>
         `).join('');
     }
 }
 
-function castVote(v, live) {
+function handleIOSVote(val, live, peerID) {
     if(!live) return;
-    s_myVote = v;
-    s_conn.send({ type: 'vote', val: v });
+    myVote = val;
+    const teacherConn = Object.values(peer.connections)[0][0]; // 取得當前唯一的連線
+    teacherConn.send({ type: 'vote', val: val });
 }
 
-function pushNotification(title, msg) {
-    const n = document.createElement('div');
-    n.className = 'notification';
-    n.innerHTML = `<strong>${title}</strong><p style="margin:5px 0 0; font-size:13px; color:#666;">${msg}</p>`;
-    document.getElementById('notif-area').appendChild(n);
-    setTimeout(() => n.remove(), 5000);
-}
-
-// 初始化
+// 啟動檢測
 window.onload = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.get('r')) {
-        // 自動啟動學生連線模式
+    // 簡單裝置檢測
+    if(/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        document.getElementById('desktop').classList.add('hidden');
+        document.getElementById('mobile-ios').style.display = 'flex';
+        const r = new URLSearchParams(window.location.search).get('r');
+        if(r) {
+            document.getElementById('s-room-input').value = r;
+            initStudent();
+        }
     }
-    initTeacher(); // 預加載老師端背景連線
+    initMaster();
 };
 </script>
 </body>
