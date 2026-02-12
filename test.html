@@ -3,331 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Pro | 專業考評系統</title>
+    <title>Lumina Ultra | 專業考評平台</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
-        :root { --p: #007AFF; --s: #34C759; --d: #FF3B30; --bg: #F5F5F7; }
+        :root { --p: #007AFF; --s: #34C759; --d: #FF3B30; --bg: #F2F2F7; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; color: #1D1D1F; user-select: none; }
-        .app { max-width: 900px; margin: auto; padding: 20px; }
-        .glass { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #FFF; }
+        .app { max-width: 1000px; margin: auto; padding: 20px; }
+        .glass { background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-radius: 20px; padding: 25px; box-shadow: 0 4px 30px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .hidden { display: none !important; }
-        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; margin: 5px; }
+        .btn { padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-p { background: var(--p); color: #FFF; }
         .btn-s { background: var(--s); color: #FFF; }
         .btn-d { background: var(--d); color: #FFF; }
         
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: #FFF; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .stat-val { font-size: 28px; font-weight: bold; color: var(--p); }
+        /* 老師儀表板 */
+        .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+        .stat-item { background: #FFF; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #DDD; }
+        .stat-num { font-size: 24px; font-weight: bold; color: var(--p); }
 
-        .q-card { background: #FFF; padding: 20px; border-radius: 15px; margin-bottom: 15px; border-left: 5px solid var(--p); }
-        .lock-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; backdrop-filter: blur(8px); flex-direction: column; }
+        /* 學生作答導覽 */
+        .q-nav { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 15px; border-bottom: 1px solid #EEE; }
+        .q-num-btn { min-width: 40px; height: 40px; border-radius: 8px; border: 1px solid #DDD; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #FFF; }
+        .q-num-btn.active { background: var(--p); color: #FFF; border-color: var(--p); }
+        .q-num-btn.done { border-color: var(--s); color: var(--s); }
+
+        /* 題目編輯器 */
+        .edit-card { background: #f9f9f9; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; }
         
-        table { width: 100%; border-collapse: collapse; background: #FFF; border-radius: 10px; overflow: hidden; }
-        th, td { padding: 12px; border-bottom: 1px solid #EEE; text-align: center; }
-        textarea { width: 100%; height: 100px; border-radius: 10px; border: 1px solid #DDD; padding: 10px; box-sizing: border-box; }
+        /* 鎖定遮罩 */
+        .lock-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; text-align: center; backdrop-filter: blur(10px); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #EEE; }
+        .progress-bar { height: 8px; background: #E5E5EA; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: var(--p); transition: 0.3s; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
 <div class="app">
     <div id="v-start" class="glass" style="text-align:center; margin-top:100px;">
-        <h1 style="font-size:48px; margin-bottom:10px;">Lumina Pro</h1>
-        <p style="color:#666;">專業 P2P 即時考評工具</p>
-        <button class="btn btn-p" onclick="initTeacher()">教師主控端</button>
-        <button class="btn" style="background:#8E8E93; color:white;" onclick="initStudent()">學生作答端</button>
+        <h1>Lumina Ultra</h1>
+        <button class="btn btn-p" onclick="showView('v-teacher-setup')">教師端 (設定考場)</button>
+        <button class="btn" style="background:#8E8E93; color:white;" onclick="initStudent()">學生端 (進入考試)</button>
     </div>
 
-    <div id="v-teacher" class="hidden">
+    <div id="v-teacher-setup" class="hidden">
         <div class="glass">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2>👨‍🏫 教師控制台</h2>
-                <div id="roomTag" style="background:#000; color:#FFF; padding:8px 20px; border-radius:10px; font-family:monospace; font-size:20px;">ID: ----</div>
+            <h2>🏠 步驟 1: 設定考場 ID</h2>
+            <input type="text" id="customRoomId" placeholder="輸入自訂房間 ID (如: CLASS101)" style="padding:12px; width:200px; border-radius:10px; border:1px solid #DDD;">
+            <p style="font-size:12px; color:gray;">建議使用大寫英文與數字</p>
+        </div>
+        <div class="glass">
+            <h2>📝 步驟 2: 設定題目</h2>
+            <div style="margin-bottom:15px;">
+                <button class="btn" onclick="showEditMode('visual')">視覺化編輯</button>
+                <button class="btn" onclick="showEditMode('excel')">Excel 匯入</button>
             </div>
             
-            <div class="stat-grid">
-                <div class="stat-card"><div>連線</div><div class="stat-val" id="s-conn">0</div></div>
-                <div class="stat-card"><div>已繳</div><div class="stat-val" id="s-sub">0</div></div>
-                <div class="stat-card"><div>平均</div><div class="stat-val" id="s-avg">0</div></div>
-                <div class="stat-card"><div>及格%</div><div class="stat-val" id="s-pass">0</div></div>
+            <div id="visualEditor">
+                <div id="qList"></div>
+                <button class="btn btn-s" onclick="addQuestion()">+ 新增一題</button>
             </div>
-
-            <div style="display:flex; flex-wrap:wrap; justify-content: center;">
-                <button class="btn btn-p" onclick="toggleExamConfig()">📝 設定/匯入題目</button>
-                <button id="lockBtn" class="btn btn-d" onclick="toggleLock()">🔒 鎖定學生端</button>
-                <button class="btn btn-s" onclick="broadcastExam()">🚀 發送考卷並開始</button>
+            
+            <div id="excelEditor" class="hidden">
+                <input type="file" accept=".xlsx" onchange="importExcel(this)">
+                <button class="btn" onclick="downloadSample()">下載範本</button>
             </div>
         </div>
+        <button class="btn btn-p" style="width:100%; padding:20px;" onclick="initTeacher()">完成設定並開啟考場</button>
+    </div>
 
-        <div id="examConfig" class="glass hidden">
-            <h3>題目編輯器</h3>
-            <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <button class="btn" onclick="showInputMode('manual')">手動線上輸入</button>
-                <button class="btn" onclick="showInputMode('excel')">Excel 檔案匯入</button>
+    <div id="v-teacher-main" class="hidden">
+        <div class="glass">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                    <h2 id="roomDisplay">考場: ----</h2>
+                    <canvas id="roomQR"></canvas>
+                </div>
+                <div style="text-align:right">
+                    <button id="allLockBtn" class="btn btn-d" onclick="toggleAllLock()">🔒 全體暫停</button>
+                    <button class="btn btn-s" onclick="broadcastExam()">🚀 發送考卷</button>
+                </div>
             </div>
-            <div id="inputMode">
-                <p style="font-size:12px; color:#666;">格式：題目,A,B,C,D,E,正確答案(如AB),配分</p>
-                <textarea id="manualInput" placeholder="範例：1+1等於?,1,2,3,4,5,B,50"></textarea>
-                <button class="btn btn-p" style="margin-top:10px;" onclick="parseManual()">確認轉換題目</button>
+
+            <div class="stat-row">
+                <div class="stat-item"><div>在線(連線)</div><div class="stat-num" id="s-online">0</div></div>
+                <div class="stat-item"><div>載入(收題)</div><div class="stat-num" id="s-ready">0</div></div>
+                <div class="stat-item"><div>已繳(完成)</div><div class="stat-num" id="s-done">0</div></div>
+                <div class="stat-item"><div>班級平均</div><div class="stat-num" id="s-avg">0</div></div>
             </div>
-            <div id="excelMode" class="hidden">
-                <button class="btn btn-outline" style="border:1px solid #ccc;" onclick="downloadSample()">📥 下載 Excel 範本</button>
-                <input type="file" id="fileInput" accept=".xlsx" onchange="importExcel(this)" style="margin-top:10px;">
-            </div>
-            <div id="qCountText" style="margin-top:10px; color:var(--p); font-weight:bold;"></div>
         </div>
 
         <div class="glass">
-            <h3>📊 班級即時進度</h3>
+            <h3>👥 學生名單與即時狀態</h3>
             <table>
-                <thead><tr><th>座號</th><th>進度</th><th>總分</th><th>狀態</th></tr></thead>
+                <thead><tr><th>座號</th><th>進度</th><th>狀態</th><th>操作</th></tr></thead>
                 <tbody id="monitorBody"></tbody>
             </table>
-            <button class="btn btn-s" style="width:100%; margin-top:15px;" onclick="exportFinal()">💾 下載結算成績單 (Excel)</button>
+            <button class="btn btn-s" style="width:100%; margin-top:15px;" onclick="exportExcel()">💾 匯出結算 Excel</button>
         </div>
     </div>
 
     <div id="v-student" class="hidden">
-        <div id="examLock" class="lock-mask hidden">
-            <div style="font-size:60px; margin-bottom:20px;">🔒</div>
-            <div>老師已暫停作答，請聽講</div>
+        <div id="lockMask" class="lock-mask hidden"><div>🔒 老師暫停了你的作答<br>請抬頭聽講</div></div>
+        <div class="glass">
+            <div style="display:flex; justify-content:space-between;">
+                <b id="stuNoLabel">座號: --</b>
+                <button class="btn btn-d" style="padding:4px 10px;" onclick="studentLogout()">保存並登出</button>
+            </div>
+            <div class="progress-bar"><div id="stuProgFill" class="progress-fill" style="width: 0%"></div></div>
+            <div id="qNav" class="q-nav"></div>
         </div>
-        <div class="glass" style="text-align:center;">
-            <h2 id="stuTitle">等待老師發送考卷...</h2>
-            <div id="stuMeta" style="color:#666; font-size:14px;">尚未連線</div>
+        <div id="quizContainer" class="glass">
+            <p style="text-align:center; color:gray;">等待老師發送考卷...</p>
         </div>
-        <div id="quizArea"></div>
-        <button id="subBtn" class="btn btn-p hidden" style="width:100%; padding:20px; font-size:20px;" onclick="studentSubmit()">確認繳交考卷</button>
+        <button id="finalSubBtn" class="btn btn-p hidden" style="width:100%; padding:15px;" onclick="studentSubmit()">確認繳交全卷</button>
     </div>
 
     <div id="v-result" class="hidden glass" style="text-align:center; margin-top:100px;">
-        <h1 style="color:var(--s); font-size:40px;">已成功繳交</h1>
-        <div style="font-size:100px; font-weight:bold; margin:20px 0;" id="resScore">0</div>
-        <p style="font-size:20px; color:#666;">你的得分</p>
-        <button class="btn btn-p" onclick="location.reload()">重新開始</button>
+        <h2 style="color:var(--s)">繳交成功</h2>
+        <div id="resScore" style="font-size:80px; font-weight:bold;">0</div>
+        <p>分</p>
+        <button class="btn btn-p" onclick="location.reload()">回首頁</button>
     </div>
 </div>
 
 <script>
-    let peer, conn, myRoomId, isLocked = false;
+    let peer, conn, myRoomId, isAllLocked = false;
+    let studentData = {}; // 老師存儲
     let connections = {};
-    let studentData = {};
     let masterQuiz = [];
-    let myNo = "";
+    let currentIdx = 0; // 學生作答目前題號
 
-    // --- 教師端邏輯 ---
+    // --- 老師設定與邏輯 ---
+    function addQuestion() {
+        const idx = document.querySelectorAll('.edit-card').length;
+        const html = `
+            <div class="edit-card" id="qc-${idx}">
+                <b>第 ${idx+1} 題</b>
+                <input type="text" placeholder="題目內容" class="in-q" style="width:100%; margin:5px 0;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+                    <input type="text" placeholder="選項A" class="in-a"> <input type="text" placeholder="選項B" class="in-b">
+                    <input type="text" placeholder="選項C" class="in-c"> <input type="text" placeholder="選項D" class="in-d">
+                </div>
+                正確答案: <input type="text" placeholder="如: A 或 AB" class="in-ans" style="width:60px;">
+                配分: <input type="number" value="10" class="in-pt" style="width:50px;">
+                <button onclick="this.parentElement.remove()" style="color:red; background:none; border:none; float:right;">刪除</button>
+            </div>`;
+        document.getElementById('qList').insertAdjacentHTML('beforeend', html);
+    }
+
+    function parseVisual() {
+        const cards = document.querySelectorAll('.edit-card');
+        masterQuiz = Array.from(cards).map(c => ({
+            q: c.querySelector('.in-q').value,
+            opts: {A: c.querySelector('.in-a').value, B: c.querySelector('.in-b').value, C: c.querySelector('.in-c').value, D: c.querySelector('.in-d').value},
+            ans: c.querySelector('.in-ans').value.toUpperCase().split('').sort().join(''),
+            point: Number(c.querySelector('.in-pt').value)
+        }));
+    }
+
     function initTeacher() {
-        showView('v-teacher');
-        myRoomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+        if(document.getElementById('excelEditor').classList.contains('hidden')) parseVisual();
+        myRoomId = document.getElementById('customRoomId').value.toUpperCase() || Math.random().toString(36).substring(2,6).toUpperCase();
+        
         peer = new Peer(myRoomId);
-        peer.on('open', id => { 
-            document.getElementById('roomTag').innerText = "ID: " + id;
+        peer.on('open', id => {
+            showView('v-teacher-main');
+            document.getElementById('roomDisplay').innerText = "考場 ID: " + id;
+            QRCode.toCanvas(document.getElementById('roomQR'), window.location.href.split('?')[0] + '?room=' + id, {width: 150});
         });
+
         peer.on('connection', c => {
             const no = c.metadata.no;
-            connections[no] = c;
-            if(!studentData[no]) studentData[no] = { no: no, progress: "0%", score: 0, ans: {}, qScore: {}, status: "已連線", cheats: 0 };
-            updateMonitor();
-            
-            // 學生連線時，立刻同步目前的鎖定狀態
-            setTimeout(() => { c.send({ type: 'lock', state: isLocked }); }, 1000);
+            const deviceId = c.metadata.deviceId;
 
-            c.on('data', data => handleStudentData(no, data));
-            c.on('close', () => { studentData[no].status = "斷線"; updateMonitor(); });
+            // 防冒用邏輯
+            if(studentData[no] && studentData[no].deviceId !== deviceId) {
+                c.send({type: 'error', msg: '此座號已被其他裝置占用！'});
+                setTimeout(() => c.close(), 500);
+                return;
+            }
+
+            connections[no] = c;
+            if(!studentData[no]) {
+                studentData[no] = { no: no, deviceId: deviceId, progress: "0%", score: 0, status: "在線", cheats: 0, isLocked: false, hasExam: false };
+            } else {
+                studentData[no].status = "在線";
+            }
+            
+            updateMonitor();
+            c.on('data', d => handleData(no, d));
+            c.on('close', () => { if(studentData[no]) studentData[no].status = "離線"; updateMonitor(); });
         });
     }
 
-    function handleStudentData(no, data) {
-        if (data.type === 'sync') {
-            studentData[no].progress = data.progress;
-            studentData[no].cheats = data.cheats;
+    function handleData(no, d) {
+        if(d.type === 'sync') {
+            studentData[no].progress = d.progress;
+            studentData[no].cheats = d.cheats;
+            studentData[no].hasExam = true; // 表示已載入試卷
             updateMonitor();
         }
-        if (data.type === 'submit') {
-            let total = 0, perQ = {};
-            masterQuiz.forEach((q, i) => {
-                if (data.userAns[i] === q.ans) { total += q.point; perQ[i] = q.point; }
-                else perQ[i] = 0;
-            });
-            studentData[no].score = Math.round(total);
-            studentData[no].ans = data.userAns;
-            studentData[no].qScore = perQ;
-            studentData[no].status = "✅ 已繳";
-            if(connections[no]) connections[no].send({ type: 'report', score: Math.round(total) });
+        if(d.type === 'submit') {
+            let total = 0;
+            masterQuiz.forEach((q, i) => { if(d.ans[i] === q.ans) total += q.point; });
+            studentData[no].score = total;
+            studentData[no].status = "已繳交";
+            connections[no].send({type: 'report', score: total});
             updateMonitor();
         }
     }
 
     function updateMonitor() {
         const list = Object.values(studentData);
-        document.getElementById('s-conn').innerText = list.length;
-        const subList = list.filter(s => s.status === "✅ 已繳");
-        document.getElementById('s-sub').innerText = subList.length;
+        document.getElementById('s-online').innerText = list.filter(s => s.status !== "離線").length;
+        document.getElementById('s-ready').innerText = list.filter(s => s.hasExam).length;
+        document.getElementById('s-done').innerText = list.filter(s => s.status === "已繳交").length;
         
-        let sum = 0, pass = 0;
-        document.getElementById('monitorBody').innerHTML = list.map(s => {
-            sum += s.score;
-            if(s.score >= 60) pass++;
-            const cTxt = s.cheats > 0 ? `<div style="color:red; font-size:11px; font-weight:bold;">離頁警告 ${s.cheats} 次</div>` : "";
-            return `<tr><td>${s.no}</td><td>${s.progress}${cTxt}</td><td>${s.score}</td><td>${s.status}</td></tr>`;
-        }).join('');
-        
-        document.getElementById('s-avg').innerText = subList.length ? (sum / subList.length).toFixed(1) : 0;
-        document.getElementById('s-pass').innerText = subList.length ? Math.round((pass/subList.length)*100) + "%" : "0%";
+        document.getElementById('monitorBody').innerHTML = list.map(s => `
+            <tr>
+                <td>${s.no}</td>
+                <td>${s.progress}</td>
+                <td>${s.status} ${s.cheats > 0 ? '<b style="color:red">!</b>':''}</td>
+                <td>
+                    <button class="btn ${s.isLocked?'btn-s':'btn-d'}" onclick="toggleSingleLock('${s.no}')">${s.isLocked?'解鎖':'鎖定'}</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function toggleAllLock() {
+        isAllLocked = !isAllLocked;
+        Object.values(connections).forEach(c => c.send({type: 'lock', state: isAllLocked}));
+        document.getElementById('allLockBtn').innerText = isAllLocked ? "🔓 全體解鎖" : "🔒 全體暫停";
+    }
+
+    function toggleSingleLock(no) {
+        studentData[no].isLocked = !studentData[no].isLocked;
+        if(connections[no]) connections[no].send({type: 'lock', state: studentData[no].isLocked});
+        updateMonitor();
     }
 
     function broadcastExam() {
-        if(!masterQuiz.length) return alert("請先在『設定題目』中匯入或輸入考題！");
-        // 發送前先解除鎖定，確保學生能寫
-        if(isLocked) toggleLock(); 
-        const safeQuiz = masterQuiz.map(({ans, ...rest}) => rest);
-        Object.values(connections).forEach(c => c.send({ type: 'exam', quiz: safeQuiz }));
-        alert("考卷發送成功！學生端應已顯示題目。");
-    }
-
-    function toggleLock() {
-        isLocked = !isLocked;
-        document.getElementById('lockBtn').innerText = isLocked ? "🔓 解除鎖定" : "🔒 鎖定學生端";
-        document.getElementById('lockBtn').className = isLocked ? "btn btn-s" : "btn btn-d";
-        Object.values(connections).forEach(c => c.send({ type: 'lock', state: isLocked }));
-    }
-
-    function showInputMode(m) {
-        document.getElementById('inputMode').classList.toggle('hidden', m !== 'manual');
-        document.getElementById('excelMode').classList.toggle('hidden', m !== 'excel');
-    }
-
-    function parseManual() {
-        const text = document.getElementById('manualInput').value.trim();
-        if(!text) return alert("請輸入內容");
-        masterQuiz = text.split('\n').map(line => {
-            const p = line.split(',');
-            return { 
-                q: p[0], 
-                opts: {A:p[1], B:p[2], C:p[3], D:p[4], E:p[5]}, 
-                ans: String(p[6]||"").toUpperCase().split('').sort().join(''), 
-                point: Number(p[7]||0) 
-            };
-        });
-        document.getElementById('qCountText').innerText = `✅ 成功載入 ${masterQuiz.length} 題`;
-    }
-
-    function importExcel(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            masterQuiz = data.map(r => ({
-                q: r.題目, 
-                opts: {A:r.選項A, B:r.選項B, C:r.選項C, D:r.選項D, E:r.選項E},
-                ans: String(r.正確答案 || "").toUpperCase().split('').sort().join(''), 
-                point: Number(r.配分 || 0)
-            }));
-            document.getElementById('qCountText').innerText = `✅ Excel 匯入成功: ${masterQuiz.length} 題`;
-        };
-        reader.readAsArrayBuffer(input.files[0]);
+        const safe = masterQuiz.map(({ans, ...r}) => r);
+        Object.values(connections).forEach(c => c.send({type: 'exam', quiz: safe}));
     }
 
     // --- 學生端邏輯 ---
-    let cheats = 0, currentQuiz = [];
+    let myAnswers = {}, stuQuiz = [], stuCheats = 0;
     function initStudent() {
-        const id = (new URLSearchParams(window.location.search)).get('room') || prompt("請輸入老師的 4 位房間 ID:");
-        myNo = prompt("請輸入您的座號:");
+        const id = (new URLSearchParams(window.location.search)).get('room') || prompt("考場 ID:");
+        myNo = prompt("座號:");
         if(!id || !myNo) return;
+
+        // 裝置綁定辨識
+        let dId = localStorage.getItem('lumina_device_id');
+        if(!dId) { dId = Math.random().toString(36).substring(7); localStorage.setItem('lumina_device_id', dId); }
+
         showView('v-student');
-        document.getElementById('stuMeta').innerText = `座號: ${myNo} | 正在連線至房間 ${id}...`;
-        
+        document.getElementById('stuNoLabel').innerText = "座號: " + myNo;
+
         peer = new Peer();
         peer.on('open', () => {
-            conn = peer.connect(id.toUpperCase(), { metadata: { no: myNo } });
-            conn.on('open', () => { document.getElementById('stuMeta').innerText = `座號: ${myNo} | 連線成功`; });
-            conn.on('data', data => {
-                if(data.type === 'exam') renderExam(data.quiz);
-                if(data.type === 'lock') document.getElementById('examLock').classList.toggle('hidden', !data.state);
-                if(data.type === 'report') {
-                    localStorage.removeItem('lumina_ans_'+myNo);
-                    showView('v-result');
-                    document.getElementById('resScore').innerText = data.score;
-                }
+            conn = peer.connect(id.toUpperCase(), { metadata: { no: myNo, deviceId: dId } });
+            conn.on('data', d => {
+                if(d.type === 'exam') { stuQuiz = d.quiz; renderStuExam(); }
+                if(d.type === 'lock') document.getElementById('lockMask').classList.toggle('hidden', !d.state);
+                if(d.type === 'report') showResult(d.score);
+                if(d.type === 'error') { alert(d.msg); location.reload(); }
             });
         });
 
         document.addEventListener('visibilitychange', () => {
-            if(document.visibilityState === 'hidden') {
-                cheats++;
-                syncProgress();
-            }
+            if(document.visibilityState === 'hidden') { stuCheats++; syncStu(); }
         });
     }
 
-    function renderExam(quiz) {
-        currentQuiz = quiz;
-        document.getElementById('stuTitle').innerText = "測驗進行中";
-        document.getElementById('subBtn').classList.remove('hidden');
-        const saved = JSON.parse(localStorage.getItem('lumina_ans_'+myNo) || "{}");
+    function renderStuExam() {
+        const saved = JSON.parse(localStorage.getItem('ans_'+myNo) || "{}");
+        myAnswers = saved;
         
-        let html = '';
-        quiz.forEach((q, i) => {
-            html += `<div class="q-card"><b>${i+1}. ${q.q} (${q.point}分)</b><br>`;
-            Object.entries(q.opts).forEach(([k, v]) => {
-                if(!v || v === "undefined") return;
-                const checked = (saved[i] || "").includes(k) ? "checked" : "";
-                html += `<label style="display:block;margin:12px 0;padding:10px;background:#f9f9f9;border-radius:8px;"><input type="checkbox" name="q${i}" value="${k}" ${checked} onchange="saveAndSync()"> ${k}. ${v}</label>`;
-            });
-            html += `</div>`;
+        let navHtml = '';
+        stuQuiz.forEach((_, i) => {
+            navHtml += `<div class="q-num-btn" id="nb-${i}" onclick="jumpTo(${i})">${i+1}</div>`;
         });
-        document.getElementById('quizArea').innerHTML = html;
-        syncProgress();
+        document.getElementById('qNav').innerHTML = navHtml;
+        jumpTo(0);
+        syncStu();
     }
 
-    function saveAndSync() {
-        let ans = {};
-        currentQuiz.forEach((_, i) => {
-            ans[i] = Array.from(document.querySelectorAll(`input[name="q${i}"]:checked`)).map(el => el.value).sort().join('');
+    function jumpTo(idx) {
+        currentIdx = idx;
+        const q = stuQuiz[idx];
+        let optsHtml = '';
+        Object.entries(q.opts).forEach(([k, v]) => {
+            if(!v) return;
+            const checked = (myAnswers[idx] || "").includes(k) ? "checked" : "";
+            optsHtml += `<label style="display:block; padding:15px; background:#F9F9F9; margin:10px 0; border-radius:10px;">
+                <input type="checkbox" name="sq" value="${k}" ${checked} onchange="saveAns()"> ${k}. ${v}
+            </label>`;
         });
-        localStorage.setItem('lumina_ans_'+myNo, JSON.stringify(ans));
-        syncProgress();
+        document.getElementById('quizContainer').innerHTML = `<h3>第 ${idx+1} 題</h3><p>${q.q}</p>${optsHtml}`;
+        
+        document.querySelectorAll('.q-num-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('nb-'+idx).classList.add('active');
+        
+        // 如果是最後一題，顯示繳交按鈕
+        document.getElementById('finalSubBtn').classList.toggle('hidden', idx !== stuQuiz.length - 1);
     }
 
-    function syncProgress() {
-        const saved = JSON.parse(localStorage.getItem('lumina_ans_'+myNo) || "{}");
-        const done = Object.values(saved).filter(v => v !== "").length;
-        if(conn && conn.open) {
-            conn.send({ type: 'sync', progress: Math.round((done/currentQuiz.length)*100)+"%", cheats: cheats });
-        }
+    function saveAns() {
+        const sel = Array.from(document.querySelectorAll('input[name="sq"]:checked')).map(e => e.value).sort().join('');
+        myAnswers[currentIdx] = sel;
+        localStorage.setItem('ans_'+myNo, JSON.stringify(myAnswers));
+        if(sel) document.getElementById('nb-'+currentIdx).classList.add('done');
+        syncStu();
+    }
+
+    function syncStu() {
+        const doneCount = Object.values(myAnswers).filter(v => v !== "").length;
+        const prog = Math.round((doneCount / stuQuiz.length) * 100);
+        document.getElementById('stuProgFill').style.width = prog + "%";
+        if(conn) conn.send({type: 'sync', progress: prog + "%", cheats: stuCheats});
     }
 
     function studentSubmit() {
-        if(!confirm("確定要交卷嗎？繳交後將無法修改。")) return;
-        const ans = JSON.parse(localStorage.getItem('lumina_ans_'+myNo) || "{}");
-        conn.send({ type: 'submit', userAns: ans });
+        if(confirm("確定繳交？")) conn.send({type: 'submit', ans: myAnswers});
     }
 
-    // --- 通用工具 ---
+    function studentLogout() {
+        alert("答案已保存，下次登入座號可繼續。");
+        location.reload();
+    }
+
+    function showResult(s) {
+        showView('v-result');
+        document.getElementById('resScore').innerText = s;
+        localStorage.removeItem('ans_'+myNo);
+    }
+
+    // 工具
     function showView(id) {
-        ['v-start','v-teacher','v-student','v-result'].forEach(x => document.getElementById(x).classList.add('hidden'));
+        ['v-start','v-teacher-setup','v-teacher-main','v-student','v-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
-    function toggleExamConfig() { document.getElementById('examConfig').classList.toggle('hidden'); }
-    function downloadSample() {
-        const data = [["題目","選項A","選項B","選項C","選項D","選項E","正確答案","配分"],["範例：台灣最高的山？","玉山","雪山","大霸尖山","","","A",100]];
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "考題範本");
-        XLSX.writeFile(wb, "Lumina_Excel範本.xlsx");
+    function showEditMode(m) {
+        document.getElementById('visualEditor').classList.toggle('hidden', m!=='visual');
+        document.getElementById('excelEditor').classList.toggle('hidden', m!=='excel');
     }
-    function exportFinal() {
-        const list = Object.values(studentData).map(s => {
-            let row = { "座號": s.no, "得分": s.score, "離頁次數": s.cheats, "狀態": s.status };
-            masterQuiz.forEach((_, i) => row[`Q${i+1}回答`] = s.ans[i] || "");
-            return row;
-        });
-        const ws = XLSX.utils.json_to_sheet(list);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "成績結算");
-        XLSX.writeFile(wb, `成績單_${new Date().getTime()}.xlsx`);
+    function downloadSample() {
+        const ws = XLSX.utils.aoa_to_sheet([["題目","選項A","選項B","選項C","選項D","正確答案","配分"],["1+1=?","1","2","3","4","B",10]]);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
+        XLSX.writeFile(wb, "考題範本.xlsx");
+    }
+    function importExcel(input) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const data = XLSX.utils.sheet_to_json(XLSX.read(e.target.result, {type:'array'}).Sheets["題庫"]);
+            masterQuiz = data.map(r => ({ q:r.題目, opts:{A:r.選項A,B:r.選項B,C:r.選項C,D:r.選項D}, ans:String(r.正確答案).toUpperCase().split('').sort().join(''), point:r.配分 }));
+            alert("成功匯入 " + masterQuiz.length + " 題");
+        };
+        reader.readAsArrayBuffer(input.files[0]);
     }
 </script>
 </body>
