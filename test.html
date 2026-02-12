@@ -2,219 +2,239 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>macOS Sequoia v15.2 | Ultimate Lumina Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>macOS Sequoia Pro | Authority Architecture</title>
     
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
-            --apple-blue: #007AFF;
-            --glass: blur(40px) saturate(180%);
-            --win-bg: rgba(255, 255, 255, 0.7);
-            --menu-height: 28px;
-            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+            --sys-blue: #007AFF;
+            --sys-red: #FF5F57;
+            --sys-yellow: #FEBC2E;
+            --sys-green: #28C840;
+            --menu-bg: rgba(255, 255, 255, 0.3);
+            --win-bg: rgba(255, 255, 255, 0.75);
+            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; font-family: var(--font-main); overflow: hidden; background: #000; }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: var(--font-main); overflow: hidden; background: #000; }
 
-        /* --- macOS 啟動與登入動畫 --- */
+        /* --- 1. Bootloader (啟動動畫) --- */
         #boot-screen {
             position: fixed; inset: 0; background: #000; z-index: 99999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .apple-logo { width: 80px; filter: invert(1); margin-bottom: 50px; }
-        .boot-bar { width: 200px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        .boot-progress { width: 0%; height: 100%; background: #fff; transition: width 2s ease-in-out; }
+        .apple-logo { width: 70px; filter: invert(1); margin-bottom: 50px; font-size: 60px; }
+        .boot-bar-wrap { width: 180px; height: 4px; background: #333; border-radius: 2px; }
+        #boot-p { width: 0%; height: 100%; background: #fff; transition: width 2s cubic-bezier(0.1, 0, 0.1, 1); }
 
+        /* --- 2. Login Window (登入視窗) --- */
         #login-screen {
-            position: fixed; inset: 0; z-index: 99998; background: url('https://raw.githubusercontent.com/apple/sequoia-wallpaper/main/sequoia.jpg') center/cover;
-            display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px);
+            position: fixed; inset: 0; z-index: 99998; display: none;
+            background: url('https://raw.githubusercontent.com/apple/sequoia-wallpaper/main/sequoia.jpg') center/cover;
+            flex-direction: column; align-items: center; justify-content: center;
         }
-        .user-avatar { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid #fff; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; }
-        .login-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); padding: 8px 25px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.2s; }
-        .login-btn:hover { background: rgba(255,255,255,0.4); }
+        .login-card { text-align: center; backdrop-filter: blur(20px); padding: 40px; border-radius: 30px; color: #fff; }
+        .avatar { width: 90px; height: 90px; border-radius: 50%; background: rgba(255,255,255,0.2); margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 40px; border: 1px solid rgba(255,255,255,0.4); }
+        .login-btns { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-ios { background: #fff; color: #000; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .btn-mac { background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; border-radius: 12px; cursor: pointer; }
 
-        /* --- 桌面系統元件 --- */
+        /* --- 3. macOS Desktop --- */
         #desktop { width: 100%; height: 100%; background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover; display: none; }
         
+        /* Menu Bar */
         .menu-bar {
-            height: var(--menu-height); background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+            height: 30px; background: var(--menu-bg); backdrop-filter: blur(20px);
             position: fixed; top: 0; width: 100%; z-index: 10000; display: flex; align-items: center;
-            padding: 0 15px; color: #fff; font-size: 13px; font-weight: 600;
+            padding: 0 15px; color: #fff; font-size: 13px;
         }
-        .menu-left { display: flex; gap: 15px; }
+        .menu-item { padding: 0 10px; cursor: default; font-weight: 500; }
+        .menu-item:hover { background: rgba(255,255,255,0.2); border-radius: 4px; }
         .menu-right { flex: 1; display: flex; justify-content: flex-end; gap: 15px; }
 
+        /* Window System */
         .window {
-            position: absolute; width: 800px; height: 500px; background: var(--win-bg); backdrop-filter: var(--glass);
-            border-radius: 12px; box-shadow: 0 30px 60px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.3);
+            position: absolute; min-width: 400px; background: var(--win-bg); backdrop-filter: blur(40px) saturate(180%);
+            border-radius: 12px; box-shadow: 0 40px 80px rgba(0,0,0,0.4); border: 0.5px solid rgba(255,255,255,0.3);
             display: flex; flex-direction: column; overflow: hidden;
         }
-        .win-header { height: 38px; display: flex; align-items: center; padding: 0 12px; cursor: grab; }
-        .win-header:active { cursor: grabbing; }
-        .traffic-lights { display: flex; gap: 8px; width: 60px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); position: relative; }
-        .dot-red { background: #FF5F57; }
-        .dot-yellow { background: #FEBC2E; }
-        .dot-green { background: #28C840; position: relative; }
+        .win-header { height: 40px; display: flex; align-items: center; padding: 0 12px; background: rgba(255,255,255,0.1); cursor: grab; }
+        .traffic-lights { display: flex; gap: 8px; width: 60px; position: relative; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; }
+        .dot:hover::after { font-size: 8px; font-weight: 900; color: rgba(0,0,0,0.5); }
+        .dot-red { background: var(--sys-red); } .dot-red:hover::after { content: "×"; }
+        .dot-yellow { background: var(--sys-yellow); } .dot-yellow:hover::after { content: "−"; }
+        .dot-green { background: var(--sys-green); position: relative; } .dot-green:hover::after { content: "+"; }
 
-        /* 綠色按鈕：Layout Picker */
-        .layout-picker {
-            position: absolute; top: 20px; left: 0; background: rgba(40,40,40,0.9); backdrop-filter: blur(10px);
-            padding: 10px; border-radius: 8px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; z-index: 10001;
+        /* Tiling Picker (懸停在綠色按鈕顯示) */
+        .tiling-picker {
+            position: absolute; top: 25px; left: 0; background: rgba(45,45,45,0.95); backdrop-filter: blur(10px);
+            padding: 10px; border-radius: 10px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; z-index: 10001;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .dot-green:hover .layout-picker { display: grid; }
-        .layout-item { width: 40px; height: 30px; border: 1px solid #666; border-radius: 4px; cursor: pointer; }
-        .layout-item:hover { background: var(--apple-blue); }
+        .dot-green:hover .tiling-picker { display: grid; }
+        .tile-opt { width: 45px; height: 35px; border: 1.5px solid #666; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        .tile-opt:hover { background: var(--sys-blue); border-color: #fff; }
 
-        /* --- 學生端專屬：iPhone Shell --- */
+        /* Window Content */
+        .win-body { flex: 1; display: flex; background: #fff; color: #000; }
+        .win-sidebar { width: 180px; background: rgba(0,0,0,0.03); border-right: 1px solid rgba(0,0,0,0.05); padding: 20px 10px; }
+        .side-link { padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; cursor: pointer; transition: 0.2s; }
+        .side-link.active { background: rgba(0,122,255,0.1); color: var(--sys-blue); font-weight: 600; }
+        .win-main { flex: 1; padding: 25px; overflow-y: auto; }
+
+        /* --- 4. iPhone Interface --- */
         #iphone-shell {
             position: fixed; inset: 0; background: #F2F2F7; display: none; flex-direction: column; z-index: 90000;
         }
-        .iphone-header { padding: 60px 25px 20px; background: #fff; }
-        .iphone-card { background: #fff; margin: 10px 15px; padding: 20px; border-radius: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .ios-btn { width: 100%; padding: 18px; border-radius: 14px; background: #fff; border: 1px solid #ddd; margin-bottom: 12px; font-weight: 600; text-align: left; transition: 0.2s; }
-        .ios-btn.selected { border-color: var(--apple-blue); background: rgba(0,122,255,0.05); }
-        .ios-submit { background: var(--apple-blue); color: #fff; border: none; padding: 15px; border-radius: 14px; width: 100%; font-size: 17px; font-weight: 700; margin-top: 10px; }
+        .ios-top { padding: 60px 20px 20px; background: #fff; border-bottom: 0.5px solid #d1d1d6; }
+        .ios-body { flex: 1; padding: 20px; overflow-y: auto; }
+        .ios-card { background: #fff; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .ios-row { width: 100%; padding: 18px; border-radius: 15px; background: #fff; border: 1.5px solid #eee; margin-bottom: 12px; font-size: 17px; font-weight: 600; text-align: left; display: flex; justify-content: space-between; }
+        .ios-row.active { border-color: var(--sys-blue); background: rgba(0,122,255,0.05); }
+        .ios-btn-primary { width: 100%; background: var(--sys-blue); color: #fff; border: none; padding: 18px; border-radius: 15px; font-size: 18px; font-weight: 700; margin-top: 20px; }
 
-        /* --- Dock --- */
-        .dock-container {
-            position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+        /* Dock */
+        .dock-bar {
+            position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
             background: rgba(255,255,255,0.25); backdrop-filter: blur(25px);
-            border-radius: 20px; padding: 8px; display: flex; gap: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 10000;
+            padding: 8px; border-radius: 20px; display: flex; gap: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 10000;
         }
-        .dock-icon { width: 54px; height: 54px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; transition: transform 0.2s; }
-        .dock-icon:hover { transform: scale(1.3) translateY(-10px); }
+        .dock-app { width: 50px; height: 50px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; transition: 0.2s; }
+        .dock-app:hover { transform: scale(1.3) translateY(-10px); }
 
         .hidden { display: none !important; }
+        .apple-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 15px; outline: none; }
+        .apple-input:focus { border-color: var(--sys-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
     </style>
 </head>
 <body>
 
 <div id="boot-screen">
     <div class="apple-logo"></div>
-    <div class="boot-bar"><div class="boot-progress" id="bp"></div></div>
+    <div class="boot-bar-wrap"><div id="boot-p"></div></div>
 </div>
 
 <div id="login-screen">
-    <div class="user-avatar">👤</div>
-    <h2 style="color:#fff; margin-bottom:20px;">Lumina User</h2>
-    <div style="display:flex; gap:10px;">
-        <button class="login-btn" onclick="System.init('teacher')">我是老師</button>
-        <button class="login-btn" onclick="System.init('student')">我是學生</button>
+    <div class="login-card">
+        <div class="avatar">👤</div>
+        <h2>Lumina Sequoia</h2>
+        <div class="login-btns">
+            <button class="btn-mac" onclick="Kernel.boot('teacher')">我是老師 (macOS)</button>
+            <button class="btn-ios" onclick="Kernel.boot('student')">我是學生 (iPhone)</button>
+        </div>
     </div>
 </div>
 
 <div id="desktop">
-    <div class="menu-bar">
-        <div class="menu-left">
-            <span></span><span id="active-app-name">Finder</span><span>File</span><span>Edit</span><span>View</span>
-        </div>
+    <nav class="menu-bar">
+        <div class="menu-item" style="font-weight: 900;"></div>
+        <div class="menu-item" id="cur-app">Control Center</div>
+        <div class="menu-item">File</div>
+        <div class="menu-item">Edit</div>
         <div class="menu-right">
-            <span id="sys-time">9:41 AM</span>
+            <div class="menu-item">📡</div>
+            <div class="menu-item" id="clock">9:41 AM</div>
         </div>
-    </div>
+    </nav>
 
-    <div id="win-master" class="window" style="top:100px; left:100px;">
-        <div class="win-header" onmousedown="OS.dragStart(event, 'win-master')">
+    <div id="win-master" class="window" style="width: 900px; height: 600px; top: 80px; left: 100px;">
+        <div class="win-header" onmousedown="Kernel.windowDrag(event, 'win-master')">
             <div class="traffic-lights">
-                <div class="dot dot-red" onclick="this.parentElement.parentElement.parentElement.classList.add('hidden')"></div>
-                <div class="dot dot-yellow"></div>
+                <div class="dot dot-red" onclick="Kernel.closeWindow('win-master')"></div>
+                <div class="dot dot-yellow" onclick="Kernel.minimizeWindow('win-master')"></div>
                 <div class="dot dot-green">
-                    <div class="layout-picker">
-                        <div class="layout-item" onclick="OS.tile('left')"></div>
-                        <div class="layout-item" onclick="OS.tile('right')"></div>
-                        <div class="layout-item" style="grid-column: span 2" onclick="OS.tile('full')"></div>
+                    <div class="tiling-picker">
+                        <div class="tile-opt" onclick="Kernel.tile('left')"></div>
+                        <div class="tile-opt" onclick="Kernel.tile('right')"></div>
+                        <div class="tile-opt" style="grid-column: span 2" onclick="Kernel.tile('full')"></div>
                     </div>
                 </div>
             </div>
-            <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Lumina 任務配置</div>
+            <div style="flex:1; text-align:center; font-size:13px; font-weight:600; color:#555;">投票控制中心</div>
         </div>
-        <div style="flex:1; display:flex; background:#fff;">
-            <aside style="width:180px; background:#f6f6f6; border-right:1px solid #ddd; padding:15px;">
-                <div style="font-weight:700; color:#007AFF; margin-bottom:10px;">✦ 當前任務</div>
-                <div id="room-id-display" style="font-size:20px; font-weight:800;">----</div>
+        <div class="win-body">
+            <aside class="win-sidebar">
+                <div class="side-link active" onclick="Kernel.switchView('setup')">任務設定</div>
+                <div class="side-link" onclick="Kernel.switchView('live')">實時監控</div>
+                <div style="margin-top:20px; padding:10px; font-size:11px; color:#999;">房號：<span id="room-id-val">----</span></div>
             </aside>
-            <main style="flex:1; padding:25px; overflow-y:auto;">
-                <h3>設定題目</h3>
-                <input type="text" id="t-topic" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px;">
-                <div id="t-opts"></div>
-                <button onclick="System.addOpt()" style="color:#007AFF; background:none; border:none; cursor:pointer;">+ 新增選項</button>
-                <div style="margin-top:20px;">
-                    <button onclick="System.start()" id="start-btn" style="background:#007AFF; color:#fff; border:none; padding:10px 20px; border-radius:8px;">🚀 啟動投票</button>
+            <main class="win-main" id="master-content">
+                <div id="view-setup">
+                    <h2 style="margin-bottom:20px;">配置投票任務</h2>
+                    <label style="font-size:12px; color:#888;">投票題目</label>
+                    <input type="text" id="t-topic" class="apple-input" placeholder="輸入您的題目..." style="margin:8px 0 20px;">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="font-size:12px; color:#888;">選項列表</label>
+                        <button onclick="Kernel.addOption()" style="color:var(--sys-blue); border:none; background:none; cursor:pointer; font-weight:600;">+ 新增選項</button>
+                    </div>
+                    <div id="t-opt-list" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
+                    
+                    <button onclick="Kernel.launch()" style="width:100%; background:var(--sys-blue); color:#fff; border:none; padding:15px; border-radius:12px; font-weight:700; margin-top:30px; cursor:pointer;">🚀 發布並啟動任務</button>
                 </div>
-                <div id="chart-wrap" class="hidden" style="height:250px; margin-top:20px;">
-                    <canvas id="masterChart"></canvas>
+
+                <div id="view-live" class="hidden">
+                    <div style="display:flex; justify-content:space-between;">
+                        <h2 id="live-topic-disp">等待數據中...</h2>
+                        <div id="live-count" style="font-size:30px; font-weight:800; color:var(--sys-blue);">0</div>
+                    </div>
+                    <div style="height:300px; margin-top:20px;">
+                        <canvas id="masterChart"></canvas>
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <div class="dock-container">
-        <div class="dock-icon">📂</div>
-        <div class="dock-icon">⚙️</div>
-        <div class="dock-icon" onclick="document.getElementById('win-master').classList.remove('hidden')">📊</div>
+    <div class="dock-bar">
+        <div class="dock-app" onclick="Kernel.openWindow('win-master')">📊</div>
+        <div class="dock-app">⚙️</div>
+        <div class="dock-app">📁</div>
     </div>
 </div>
 
 <div id="iphone-shell">
-    <div class="iphone-header">
-        <h1 id="ios-topic-disp" style="font-size:32px;">等待老師開始...</h1>
-        <p id="ios-status" style="color:#888;">連線至指揮中心...</p>
+    <div class="ios-top">
+        <h1 id="ios-topic">等待老師發布...</h1>
+        <p style="color:#888;">連線狀態：<span id="ios-status" style="color:var(--sys-green)">尋找房號...</span></p>
     </div>
-    <div class="iphone-card" id="ios-vote-area">
-        <div id="ios-opt-list"></div>
-        <button id="submit-vote" class="ios-submit hidden" onclick="System.submitVote()">送出投票結果</button>
-    </div>
-    <div class="iphone-card hidden" id="ios-result-area">
-        <h3>投票結果統計</h3>
-        <div id="ios-res-data"></div>
+    <div class="ios-body">
+        <div id="ios-vote-screen">
+            <div id="ios-options-list"></div>
+            <button id="ios-submit-btn" class="ios-btn-primary hidden" onclick="Kernel.submitToTeacher()">送出投票結果</button>
+        </div>
+        <div id="ios-result-screen" class="hidden">
+            <div class="ios-card">
+                <h3>目前的統計數據</h3>
+                <div id="ios-res-bars"></div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
 /**
- * macOS Sequoia v15.2 - Core Engine
- * 3000行代碼量級的精簡核心版
+ * LuminaOS Sequoia Ultimate Engine
+ * 全世界權威級 macOS WebOS 架構
  */
 
-const OS = {
-    dragStart(e, id) {
-        const win = document.getElementById(id);
-        let startX = e.clientX - win.offsetLeft;
-        let startY = e.clientY - win.offsetTop;
-        const move = (ev) => {
-            win.style.left = (ev.clientX - startX) + 'px';
-            win.style.top = (ev.clientY - startY) + 'px';
-        };
-        const end = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', end); };
-        document.addEventListener('mousemove', move);
-        document.addEventListener('mouseup', end);
+const Kernel = {
+    state: {
+        mode: '', room: '', topic: '今日課程吸收度？', options: ['完全理解', '需要加油'], 
+        votes: {}, active: false, selected: '', peer: null, conn: null, chart: null
     },
-    tile(pos) {
-        const win = document.getElementById('win-master');
-        win.style.transition = "all 0.4s cubic-bezier(0.2, 1, 0.2, 1)";
-        if(pos === 'left') { win.style.left="0"; win.style.top="28px"; win.style.width="50%"; win.style.height="calc(100% - 100px)"; }
-        if(pos === 'right') { win.style.left="50%"; win.style.top="28px"; win.style.width="50%"; win.style.height="calc(100% - 100px)"; }
-        if(pos === 'full') { win.style.left="0"; win.style.top="28px"; win.style.width="100%"; win.style.height="calc(100% - 100px)"; }
-        setTimeout(() => win.style.transition = "none", 500);
-    }
-};
 
-const System = {
-    peer: null, conn: null, mode: '', 
-    state: { room: '', topic: '今日課後練習', options: ['完全理解','需要輔習','完全不懂'], votes: {}, selected: '' },
-    
-    init(type) {
-        this.mode = type;
+    // --- 系統啟動邏輯 ---
+    boot(type) {
+        this.state.mode = type;
         document.getElementById('login-screen').style.display = 'none';
-        
-        if(/Android|iPhone|iPad/i.test(navigator.userAgent) || type === 'student') {
+        if(type === 'student') {
             document.getElementById('iphone-shell').style.display = 'flex';
             this.initStudent();
         } else {
@@ -223,102 +243,152 @@ const System = {
         }
     },
 
+    // --- 視窗引擎 ---
+    windowDrag(e, id) {
+        const win = document.getElementById(id);
+        let startX = e.clientX - win.offsetLeft;
+        let startY = e.clientY - win.offsetTop;
+        const move = (ev) => { win.style.left = (ev.clientX-startX)+'px'; win.style.top = (ev.clientY-startY)+'px'; };
+        const end = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', end); };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', end);
+    },
+
+    tile(pos) {
+        const win = document.getElementById('win-master');
+        win.style.transition = '0.4s cubic-bezier(0.2, 1, 0.2, 1)';
+        const menuH = 30;
+        if(pos==='left') { win.style.left='0'; win.style.top=menuH+'px'; win.style.width='50%'; win.style.height='calc(100% - 100px)'; }
+        if(pos==='right') { win.style.left='50%'; win.style.top=menuH+'px'; win.style.width='50%'; win.style.height='calc(100% - 100px)'; }
+        if(pos==='full') { win.style.left='0'; win.style.top=menuH+'px'; win.style.width='100%'; win.style.height='calc(100% - 100px)'; }
+        setTimeout(() => win.style.transition='none', 500);
+    },
+
+    closeWindow(id) { document.getElementById(id).classList.add('hidden'); },
+    openWindow(id) { document.getElementById(id).classList.remove('hidden'); },
+
+    // --- 老師端核心 ---
     initTeacher() {
         this.state.room = Math.floor(1000 + Math.random() * 8999).toString();
-        document.getElementById('room-id-display').innerText = this.state.room;
-        this.peer = new Peer('LUMINA-' + this.state.room);
-        this.renderOpts();
+        document.getElementById('room-id-val').innerText = this.state.room;
+        this.state.peer = new Peer('LUMINA-' + this.state.room);
         
-        this.peer.on('connection', c => {
+        this.renderSetupOptions();
+        
+        this.state.peer.on('connection', c => {
             c.on('data', d => {
                 if(d.type === 'vote') {
                     this.state.votes[c.peer] = d.val;
-                    this.updateChart();
+                    this.updateLiveChart();
                 }
             });
         });
-        this.broadcast();
-    },
 
-    initStudent() {
-        const r = new URLSearchParams(window.location.search).get('r') || prompt("請輸入房號：");
-        this.peer = new Peer();
-        this.peer.on('open', () => {
-            this.conn = this.peer.connect('LUMINA-' + r);
-            this.conn.on('data', d => this.syncStudent(d));
-        });
-    },
-
-    addOpt() { this.state.options.push('新選項'); this.renderOpts(); },
-    renderOpts() {
-        const c = document.getElementById('t-opts');
-        c.innerHTML = this.state.options.map((o, i) => `
-            <input type="text" value="${o}" oninput="System.state.options[${i}]=this.value" style="width:80%; padding:8px; margin-bottom:5px;">
-        `).join('');
-    },
-
-    start() {
-        this.state.active = true;
-        document.getElementById('chart-wrap').classList.remove('hidden');
-        this.initChart();
-    },
-
-    submitVote() {
-        if(!this.state.selected) return alert("請選擇一個選項");
-        this.conn.send({ type: 'vote', val: this.state.selected });
-        document.getElementById('submit-vote').innerText = "已送出！";
-        document.getElementById('submit-vote').style.background = "#28C840";
-    },
-
-    syncStudent(data) {
-        document.getElementById('ios-topic-disp').innerText = data.topic;
-        document.getElementById('ios-status').innerText = "已連接房號：" + data.room;
-        const list = document.getElementById('ios-opt-list');
-        list.innerHTML = data.options.map(o => `
-            <button class="ios-btn ${this.state.selected === o ? 'selected' : ''}" onclick="System.state.selected='${o}'; System.syncStudent(${JSON.stringify(data)})">${o}</button>
-        `).join('');
-        document.getElementById('submit-vote').classList.remove('hidden');
-    },
-
-    broadcast() {
+        // 廣播心跳
         setInterval(() => {
-            if(!this.peer) return;
-            Object.values(this.peer.connections).forEach(conns => {
-                conns.forEach(c => { if(c.open) c.send({ ...this.state, room: this.state.room }); });
+            if(!this.state.peer) return;
+            const payload = { ...this.state, type: 'sync' };
+            Object.values(this.state.peer.connections).forEach(conns => {
+                conns.forEach(c => { if(c.open) c.send(payload); });
             });
         }, 1000);
     },
 
+    addOption() { this.state.options.push("新選項"); this.renderSetupOptions(); },
+    
+    renderSetupOptions() {
+        const cont = document.getElementById('t-opt-list');
+        cont.innerHTML = this.state.options.map((o, i) => `
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="text" class="apple-input" value="${o}" oninput="Kernel.state.options[${i}]=this.value">
+                <button onclick="Kernel.state.options.splice(${i},1); Kernel.renderSetupOptions()" style="color:var(--sys-red); border:none; background:none; cursor:pointer;">✕</button>
+            </div>
+        `).join('');
+    },
+
+    switchView(v) {
+        document.getElementById('view-setup').classList.toggle('hidden', v!=='setup');
+        document.getElementById('view-live').classList.toggle('hidden', v!=='live');
+        document.querySelectorAll('.side-link').forEach(l => l.classList.toggle('active', l.innerText.includes(v==='setup'?'設定':'監控')));
+        if(v==='live' && this.state.chart) setTimeout(() => this.state.chart.resize(), 100);
+    },
+
+    launch() {
+        this.state.topic = document.getElementById('t-topic').value || this.state.topic;
+        this.state.active = true;
+        this.state.votes = {};
+        this.switchView('live');
+        document.getElementById('live-topic-disp').innerText = this.state.topic;
+        this.initChart();
+    },
+
     initChart() {
         const ctx = document.getElementById('masterChart').getContext('2d');
-        this.chart = new Chart(ctx, {
+        if(this.state.chart) this.state.chart.destroy();
+        this.state.chart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: this.state.options, datasets: [{ data: [], backgroundColor: '#007AFF' }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            data: { labels: this.state.options, datasets: [{ data: [], backgroundColor: '#007AFF', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
         });
     },
 
-    updateChart() {
+    updateLiveChart() {
+        if(!this.state.chart) return;
         const counts = this.state.options.map(o => Object.values(this.state.votes).filter(v => v === o).length);
-        this.chart.data.datasets[0].data = counts;
-        this.chart.update();
+        this.state.chart.data.datasets[0].data = counts;
+        this.state.chart.update();
+        document.getElementById('live-count').innerText = Object.keys(this.state.votes).length;
+    },
+
+    // --- 學生端核心 ---
+    initStudent() {
+        const r = new URLSearchParams(window.location.search).get('r') || prompt("請輸入房號：");
+        this.state.peer = new Peer();
+        this.state.peer.on('open', () => {
+            this.state.conn = this.state.peer.connect('LUMINA-' + r);
+            this.state.conn.on('open', () => document.getElementById('ios-status').innerText = "已連線至房號 " + r);
+            this.state.conn.on('data', d => this.syncStudentUI(d));
+        });
+    },
+
+    syncStudentUI(data) {
+        document.getElementById('ios-topic').innerText = data.topic;
+        const list = document.getElementById('ios-options-list');
+        list.innerHTML = data.options.map(o => `
+            <button class="ios-row ${this.state.selected === o ? 'active' : ''}" onclick="Kernel.selectOpt('${o}', ${JSON.stringify(data)})">
+                ${o} <span>${this.state.selected === o ? '✓' : ''}</span>
+            </button>
+        `).join('');
+        document.getElementById('ios-submit-btn').classList.remove('hidden');
+    },
+
+    selectOpt(o, data) {
+        this.state.selected = o;
+        this.syncStudentUI(data);
+    },
+
+    submitToTeacher() {
+        if(!this.state.selected) return;
+        this.state.conn.send({ type: 'vote', val: this.state.selected });
+        document.getElementById('ios-submit-btn').innerText = "✅ 已送出";
+        document.getElementById('ios-submit-btn').style.background = var(--sys-green);
     }
 };
 
-// 啟動動畫
+// 系統引導程序
 window.onload = () => {
-    const bp = document.getElementById('bp');
+    const p = document.getElementById('boot-p');
     setTimeout(() => {
-        bp.style.width = "100%";
+        p.style.width = "100%";
         setTimeout(() => {
             document.getElementById('boot-screen').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
         }, 2200);
     }, 500);
-    
-    // 每秒更新系統時間
+
     setInterval(() => {
-        document.getElementById('sys-time').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }, 1000);
 };
 </script>
