@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級平台 - 權限管理系統</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f0f2f5; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; }
+        
+        /* 介面切換 */
+        .page { display: none; padding: 20px; max-width: 800px; margin: auto; animation: fadeIn 0.3s; }
+        .active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 通用元件 */
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; }
+        .btn { border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-p { background: var(--p); color: white; }
+        .btn-s { background: var(--s); color: white; }
+        .btn-d { background: var(--d); color: white; }
+        
+        /* 管理員清單 */
+        .stu-item { border-bottom: 1px solid #eee; padding: 15px 10px; }
+        .stu-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .details { display: none; padding: 15px; background: #f9f9f9; border-radius: 12px; margin-top: 10px; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .badge-pending { background: #fee2e2; color: var(--d); }
+        .badge-approved { background: #e6fffa; color: var(--s); }
+        
+        .nav-header { background: white; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: none; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div id="nav" class="nav-header">
+        <b id="userLabel">身分載入中...</b>
+        <button class="btn" style="width:auto; margin:0;" onclick="logout()">安全登出</button>
+    </div>
+
+    <div id="page-auth" class="page active-page">
+        <div class="card" id="login-box">
+            <h2 style="text-align:center;">🔑 學生/導師登入</h2>
+            <input type="number" id="l-id" placeholder="座號 (例如 05)">
+            <input type="password" id="l-pw" placeholder="密碼">
+            <button class="btn btn-p" onclick="doLogin()">登入</button>
+            <button class="btn" style="background:none; color:var(--p)" onclick="toggleAuth(false)">新同學？點此註冊</button>
+        </div>
+
+        <div class="card" id="reg-box" style="display:none;">
+            <h2 style="text-align:center;">📝 申請入班</h2>
+            <input type="text" id="r-class" placeholder="班級 (例如 101)">
+            <input type="number" id="r-id" placeholder="座號">
+            <input type="text" id="r-name" placeholder="真實姓名">
+            <select id="r-gender"><option value="男">男</option><option value="女">女</option></select>
+            <input type="password" id="r-pw" placeholder="設定登入密碼">
+            <button class="btn btn-s" onclick="doRegister()">送出審核</button>
+            <button class="btn" style="background:none; color:var(--p)" onclick="toggleAuth(true)">返回登入</button>
+        </div>
+    </div>
+
+    <div id="page-profile" class="page">
+        <div class="card">
+            <h3>👤 個人檔案 (唯讀)</h3>
+            <label style="font-size:0.8rem;">班級/座號/姓名</label>
+            <input type="text" id="p-basic" disabled>
+            <label style="font-size:0.8rem;">職務 (由系統指派)</label>
+            <input type="text" id="p-title" disabled>
+            
+            <h3 style="margin-top:25px; border-top:1px solid #eee; pt:20px; padding-top:20px;">⚙️ 帳戶設定 (可修改)</h3>
+            <label>性別</label>
+            <select id="p-gender"><option value="男">男</option><option value="女">女</option></select>
+            <label>新密碼 (不修改請留空)</label>
+            <input type="password" id="p-newpw" placeholder="請輸入新密碼">
+            <button class="btn btn-p" onclick="updateProfile()">儲存並更新</button>
+        </div>
+    </div>
+
+    <div id="page-admin" class="page">
+        <div class="card" style="border-left: 5px solid var(--d);">
+            <h3>⏳ 待批准名單 (<span id="count-pending">0</span>)</h3>
+            <div id="list-pending"></div>
+        </div>
+        
+        <div class="card">
+            <h3>👥 全班資料總覽 (<span id="count-all">0</span>)</h3>
+            <div id="list-all"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Firebase 初始化 ---
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+            authDomain: "vote-6668.firebaseapp.com",
+            projectId: "vote-6668",
+            storageBucket: "vote-6668.firebasestorage.app",
+            messagingSenderId: "389284021944",
+            appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let me = null;
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById('page-' + pageId).classList.add('active-page');
+            document.getElementById('nav').style.display = (pageId === 'auth') ? 'none' : 'flex';
+        }
+
+        function toggleAuth(showLogin) {
+            document.getElementById('login-box').style.display = showLogin ? 'block' : 'none';
+            document.getElementById('reg-box').style.display = showLogin ? 'none' : 'block';
+        }
+
+        // --- 登入邏輯：權限分支在此 ---
+        async function doLogin() {
+            const id = document.getElementById('l-id').value.padStart(2, '0');
+            const pw = document.getElementById('l-pw').value;
+            
+            try {
+                const doc = await db.collection("students").doc(id).get();
+                if (doc.exists && doc.data().password === pw) {
+                    const data = doc.data();
+                    
+                    // 1. 檢查是否批准 (老師/管理員不受限)
+                    if (data.status !== "approved" && data.role !== "teacher" && data.role !== "admin") {
+                        return alert("您的帳號申請正在審核中，請稍候。");
+                    }
+
+                    me = { id, ...data };
+                    document.getElementById('userLabel').innerText = `${me.name} (${id}) - ${me.role === 'teacher' ? '導師' : '學生'}`;
+
+                    // 2. 根據 role 導向不同頁面
+                    if (me.role === 'teacher' || me.role === 'admin') {
+                        startAdminListener();
+                        showPage('admin');
+                    } else {
+                        fillProfile();
+                        showPage('profile');
+                    }
+                } else {
+                    alert("座號或密碼錯誤");
+                }
+            } catch (e) { alert("登入失敗: " + e.message); }
+        }
+
+        async function doRegister() {
+            const id = document.getElementById('r-id').value.padStart(2, '0');
+            const data = {
+                class: document.getElementById('r-class').value,
+                name: document.getElementById('r-name').value,
+                gender: document.getElementById('r-gender').value,
+                password: document.getElementById('r-pw').value,
+                status: "pending",
+                role: "student", // 註冊預設為學生
+                title: "一般學生",
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if(!id || !data.name || !data.password) return alert("資訊填寫不全");
+            await db.collection("students").doc(id).set(data);
+            alert("申請已送出！請等待導師批准。");
+            location.reload();
+        }
+
+        function fillProfile() {
+            document.getElementById('p-basic').value = `${me.class} - ${me.id}號 - ${me.name}`;
+            document.getElementById('p-title').value = me.title || "一般學生";
+            document.getElementById('p-gender').value = me.gender;
+        }
+
+        async function updateProfile() {
+            const newPw = document.getElementById('p-newpw').value;
+            const updates = { 
+                gender: document.getElementById('p-gender').value,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (newPw) updates.password = newPw;
+            await db.collection("students").doc(me.id).update(updates);
+            alert("資料已更新！");
+        }
+
+        // --- 管理員實時監聽 ---
+        function startAdminListener() {
+            db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).onSnapshot(snap => {
+                const pList = document.getElementById('list-pending');
+                const aList = document.getElementById('list-all');
+                pList.innerHTML = ""; aList.innerHTML = "";
+                let pCount = 0; let aCount = 0;
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const id = doc.id;
+                    const isP = d.status === 'pending';
+                    const item = document.createElement('div');
+                    item.className = 'stu-item';
+                    item.innerHTML = `
+                        <div class="stu-header" onclick="document.getElementById('det-${id}').style.display = document.getElementById('det-${id}').style.display==='block'?'none':'block'">
+                            <span><b>${id} ${d.name}</b></span>
+                            <span class="badge ${isP?'badge-pending':'badge-approved'}">${isP?'待審核':'已准許'}</span>
+                        </div>
+                        <div id="det-${id}" class="details">
+                            <p>班級：${d.class} | 職務：${d.title || '一般學生'} | 性別：${d.gender}</p>
+                            <p style="font-size:0.7rem; color:#aaa;">身分權限：${d.role}</p>
+                            <div style="display:flex; gap:5px; margin-top:10px;">
+                                ${isP ? `<button class="btn btn-s" style="padding:5px;" onclick="adminAction('${id}','approve')">准許入班</button>` : ''}
+                                <button class="btn btn-d" style="padding:5px; background:none; color:var(--d); border:1px solid var(--d);" onclick="adminAction('${id}','delete')">拒絕/刪除</button>
+                                <button class="btn" style="padding:5px; background:#666; color:white;" onclick="adminAction('${id}','reset')">還原密碼</button>
+                            </div>
+                        </div>
+                    `;
+                    if(isP) { pList.appendChild(item); pCount++; }
+                    else { aList.appendChild(item); aCount++; }
+                });
+                document.getElementById('count-pending').innerText = pCount;
+                document.getElementById('count-all').innerText = aCount;
+            });
+        }
+
+        async function adminAction(id, type) {
+            if (type === 'approve') await db.collection("students").doc(id).update({ status: 'approved' });
+            if (type === 'delete') if(confirm(`確定刪除/拒絕 ${id} 嗎？`)) await db.collection("students").doc(id).delete();
+            if (type === 'reset') {
+                const name = (await db.collection("students").doc(id).get()).data().name;
+                await db.collection("students").doc(id).update({ password: id + name });
+                alert("已重設密碼為：" + id + name);
+            }
+        }
+
+        function logout() { location.reload(); }
+    </script>
+</body>
+</html>
