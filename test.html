@@ -14,8 +14,8 @@
             --card: rgba(255, 255, 255, 0.4); 
             --text: #1e293b;
             --sub-text: #64748b;
-            --border: rgba(0,0,0,0.08);
-            --glass-bg: rgba(248, 250, 252, 0.2); 
+            --border: rgba(0,0,0,0.1); /* 稍微加深邊框辨識度 */
+            --glass-bg: rgba(248, 250, 252, 0.4); 
             --banner-bg: #fff9db;
             --banner-text: #856404;
         }
@@ -25,15 +25,14 @@
             --card: rgba(15, 23, 42, 0.3);
             --text: #f1f5f9;
             --sub-text: #94a3b8;
-            --border: rgba(255,255,255,0.05);
-            --glass-bg: rgba(2, 6, 23, 0.15);
+            --border: rgba(255,255,255,0.08);
+            --glass-bg: rgba(2, 6, 23, 0.3);
             --banner-bg: #2d2a15;
             --banner-text: #ffec99;
         }
 
         body { margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; }
 
-        /* --- 頂部區塊 --- */
         .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(30px) saturate(200%); -webkit-backdrop-filter: blur(30px) saturate(200%); border-bottom: 1px solid var(--border); }
         .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 10px 15px; font-size: 0.75rem; text-align: center; font-weight: 800; }
 
@@ -41,20 +40,18 @@
         .header-titles h1 { margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
         .header-titles p { margin: 4px 0 0; font-size: 0.8rem; color: var(--sub-text); font-weight: 500; }
 
-        /* --- 右側控制區：精確 120px 寬度 --- */
+        /* --- 右側控制區：對稱設計 --- */
         .header-right { display: flex; flex-direction: column; gap: 8px; width: 120px; } 
         
         .controls-row { display: flex; gap: 8px; width: 100%; height: 34px; }
         .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
         .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 7px; cursor: pointer; opacity: 0.4; display: flex; align-items: center; justify-content: center; }
-        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         body.dark-mode .layout-btn.active { background: #334155; }
         .layout-btn svg { width: 14px; height: 14px; fill: var(--text); }
 
-        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .square-btn svg { width: 16px; height: 16px; fill: var(--text); }
-        .log-trigger { background: var(--p); }
-        .log-trigger svg { fill: white; }
 
         .author-box-row { display: flex; gap: 8px; width: 100%; }
         .header-author { flex: 1; font-size: 0.55rem; color: var(--sub-text); font-weight: 700; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; border: 1px solid var(--border); height: 34px; line-height: 34px; white-space: nowrap; }
@@ -72,18 +69,18 @@
         .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
         .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
-        /* 卡片設計 */
-        .menu-item { background: var(--card); border-radius: 22px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.3s; position: relative; overflow: hidden; }
+        .menu-item { background: var(--card); border-radius: 22px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: background 0.2s, transform 0.3s; position: relative; overflow: hidden; }
         .menu-item:hover { transform: translateY(-3px); border-color: var(--p); background: white; }
+        body.dark-mode .menu-item:hover { background: #1e293b; }
 
-        .list-mode .menu-item { padding: 18px; align-items: center; flex-direction: row !important; }
+        .list-mode .menu-item { padding: 18px; align-items: center; }
         .grid-mode .menu-item { flex-direction: column; padding: 22px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; align-items: center; }
 
         .icon-box { border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); flex-shrink: 0; }
         .list-mode .icon-box { width: 48px; height: 48px; margin-right: 15px; font-size: 24px; }
         .grid-mode .icon-box { width: 42px; height: 42px; margin-bottom: 10px; font-size: 26px; }
 
-        .info { flex: 1; display: flex; flex-direction: column; }
+        .info { flex: 1; pointer-events: none; } /* 避免內部文字觸發點擊 */
         .info h2 { margin: 0; font-size: 0.95rem; font-weight: 800; }
         .info p { margin: 4px 0 0; font-size: 0.78rem; color: var(--sub-text); line-height: 1.2; }
         .grid-mode .info p { display: none; }
@@ -91,14 +88,14 @@
         .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.8; }
         .grid-mode .menu-item::before { width: 100%; height: 4px; top: 0; left: 0; }
 
-        /* --- 彈窗 --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal { background: var(--bg); width: 85%; max-width: 400px; border-radius: 28px; padding: 30px; border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center; }
+        /* --- 彈窗與防誤觸 --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; pointer-events: auto; }
+        .modal { background: var(--bg); width: 85%; max-width: 400px; border-radius: 28px; padding: 30px; border: 1px solid var(--border); box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center; pointer-events: auto; }
         .close-modal { margin-top: 20px; width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-        /* 底部導覽 */
+        /* --- 底部導覽：增加實體邊框 --- */
         .bottom-nav-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 2000; }
-        .bottom-nav { background: var(--glass-bg); backdrop-filter: blur(40px); border-radius: 100px; display: flex; padding: 6px; border: 1px solid rgba(255,255,255,0.1); }
+        .bottom-nav { background: var(--glass-bg); backdrop-filter: blur(40px); border-radius: 100px; display: flex; padding: 6px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.95rem; font-weight: 800; color: var(--sub-text); cursor: pointer; border-radius: 100px; }
         .nav-item.active { color: white; background: var(--p); }
 
@@ -123,13 +120,13 @@
                         <button class="layout-btn" id="listBtn"><svg viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg></button>
                         <button class="layout-btn" id="gridBtn"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></button>
                     </div>
-                    <button class="square-btn" id="themeBtn" title="切換模式">
-                        <svg id="themeIcon" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+                    <button class="square-btn" id="themeBtn">
+                        <svg viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
                     </button>
                 </div>
                 <div class="author-box-row">
                     <div class="header-author">© 2026 王宥鈞</div>
-                    <button class="square-btn log-trigger" onclick="openLog()" title="更新日誌">
+                    <button class="square-btn" onclick="openLog()">
                         <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                     </button>
                 </div>
@@ -141,7 +138,7 @@
         <div class="modal">
             <h3 id="modalTitle">標題</h3>
             <div id="modalBody" style="text-align: left; font-size: 0.85rem; color: var(--sub-text); line-height: 1.6;">內容</div>
-            <button class="close-modal" onclick="closeModal()">關閉</button>
+            <button class="close-modal" id="modalCloseBtn">關閉</button>
         </div>
     </div>
 
@@ -153,7 +150,7 @@
                 <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合重要時程與同步動態</p></div></a>
                 <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考倒數管理</h2><p>精確計算考點剩餘時間</p></div></a>
                 <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新測驗與作業進度</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜')"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2><p>記錄優良表現與獲獎紀錄</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('榮譽榜', event)"><div class="icon-box">🏆</div><div class="info"><h2>班級榮譽榜</h2><p>記錄優良表現與個人佳績</p></div></a>
             </div>
 
             <div id="cat-interact" class="category-group">
@@ -162,7 +159,7 @@
                 <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">㊙️</div><div class="info"><h2>加密匿名信箱</h2><p>安全且多元的訊息傳遞</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">✨</div><div class="info"><h2>班級匿名許願池</h2><p>活絡互動與願望分享</p></div></a>
                 <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公共事務討論區</h2><p>開放式的數位決策論壇</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('重點筆記')"><div class="icon-box">✍️</div><div class="info"><h2>考前重點筆記</h2><p>各科核心知識點彙整</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('學習筆記', event)"><div class="icon-box">✍️</div><div class="info"><h2>考前重點筆記</h2><p>各科核心知識點彙整</p></div></a>
             </div>
 
             <div id="cat-task" class="category-group">
@@ -171,15 +168,15 @@
                 <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機化公平排序選位</p></div></a>
                 <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>重要事務一鍵即時表決</p></div></a>
                 <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>多重算法公平一鍵分組</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('座位圖')"><div class="icon-box">🗺️</div><div class="info"><h2>班級座位導覽</h2><p>快速定位同學與股長位置</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('班級座位圖', event)"><div class="icon-box">🗺️</div><div class="info"><h2>班級座位導覽</h2><p>快速定位同學與股長位置</p></div></a>
             </div>
 
             <div id="cat-score" class="category-group">
                 <div class="category-label">📊 成績系列</div>
                 <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算</p></div></a>
                 <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>全方位學期數據計算</p></div></a>
-                <a href="rank/index.html" class="menu-item exam"><div class="icon-box">🥇</div><div class="info"><h2>進步獎追蹤</h2><p>鼓勵個人表現之成長分析</p></div></a>
-                <a href="analysis/index.html" class="menu-item soon"><div class="icon-box">🔬</div><div class="info"><h2>考後檢討報告</h2><p>弱點科目數據反饋建議</p></div></a>
+                <a href="rank/index.html" class="menu-item exam"><div class="icon-box">🥇</div><div class="info"><h2>成績排名追蹤</h2><p>透明化的進度數據反饋</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討報告', event)"><div class="icon-box">🔬</div><div class="info"><h2>考後檢討分析</h2><p>針對弱點科目之成長建議</p></div></a>
             </div>
 
         </div>
@@ -200,23 +197,40 @@
         const gridBtn = document.getElementById('gridBtn');
         const themeBtn = document.getElementById('themeBtn');
         const scrollArea = document.getElementById('scrollArea');
-        const modalOverlay = document.querySelector('.modal-overlay');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
 
         let isDarkMode = localStorage.getItem('theme') === 'dark';
 
         function openLog() {
-            document.getElementById('modalTitle').innerText = '📁 系統優化檔案';
-            document.getElementById('modalBody').innerHTML = '<strong>優化時間：2026/02/12</strong><br><br>1. <b>圖示化日誌</b>：移除文字，改用文件 SVG 圖示。<br>2. <b>完美對齊</b>：對齊按鈕群與版權文字，寬度嚴格控制於 120px。<br>3. <b>功能擴充</b>：新增「座位導覽」、「榮譽榜」等 Coming Soon 項目。<br>4. <b>介面精煉</b>：強化深淺色模式的視覺對比。';
+            document.getElementById('modalTitle').innerText = '📁 更新紀錄檔案';
+            document.getElementById('modalBody').innerHTML = '<strong>優化時間：2026/02/12</strong><br><br>• 解決彈窗關閉時的點擊穿透（誤觸）問題。<br>• 底部選單列新增淺色模式邊框，強化視覺邊界。<br>• 日誌按鈕樣式扁平化，不再過度吸睛。<br>• 列表模式下「公共事務討論區」對齊修復。';
             modalOverlay.style.display = 'flex';
         }
 
-        function comingSoon(name) {
-            document.getElementById('modalTitle').innerText = '🚧 Coming Soon';
-            document.getElementById('modalBody').innerHTML = `<strong>${name}</strong> 功能正在數位實驗室中進行開發，目前暫未提供儲存空間與連結，敬請期待。`;
+        function comingSoon(name, event) {
+            if(event) event.preventDefault();
+            document.getElementById('modalTitle').innerText = '🚧 施工中';
+            document.getElementById('modalBody').innerHTML = `<strong>${name}</strong> 目前尚未開放。我們正在努力優化此功能的穩定性。`;
             modalOverlay.style.display = 'flex';
         }
 
-        function closeModal() { modalOverlay.style.display = 'none'; }
+        function closeModal() {
+            modalOverlay.style.display = 'none';
+            // 關鍵：短暫禁用 Body 的 pointer-events 50ms 防止事件穿透
+            document.body.style.pointerEvents = 'none';
+            setTimeout(() => { document.body.style.pointerEvents = 'auto'; }, 100);
+        }
+
+        modalCloseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeModal();
+        });
+
+        // 點擊背景也能關閉
+        modalOverlay.addEventListener('click', (e) => {
+            if(e.target === modalOverlay) closeModal();
+        });
 
         function switchTab(catId, el) {
             document.querySelectorAll('.category-group').forEach(group => group.classList.remove('active'));
