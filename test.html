@@ -2,139 +2,144 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iOS 鬧鐘感官模擬</title>
+    <title>無後端快閃考試系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --p: #4361ee; --bg: #000000; }
-        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; overflow: hidden; }
-
-        /* 標題與說明 */
-        .info { text-align: center; padding-top: 50px; color: #888; font-size: 14px; }
-
-        /* 🎡 核心滾動容器 */
-        .scroller {
-            display: flex; width: 100vw; height: 60vh;
-            overflow-x: auto; 
-            /* 🧲 吸附核心：讓它永遠停在整數頁面 */
-            scroll-snap-type: x mandatory; 
-            scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
-        }
-        .scroller::-webkit-scrollbar { display: none; }
-
-        .page {
-            flex: 0 0 100vw; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            /* 🧲 吸附對齊 */
-            scroll-snap-align: start; 
-        }
-
-        .card {
-            width: 250px; height: 350px; background: #1c1c1e;
-            border-radius: 30px; border: 1px solid #3a3a3c;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-        }
-        .page-num { font-size: 100px; font-weight: 200; font-variant-numeric: tabular-nums; }
-        .page-label { color: var(--p); font-weight: 600; margin-top: 10px; letter-spacing: 2px; }
-
-        /* 底部導覽指示器 */
-        .nav {
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px;
-        }
-        .dot { width: 8px; height: 8px; border-radius: 4px; background: #3a3a3c; transition: 0.3s; }
-        .dot.active { background: white; width: 25px; }
-
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .hidden { display: none; }
+        .q-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+        #timer { font-size: 24px; color: red; font-weight: bold; text-align: center; }
+        #qrCanvas { display: block; margin: 20px auto; }
+        button { width: 100%; padding: 12px; background: #007AFF; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="info">請點擊任意處解鎖音效<br>然後左右快速撥動</div>
+<div class="card" id="mainApp">
+    <div id="teacherView">
+        <h2>📝 老師出題系統</h2>
+        <textarea id="quizInput" style="width:100%; height:100px;" placeholder="題目格式：題目,A,B,C,D,正確答案(A-D)&#10;1+1等於?,1,2,3,4,B"></textarea>
+        <input type="number" id="limitTime" placeholder="限時 (分鐘)" value="10">
+        <button onclick="generateExamQR()">1. 生成考試二維碼</button>
+        <canvas id="examQR"></canvas>
+        <hr>
+        <button style="background: #34c759;" onclick="startScanning()">2. 掃描學生答案條 (回收成績)</button>
+        <video id="video" style="width: 100%; display:none;"></video>
+        <button onclick="exportExcel()">3. 匯出 Excel 成績單</button>
+    </div>
 
-    <main class="scroller" id="scroller">
-        <div class="page"><div class="card"><div class="page-num">08</div><div class="page-label">時</div></div></div>
-        <div class="page"><div class="card"><div class="page-num">09</div><div class="page-label">時</div></div></div>
-        <div class="page"><div class="card"><div class="page-num">10</div><div class="page-label">時</div></div></div>
-        <div class="page"><div class="card"><div class="page-num">11</div><div class="page-label">時</div></div></div>
-        <div class="page"><div class="card"><div class="page-num">12</div><div class="page-label">時</div></div></div>
-    </main>
+    <div id="studentView" class="hidden">
+        <h2 id="stuTitle">作答中...</h2>
+        <div id="timer">剩餘時間 --:--</div>
+        <div id="quizContent"></div>
+        <button onclick="submitExam()">立刻繳交</button>
+    </div>
 
-    <div class="nav" id="nav-dots"></div>
+    <div id="resultView" class="hidden">
+        <h2>考試結束</h2>
+        <p>請將下方 QR Code 出示給老師掃描</p>
+        <canvas id="qrCanvas"></canvas>
+    </div>
+</div>
 
-    <script>
-        /**
-         * 🎧 Taptic Engine 聽覺模擬器 (iOS 鬧鐘專用音頻)
-         */
-        const TapticAudio = {
-            ctx: null,
-            
-            init() {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            },
+<script>
+    let examData = [];
+    let studentResults = [];
+    let timeLeft = 0;
+    let timerInterval;
 
-            // 核心「喀」聲：調整過的參數，模仿 iOS 撥輪
-            playTick() {
-                if (!this.ctx) this.init();
-                if (this.ctx.state === 'suspended') this.ctx.resume();
+    // --- 老師邏輯 ---
+    function generateExamQR() {
+        const input = document.getElementById('quizInput').value;
+        const time = document.getElementById('limitTime').value;
+        const data = btoa(unescape(encodeURIComponent(JSON.stringify({ quiz: input, time: time }))));
+        const url = window.location.href.split('?')[0] + '?exam=' + data;
+        
+        QRCode.toCanvas(document.getElementById('examQR'), url, { width: 250 });
+        alert("二維碼已生成，請投放到螢幕讓學生掃描！");
+    }
 
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                
-                // 使用方形波並透過濾波器，能產生更乾脆的物理敲擊感
-                osc.type = 'sine';
-                
-                // 起始頻率較低，模擬內部齒輪撥動的悶響
-                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.03);
-
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.03);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.03);
-            }
-        };
-
-        const scroller = document.getElementById('scroller');
-        const nav = document.getElementById('nav-dots');
-        let lastIdx = 0;
-
-        // 初始化指示器
-        for(let i=0; i<5; i++) {
-            const dot = document.createElement('div');
-            dot.className = i === 0 ? 'dot active' : 'dot';
-            nav.appendChild(dot);
+    function startScanning() {
+        alert("此部分需配合手機相機掃描，或由學生複製結果代碼貼給老師。");
+        // 實務上老師端可用手機直接點擊此 HTML 進行掃描
+        const code = prompt("請輸入學生答案條代碼 (或掃描後的內容)：");
+        if(code) {
+            const result = JSON.parse(decodeURIComponent(atob(code)));
+            studentResults.push(result);
+            alert(`已記錄座號 ${result.no} 的成績：${result.score} 分`);
         }
+    }
 
-        /**
-         * 🔄 監聽滾動邏輯
-         */
-        scroller.addEventListener('scroll', () => {
-            const width = window.innerWidth;
-            const currentIdx = Math.round(scroller.scrollLeft / width);
+    function exportExcel() {
+        const ws = XLSX.utils.json_to_sheet(studentResults);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "成績單");
+        XLSX.writeFile(wb, "班級成績單.xlsx");
+    }
 
-            // 當「吸附」動作發生，或者跨過中心點時觸發聲音
-            if (currentIdx !== lastIdx) {
-                TapticAudio.playTick(); // 🔊 發生「喀」一聲
-                
-                // 更新 UI
-                const dots = document.querySelectorAll('.dot');
-                dots.forEach((d, i) => d.classList.toggle('active', i === currentIdx));
-                
-                lastIdx = currentIdx;
+    // --- 學生邏輯 ---
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('exam')) {
+            document.getElementById('teacherView').classList.add('hidden');
+            document.getElementById('studentView').classList.remove('hidden');
+            loadExam(urlParams.get('exam'));
+        }
+    };
+
+    function loadExam(encodedData) {
+        const data = JSON.parse(decodeURIComponent(atob(encodedData)));
+        const questions = data.quiz.split('\n');
+        timeLeft = data.time * 60;
+        
+        let html = '';
+        questions.forEach((q, index) => {
+            const parts = q.split(',');
+            if(parts.length < 6) return;
+            examData.push({ q: parts[0], options: parts.slice(1,5), ans: parts[5].trim() });
+            html += `<div class="q-item">
+                <p>${index+1}. ${parts[0]}</p>
+                <label><input type="radio" name="q${index}" value="A"> ${parts[1]}</label><br>
+                <label><input type="radio" name="q${index}" value="B"> ${parts[2]}</label><br>
+                <label><input type="radio" name="q${index}" value="C"> ${parts[3]}</label><br>
+                <label><input type="radio" name="q${index}" value="D"> ${parts[4]}</label>
+            </div>`;
+        });
+        document.getElementById('quizContent').innerHTML = html;
+        startTimer();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            let min = Math.floor(timeLeft / 60);
+            let sec = timeLeft % 60;
+            document.getElementById('timer').innerText = `剩餘時間 ${min}:${sec < 10 ? '0'+sec : sec}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                submitExam();
             }
-        }, { passive: true });
+            timeLeft--;
+        }, 1000);
+    }
 
-        // 第一次點擊啟動
-        document.body.addEventListener('touchstart', () => {
-            TapticAudio.playTick();
-        }, { once: true });
+    function submitExam() {
+        clearInterval(timerInterval);
+        const stuNo = prompt("請輸入座號：");
+        let score = 0;
+        examData.forEach((item, index) => {
+            const selected = document.querySelector(`input[name="q${index}"]:checked`);
+            if (selected && selected.value === item.ans) score += (100 / examData.length);
+        });
 
-    </script>
+        const resultData = btoa(encodeURIComponent(JSON.stringify({ no: stuNo, score: Math.round(score), time: new Date().toLocaleTimeString() })));
+        
+        document.getElementById('studentView').classList.add('hidden');
+        document.getElementById('resultView').classList.remove('hidden');
+        
+        QRCode.toCanvas(document.getElementById('qrCanvas'), resultData, { width: 300 });
+    }
+</script>
 </body>
 </html>
