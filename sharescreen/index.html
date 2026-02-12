@@ -2,139 +2,181 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>🔒 安全 P2P 教室</title>
+    <title>🔒 專業管理員 P2P 教室</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --safe-green: #2ecc71; --danger-red: #e74c3c; --bg: #1a1a1a; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; }
-        #main-view { flex: 1; display: flex; flex-direction: column; background: #000; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        .secure-bar { background: #2c3e50; padding: 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; border-bottom: 2px solid #34495e; }
-        #chat-panel { width: 320px; background: #252525; display: flex; flex-direction: column; border-left: 1px solid #444; }
-        #msgs { flex: 1; overflow-y: auto; padding: 15px; font-size: 13px; }
-        .input-box { padding: 15px; display: flex; gap: 5px; background: #1a1a1a; }
-        input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #333; color: #fff; }
-        button { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-host { background: var(--safe-green); color: white; }
-        .btn-join { background: #3498db; color: white; }
-        .btn-send { background: #9b59b6; color: white; }
-        .badge-secure { background: rgba(46, 204, 113, 0.2); color: var(--safe-green); padding: 4px 8px; border-radius: 4px; font-size: 11px; border: 1px solid var(--safe-green); }
-        .msg { margin-bottom: 10px; line-height: 1.5; }
+        :root { --danger: #ff4757; --success: #2ed573; --bg: #1e272e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; height: 100vh; }
+        #main { flex: 1; display: flex; flex-direction: column; background: #000; }
+        .top-bar { background: #2f3542; padding: 12px; display: flex; gap: 10px; align-items: center; border-bottom: 2px solid #57606f; }
+        #video-player { flex: 1; width: 100%; background: #000; object-fit: contain; }
+        
+        #right-panel { width: 320px; background: #2f3542; border-left: 1px solid #57606f; display: flex; flex-direction: column; }
+        .panel-sec { flex: 1; display: flex; flex-direction: column; min-height: 200px; border-bottom: 1px solid #57606f; }
+        #member-list { padding: 10px; overflow-y: auto; flex: 1; }
+        #chat-window { padding: 10px; overflow-y: auto; flex: 1; background: #1e272e; }
+        
+        .member-item { display: flex; justify-content: space-between; align-items: center; background: #3e4451; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; font-size: 13px; }
+        .kick-btn { background: var(--danger); border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+        
+        .input-area { padding: 10px; display: flex; gap: 5px; }
+        input, button { padding: 8px; border-radius: 4px; border: none; }
+        input { flex: 1; background: #57606f; color: white; }
+        .btn-host { background: var(--success); color: white; font-weight: bold; cursor: pointer; }
+        .btn-join { background: #1e90ff; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="main-view">
-    <div class="secure-bar">
-        <span class="badge-secure">🛡️ 端到端加密已啟動</span>
+<div id="main">
+    <div class="top-bar">
+        <span>你的 ID: <b id="my-id" style="color:#70a1ff">...</b></span>
+        <button class="btn-host" id="btn-host">啟動教室</button>
         <div style="flex:1"></div>
-        <span id="my-id-display">正在建立安全金鑰...</span>
-        <button class="btn-host" id="start-host">建立安全教室</button>
-        <button id="copy-btn" style="display:none; background:#555">複製安全連結</button>
-        <input type="text" id="target-id" placeholder="貼上教室金鑰" style="width:120px">
-        <button class="btn-join" id="start-join">加入</button>
+        <input type="text" id="target-id" placeholder="輸入主講人 ID">
+        <button class="btn-join" id="btn-join">申請加入</button>
     </div>
-    <video id="v-player" autoplay playsinline controls muted></video>
+    <video id="video-player" autoplay playsinline controls muted></video>
 </div>
 
-<div id="chat-panel">
-    <div style="padding:15px; font-weight:bold; background:#333;">即時安全對話</div>
-    <div id="msgs"></div>
-    <div class="input-box">
-        <input type="text" id="m-in" placeholder="輸入訊息...">
-        <button class="btn-send" id="btn-send">傳送</button>
+<div id="right-panel">
+    <div class="panel-sec">
+        <div style="padding:10px; background:#57606f; font-size:12px">👥 在線成員</div>
+        <div id="member-list"></div>
+    </div>
+    <div class="panel-sec">
+        <div style="padding:10px; background:#57606f; font-size:12px">💬 聊天訊息</div>
+        <div id="chat-window"></div>
+        <div class="input-area">
+            <input type="text" id="chat-in" placeholder="輸入訊息 (支援英文)...">
+            <button id="btn-send" style="background:#1e90ff; color:white">送出</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // 使用 Google 的 STUN 伺服器確保跨網連線
     const peer = new Peer({ config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] } });
     let localStream = null;
-    let connPool = [];
+    let connections = {}; // 存放所有學生連線 { peerId: dataConnection }
+    let isHost = false;
 
     peer.on('open', id => {
-        document.getElementById('my-id-display').innerText = `金鑰: ${id}`;
+        document.getElementById('my-id').innerText = id;
         if(window.location.hash) document.getElementById('target-id').value = window.location.hash.substring(1);
     });
 
-    // --- 主講人安全性邏輯 ---
-    document.getElementById('start-host').onclick = async () => {
+    // 統一監聽連線 (避免重複註冊)
+    peer.on('connection', conn => {
+        if(!isHost) {
+            conn.on('open', () => {
+                conn.send({ type: 'error', msg: '主講人尚未開啟教室' });
+                setTimeout(() => conn.close(), 1000);
+            });
+            return;
+        }
+
+        const allow = confirm(`學生 ${conn.peer} 申請加入，是否允許？`);
+        if(allow) {
+            connections[conn.peer] = conn;
+            updateMemberList();
+            setupChat(conn);
+            peer.call(conn.peer, localStream);
+            conn.on('open', () => conn.send({ type: 'sys', msg: '主講人已批准您的連線' }));
+        } else {
+            conn.on('open', () => {
+                conn.send({ type: 'error', msg: '主講人拒絕了您的申請' });
+                setTimeout(() => conn.close(), 1000);
+            });
+        }
+    });
+
+    peer.on('call', call => {
+        call.answer();
+        call.on('stream', stream => {
+            document.getElementById('video-player').srcObject = stream;
+            addLog("系統", "已成功接收主講人畫面");
+        });
+    });
+
+    // --- 按鈕功能 ---
+    document.getElementById('btn-host').onclick = async () => {
         try {
             localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-            document.getElementById('v-player').srcObject = localStream;
-            document.getElementById('copy-btn').style.display = 'block';
-            addLog("系統", "🔒 安全教室已建立。外部人員連入須經過您的同意。");
-
-            // 監聽連線請求
-            peer.on('connection', conn => {
-                // 安全機制：彈出審核視窗
-                const allow = confirm(`[安全性警告]\n發現新的連線請求 (ID: ${conn.peer})\n是否允許對方加入並觀看您的螢幕？`);
-                
-                if(allow) {
-                    setupChat(conn);
-                    peer.call(conn.peer, localStream);
-                    addLog("系統", `✅ 已授權給學生: ${conn.peer}`);
-                } else {
-                    conn.send("SYSTEM_REJECT");
-                    setTimeout(() => conn.close(), 500);
-                }
-            });
-        } catch (e) { alert("請允許螢幕分享權限以建立教室。"); }
+            document.getElementById('video-player').srcObject = localStream;
+            isHost = true;
+            addLog("系統", "教室已啟動，現在可以接受申請。");
+        } catch (e) { alert("請分享螢幕以開啟教室"); }
     };
 
-    // --- 學生連線邏輯 ---
-    document.getElementById('start-join').onclick = () => {
+    document.getElementById('btn-join').onclick = () => {
         const tid = document.getElementById('target-id').value;
-        if(!tid) return;
-        addLog("系統", "🚀 正在向主講人申請進入權限...");
+        if(!tid || connections[tid]) return;
         
+        addLog("系統", "正在送出申請...");
         const conn = peer.connect(tid);
         setupChat(conn);
-
-        peer.on('call', call => {
-            call.answer();
-            call.on('stream', stream => {
-                document.getElementById('v-player').srcObject = stream;
-                addLog("系統", "🎉 主講人已核准！加密通道已建立。");
-            });
-        });
+        connections[tid] = conn;
     };
 
     function setupChat(conn) {
-        conn.off('data'); 
         conn.on('data', data => {
-            if(data === "SYSTEM_REJECT") {
-                addLog("系統", "❌ 主講人拒絕了您的連線請求。");
-                return;
+            if(data.type === 'sys') addLog("系統", data.msg);
+            else if(data.type === 'error') {
+                addLog("錯誤", data.msg);
+                delete connections[conn.peer];
+            } else if(data.type === 'chat') addLog("對方", data.msg);
+            else if(data.type === 'kick') {
+                alert("您已被主講人移出教室");
+                location.reload();
             }
-            addLog("對方", data);
         });
-        if(!connPool.includes(conn)) connPool.push(conn);
+        conn.on('close', () => {
+            delete connections[conn.peer];
+            updateMemberList();
+            addLog("系統", `成員 ${conn.peer} 已離開`);
+        });
     }
 
-    function addLog(user, text) {
-        const box = document.getElementById('msgs');
-        const d = document.createElement('div');
-        d.className = 'msg';
-        d.innerHTML = `<b style="color:${user==='我'?'#2ecc71':'#3498db'}">${user}:</b> ${text}`;
-        box.appendChild(d);
-        box.scrollTop = box.scrollHeight;
+    function updateMemberList() {
+        const list = document.getElementById('member-list');
+        list.innerHTML = "";
+        Object.keys(connections).forEach(pid => {
+            const item = document.createElement('div');
+            item.className = 'member-item';
+            item.innerHTML = `<span>${pid.substring(0,8)}...</span> <button class="kick-btn" onclick="kickPeer('${pid}')">退出</button>`;
+            list.appendChild(item);
+        });
     }
 
-    const send = () => {
-        const i = document.getElementById('m-in');
-        if(!i.value) return;
-        connPool.forEach(c => c.open && c.send(i.value));
-        addLog("我", i.value);
-        i.value = "";
+    window.kickPeer = (pid) => {
+        if(connections[pid]) {
+            connections[pid].send({ type: 'kick' });
+            setTimeout(() => connections[pid].close(), 500);
+            delete connections[pid];
+            updateMemberList();
+        }
     };
 
-    document.getElementById('btn-send').onclick = send;
-    document.getElementById('m-in').onkeypress = (e) => e.key==='Enter' && send();
-    document.getElementById('copy-btn').onclick = () => {
-        const url = `${window.location.origin}${window.location.pathname}#${peer.id}`;
-        navigator.clipboard.writeText(url);
-        alert("🔒 安全邀請連結已複製！");
+    function addLog(user, msg) {
+        const win = document.getElementById('chat-window');
+        const d = document.createElement('div');
+        d.style.marginBottom = "8px";
+        d.innerHTML = `<small>${user}:</small> <span style="word-break:break-all">${msg}</span>`;
+        win.appendChild(d);
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function doSend() {
+        const i = document.getElementById('chat-in');
+        if(!i.value) return;
+        Object.values(connections).forEach(c => c.open && c.send({ type: 'chat', msg: i.value }));
+        addLog("我", i.value);
+        i.value = "";
+    }
+
+    document.getElementById('btn-send').onclick = doSend;
+    document.getElementById('chat-in').onkeydown = (e) => { 
+        if(e.key === 'Enter') { doSend(); e.preventDefault(); }
     };
 </script>
 </body>
