@@ -2,117 +2,72 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>震動感官實驗室</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>感官補償實驗</title>
     <style>
-        :root { --p: #4361ee; }
-        body { margin: 0; font-family: sans-serif; background: #f0f2f5; overflow: hidden; }
-        
-        /* 隱藏但存在的「拉桿驅動器」 */
-        #haptic-driver {
-            position: fixed; top: -50px; opacity: 0; pointer-events: none;
-        }
-
-        /* 可滑動容器 */
-        .scroll-container {
-            display: flex; width: 100vw; height: 80vh;
-            overflow-x: auto; scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-        }
-        .scroll-container::-webkit-scrollbar { display: none; }
-
-        .page {
-            flex: 0 0 100vw; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 5rem; font-weight: bold; color: white;
-            scroll-snap-align: start;
-        }
-
-        /* 底部導覽列 */
-        .nav {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; background: white; padding: 10px; border-radius: 50px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); gap: 10px;
-        }
-        .dot {
-            width: 50px; height: 50px; border-radius: 25px;
-            background: #ddd; display: flex; align-items: center; justify-content: center;
-            transition: 0.3s; font-weight: bold; color: #666;
-        }
-        .dot.active { background: var(--p); color: white; transform: scale(1.1); }
-
-        #status { text-align: center; padding: 20px; font-weight: bold; color: var(--p); }
+        body { margin: 0; background: #000; color: white; overflow: hidden; font-family: sans-serif; }
+        .scroll-box { display: flex; width: 100vw; height: 100vh; overflow-x: auto; scroll-snap-type: x mandatory; }
+        .page { flex: 0 0 100vw; display: flex; align-items: center; justify-content: center; font-size: 80px; }
+        .hint { position: fixed; top: 20%; width: 100%; text-align: center; color: #aaa; }
     </style>
 </head>
 <body>
 
-    <input type="range" id="haptic-driver" min="0" max="100" value="0">
-
-    <div id="status">左右滑動下方色塊測試震動</div>
-
-    <div class="scroll-container" id="scroller">
-        <div class="page" style="background: #ffadad;">1</div>
-        <div class="page" style="background: #ffd6a5;">2</div>
-        <div class="page" style="background: #fdffb6;">3</div>
-        <div class="page" style="background: #caffbf;">4</div>
-    </div>
-
-    <div class="nav">
-        <div class="dot active">1</div>
-        <div class="dot">2</div>
-        <div class="dot">3</div>
-        <div class="dot">4</div>
+    <div class="hint">請先點擊畫面任何處「授權感官回饋」<br>然後左右滑動</div>
+    <div class="scroll-box" id="scroller">
+        <div class="page" style="background:#111">A</div>
+        <div class="page" style="background:#222">B</div>
+        <div class="page" style="background:#333">C</div>
+        <div class="page" style="background:#444">D</div>
     </div>
 
     <script>
-        const scroller = document.getElementById('scroller');
-        const driver = document.getElementById('haptic-driver');
-        const dots = document.querySelectorAll('.dot');
-        const status = document.getElementById('status');
-        
+        // 🎼 建立一個極短的「物理撞擊」音效產生器
+        const AudioHaptic = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            play: function() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime); // 低頻撞擊聲
+                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+        };
+
         let lastIdx = 0;
+        const scroller = document.getElementById('scroller');
 
-        // 📳 震動核心函數
-        function triggerHaptic() {
-            // 1. Android 標準震動 (15毫秒短震)
-            if (navigator.vibrate) {
-                navigator.vibrate(15);
-            }
-
-            // 2. iPhone 模擬震動 (利用你發現的拉桿原理)
-            // 透過不斷改變拉桿值，誘發 iOS 底層對 UI 變動的 Haptic 回饋
-            driver.value = (parseInt(driver.value) + 1) % 100;
-            driver.dispatchEvent(new Event('input'));
-            
-            console.log("Haptic Triggered!");
-        }
-
-        // 監聽滑動
         scroller.addEventListener('scroll', () => {
-            const width = window.innerWidth;
-            // 計算目前在哪一頁 (四捨五入)
-            const currentIdx = Math.round(scroller.scrollLeft / width);
-
-            // 當索引改變時，代表「跨過了一格」
+            const currentIdx = Math.round(scroller.scrollLeft / window.innerWidth);
             if (currentIdx !== lastIdx) {
-                triggerHaptic(); // 💓 關鍵：跨格震動
+                // 🔊 執行「聽覺震動」
+                AudioHaptic.play();
                 
-                // 更新 UI
-                dots.forEach((dot, i) => {
-                    dot.classList.toggle('active', i === currentIdx);
-                });
+                // 📳 如果是安卓，同時補一個真震動
+                if (navigator.vibrate) navigator.vibrate(10);
                 
-                status.innerText = `目前在第 ${currentIdx + 1} 頁 - 已震動`;
                 lastIdx = currentIdx;
+                console.log("感知震動切換至:", currentIdx);
             }
-        }, { passive: true });
+        });
 
-        // 初始點擊解鎖 (許多瀏覽器需要第一次點擊才能啟用震動)
+        // 必須點擊一次來解鎖音訊瀏覽器政策
         document.body.addEventListener('touchstart', () => {
-            // 空觸發，用來獲取硬體權限
-            driver.focus();
+            AudioHaptic.play();
+            console.log("感官回饋已就緒");
         }, { once: true });
-
     </script>
 </body>
 </html>
