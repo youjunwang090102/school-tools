@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina Grand Unified v2 | 旗艦流動版</title>
+    <title>Lumina OS | 空間大師版</title>
     
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
@@ -14,225 +14,166 @@
     <style>
         :root {
             --accent-p: #7B61FF; --accent-s: #00F5A0; --accent-d: #FF385C;
-            --bg-deep: #050505; --bg-surface: #121214; --bg-glass: rgba(255, 255, 255, 0.05);
-            --text-main: #FFFFFF; --text-dim: #A0A0A0;
-            --transition: all 0.3s ease;
+            --bg-deep: #050505; --bg-glass: rgba(255, 255, 255, 0.05);
+            --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* 修正版面基礎：防止全頁溢出 */
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--bg-deep); color: var(--text-main);
-            font-family: 'Inter', system-ui, sans-serif;
-            overflow: hidden; /* 核心：禁止主頁面滾動 */
-        }
+        * { box-sizing: border-box; font-family: 'SF Pro Display', system-ui, sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-deep); color: #FFF; overflow: hidden; }
 
-        .aura-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #050505 100%);
-        }
+        .page-container { width: 100vw; height: 100vh; position: relative; display: flex; }
 
-        /* SPA 容器：強制撐滿畫面 */
-        .page-container {
-            width: 100vw; height: 100vh; position: relative;
-            display: flex; flex-direction: column;
+        /* --- 側邊欄核心設計 --- */
+        .sidebar {
+            width: 350px; height: 100%; background: #121214; 
+            border-right: 1px solid rgba(255,255,255,0.1);
+            position: relative; transition: var(--transition);
+            z-index: 100; display: flex; flex-direction: column; padding: 25px;
         }
+        .sidebar.collapsed { margin-left: -350px; }
 
-        /* View 基礎：利用 Flex 佈局讓內容自適應 */
-        .view {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; flex-direction: column;
-            padding: 20px; box-sizing: border-box;
+        /* 標籤按鈕 */
+        .sidebar-toggle {
+            position: absolute; right: -40px; top: 20px;
+            width: 40px; height: 120px; background: var(--accent-p);
+            border-radius: 0 12px 12px 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            writing-mode: vertical-lr; font-weight: 900; font-size: 14px;
+            letter-spacing: 2px; color: white; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+            transition: var(--transition);
         }
-        .view.active { display: flex; z-index: 10; }
+        .sidebar-toggle:hover { filter: brightness(1.2); }
 
-        /* 滾動容器：這是修復「無法滑動」的關鍵 */
-        .scrollable-content {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 5px;
-            /* 客製化滾動條樣式 */
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent-p) transparent;
-        }
-        .scrollable-content::-webkit-scrollbar { width: 6px; }
-        .scrollable-content::-webkit-scrollbar-thumb { background: var(--accent-p); border-radius: 10px; }
+        /* --- 主內容區 --- */
+        .main-content { flex: 1; height: 100%; position: relative; padding: 30px; display: flex; flex-direction: column; overflow: hidden; }
 
         .glass-card {
             background: var(--bg-glass); backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
-            padding: 20px; margin-bottom: 20px; flex-shrink: 0;
+            padding: 20px; margin-bottom: 20px;
         }
 
-        /* 老師端佈局優化 */
-        .admin-grid {
-            display: flex; gap: 20px; height: 100%; overflow: hidden;
-        }
-        .admin-main { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
-        .admin-side { width: 350px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        /* 輸入框與滾動條 */
+        .opt-scroll { max-height: 250px; overflow-y: auto; padding-right: 8px; }
+        .opt-scroll::-webkit-scrollbar { width: 4px; }
+        .opt-scroll::-webkit-scrollbar-thumb { background: var(--accent-p); border-radius: 10px; }
 
-        @media (max-width: 1024px) {
-            .admin-grid { flex-direction: column; overflow-y: auto; }
-            .admin-side { width: 100%; overflow-y: visible; }
-            .admin-main { overflow: visible; }
-            .view { overflow-y: auto; } /* 手機版開啟全局滾動 */
-        }
+        input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: #FFF; width: 100%; margin-bottom: 8px; }
 
-        /* 按鈕與輸入 */
-        .btn {
-            padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
-            font-weight: 700; transition: var(--transition);
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-primary { background: var(--accent-p); color: white; }
-        .btn-danger { background: var(--accent-d); color: white; }
-        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; }
-        
-        input {
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            padding: 12px; border-radius: 10px; color: white; width: 100%;
-        }
+        /* 按鈕系統 */
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-p { background: var(--accent-p); color: #FFF; }
+        .btn-d { background: var(--accent-d); color: #FFF; }
+        .btn-o { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #FFF; }
 
-        .countdown-timer {
-            font-size: 60px; font-weight: 900; color: var(--accent-s); text-align: center;
-        }
+        /* 圖表容器 */
+        #chart-wrap { flex: 1; position: relative; min-height: 0; }
 
-        /* 學生投票按鈕：自適應長度 */
-        .option-grid { display: grid; gap: 12px; padding-bottom: 100px; }
-        .option-btn {
-            padding: 20px; border-radius: 15px; background: rgba(255,255,255,0.05);
-            border: 2px solid transparent; color: white; font-size: 18px; text-align: left;
-        }
+        /* 學生端佈局 (手機優化) */
+        .stu-view { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .option-btn { width: 100%; padding: 20px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 2px solid transparent; color: #FFF; font-size: 18px; margin-bottom: 12px; text-align: left; }
         .option-btn.selected { border-color: var(--accent-p); background: rgba(123, 97, 255, 0.1); }
 
-        .badge { padding: 4px 10px; border-radius: 50px; font-size: 12px; background: rgba(255,255,255,0.1); }
+        .timer-text { font-size: 64px; font-weight: 900; color: var(--accent-s); text-align: center; }
         .hidden { display: none !important; }
-        
-        #t-chart-container { flex: 1; min-height: 300px; position: relative; }
+
+        /* 入口頁面 */
+        .welcome-screen { position: fixed; inset: 0; background: var(--bg-deep); z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="aura-bg"></div>
+<div id="welcome" class="welcome-screen">
+    <div>
+        <h1 style="font-size: 48px; letter-spacing: -2px;">LUMINA <span style="color:var(--accent-p)">MASTER</span></h1>
+        <div style="margin-top: 30px; display: flex; gap: 15px;">
+            <button class="btn btn-p" onclick="initTeacher()" style="padding: 20px 40px;">我是老師</button>
+            <button class="btn btn-o" onclick="showStuLogin()" style="padding: 20px 40px;">我是學生</button>
+        </div>
+    </div>
+</div>
 
 <div class="page-container">
     
-    <section id="v-welcome" class="view active">
-        <div style="margin: auto; text-align: center;">
-            <h1 class="animate__animated animate__fadeInDown">LUMINA <span style="color:var(--accent-s)">GRAND</span></h1>
-            <p style="color: var(--text-dim);">權威級同步投票系統</p>
-            <div style="margin-top: 40px; display: flex; gap: 15px; justify-content: center;">
-                <button class="btn btn-primary" onclick="initTeacher()">我是老師</button>
-                <button class="btn btn-outline" onclick="showView('v-stu-login')">我是學生</button>
+    <aside id="sidebar" class="sidebar hidden">
+        <div class="sidebar-toggle" onclick="toggleSidebar()">
+            CONTROL CENTER
+        </div>
+        
+        <h2 id="room-id-display" style="color:var(--accent-p); margin-bottom: 30px;">ID: ----</h2>
+        
+        <div class="scrollable-content" style="flex:1">
+            <div class="glass-card">
+                <label>投票題目</label>
+                <input type="text" id="t-topic" placeholder="輸入問題" oninput="syncTopic()">
+                <label>選項設定</label>
+                <div id="t-opt-fields" class="opt-scroll"></div>
+                <button class="btn btn-o" style="width:100%; margin-top:10px;" onclick="addOption()">+ 新增選項</button>
+            </div>
+
+            <div class="glass-card">
+                <div class="timer-text" id="t-timer">01:00</div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="number" id="t-min" value="1" style="margin-bottom:0"> 分
+                    <input type="number" id="t-sec" value="0" style="margin-bottom:0"> 秒
+                </div>
+                <button id="start-btn" class="btn btn-p" style="width:100%; margin-top:15px;" onclick="startSession()">啟動投票</button>
+                <button id="end-btn" class="btn btn-d hidden" style="width:100%; margin-top:15px;" onclick="endSession()">提前終止</button>
             </div>
         </div>
-    </section>
 
-    <section id="v-stu-login" class="view">
-        <div style="margin: auto; width: 100%; max-width: 350px;">
-            <div class="glass-card animate__animated animate__fadeInUp">
-                <h2 style="text-align: center;">輸入房號</h2>
-                <input type="text" id="stu-room-id" maxlength="4" style="text-align: center; font-size: 32px; letter-spacing: 5px; margin: 20px 0;">
-                <button class="btn btn-primary" style="width: 100%;" onclick="initStudent()">進入系統</button>
-                <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="showView('v-welcome')">返回</button>
-            </div>
+        <div style="margin-top:20px;">
+            <canvas id="qr-canvas" style="width:100%; border-radius:10px;"></canvas>
+            <button class="btn btn-o" style="width:100%; margin-top:10px;" onclick="exportData()">導出數據</button>
         </div>
-    </section>
+    </aside>
 
-    <section id="v-teacher" class="view">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 id="display-room-id" style="margin: 0; color: var(--accent-p);">ID: ----</h2>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-outline" onclick="exportData()">CSV</button>
-                <button class="btn btn-danger" onclick="location.reload()">重置</button>
-            </div>
-        </header>
-
-        <div class="admin-grid">
-            <div class="admin-main">
-                <div class="glass-card" style="margin-bottom: 0;">
-                    <input type="text" id="t-topic" placeholder="請在此輸入投票題目..." oninput="syncState()">
-                    <div id="t-option-fields" style="margin-top: 15px; max-height: 150px; overflow-y: auto;"></div>
-                    <button class="btn btn-outline" style="margin-top: 10px; width: 100%;" onclick="addOption()">+ 新增選項</button>
-                </div>
-                
-                <div class="glass-card" id="t-chart-container">
-                    <canvas id="t-chart"></canvas>
-                </div>
-            </div>
-
-            <aside class="admin-side">
-                <div class="glass-card" style="text-align: center;">
-                    <div class="countdown-timer" id="t-timer-display">01:00</div>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0;">
-                        <input type="number" id="t-min" value="1" style="width: 60px;"> 分
-                        <input type="number" id="t-sec" value="0" style="width: 60px;"> 秒
-                    </div>
-                    <button id="ctrl-btn" class="btn btn-primary" style="width: 100%;" onclick="startSession()">啟動投票</button>
-                    <button id="end-btn" class="btn btn-danger hidden" style="width: 100%;" onclick="endSession()">提前結束</button>
-                </div>
-                <div class="glass-card" style="text-align: center;">
-                    <canvas id="qr-canvas" style="max-width: 150px; margin: auto;"></canvas>
-                </div>
-            </aside>
+    <main id="teacher-main" class="main-content hidden">
+        <h1 id="main-topic-display" style="margin: 0 0 20px 0;">等待投票開始...</h1>
+        <div id="chart-wrap">
+            <canvas id="t-chart"></canvas>
         </div>
-    </section>
+    </main>
 
-    <section id="v-student" class="view">
-        <header style="text-align: center; margin-bottom: 15px;">
-            <div id="s-timer-display" class="countdown-timer" style="font-size: 32px;">準備中</div>
-            <h2 id="s-topic-display" style="margin: 10px 0;">--</h2>
-        </header>
-
-        <div class="scrollable-content" id="s-scroll-area">
-            <div id="s-option-area" class="option-grid"></div>
-            
-            <div id="s-result-area" class="hidden">
-                <div class="glass-card" style="border: 1px solid var(--accent-s);">
-                    <h3 style="color:var(--accent-s); text-align: center;">最終統計</h3>
-                    <div id="s-result-details"></div>
-                </div>
-            </div>
+    <section id="student-view" class="stu-view hidden">
+        <div class="glass-card" style="text-align: center;">
+            <div id="s-timer" class="timer-text" style="font-size: 32px;">準備中</div>
+            <h2 id="s-topic" style="margin: 10px 0;">--</h2>
+        </div>
+        <div id="s-options"></div>
+        <div id="s-results" class="hidden glass-card" style="margin-top:20px; border: 1px solid var(--accent-s);">
+            <h3 style="color:var(--accent-s); text-align:center;">最終統計結果</h3>
+            <div id="s-res-list"></div>
         </div>
     </section>
 
 </div>
 
 <script>
-    let peer, conn, role, myChart, timerInt;
+    let peer, conn, myChart, timerInt;
     let state = {
-        roomID: "", topic: "投票題目", options: ["選項 A", "選項 B"],
+        roomID: "", topic: "請選擇一個選項", options: ["選項 A", "選項 B"],
         votes: {}, voterMap: {}, isLive: false, timeLeft: "01:00", showResult: false
     };
 
-    function showView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
     }
 
-    function syncState() {
-        state.topic = document.getElementById('t-topic').value;
-    }
-
-    // --- 老師核心 ---
     function initTeacher() {
-        role = 'teacher';
+        document.getElementById('welcome').classList.add('hidden');
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('teacher-main').classList.remove('hidden');
+        
         state.roomID = Math.floor(1000 + Math.random() * 8999).toString();
         peer = new Peer('LUMINA-' + state.roomID);
 
-        peer.on('open', id => {
-            showView('v-teacher');
-            document.getElementById('display-room-id').innerText = "ID: " + state.roomID;
+        peer.on('open', () => {
+            document.getElementById('room-id-display').innerText = "ID: " + state.roomID;
             QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.origin + window.location.pathname + '?r=' + state.roomID);
-            renderOptionInputs();
+            renderOptInputs();
             initChart();
-            
-            setInterval(() => {
-                const payload = { ...state, type: 'sync' };
-                Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(payload); }));
-            }, 800);
+            startBroadcast();
         });
 
         peer.on('connection', c => {
@@ -247,28 +188,35 @@
         });
     }
 
-    function renderOptionInputs() {
-        const container = document.getElementById('t-option-fields');
+    function renderOptInputs() {
+        const container = document.getElementById('t-opt-fields');
         container.innerHTML = state.options.map((opt, i) => `
-            <div style="display:flex; gap:5px; margin-bottom:5px;">
+            <div style="display:flex; gap:5px;">
                 <input type="text" value="${opt}" oninput="state.options[${i}]=this.value; updateChart();">
-                <button class="btn btn-outline" style="padding:5px 12px;" onclick="removeOption(${i})">✕</button>
+                <button class="btn btn-o" style="padding:5px 10px;" onclick="state.options.splice(${i},1); renderOptInputs(); updateChart();">✕</button>
             </div>
         `).join('');
     }
 
-    function addOption() { state.options.push("選項 " + (state.options.length+1)); renderOptionInputs(); updateChart(); }
-    function removeOption(i) { state.options.splice(i, 1); renderOptionInputs(); updateChart(); }
+    function addOption() { state.options.push("選項 " + (state.options.length+1)); renderOptInputs(); updateChart(); }
+
+    function syncTopic() {
+        state.topic = document.getElementById('t-topic').value;
+        document.getElementById('main-topic-display').innerText = state.topic;
+    }
 
     function initChart() {
         const ctx = document.getElementById('t-chart').getContext('2d');
         myChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: state.options, datasets: [{ data: [], backgroundColor: '#7B61FF', borderRadius: 8 }] },
-            options: { 
+            data: { labels: state.options, datasets: [{ data: [], backgroundColor: '#7B61FF', borderRadius: 10 }] },
+            options: {
                 responsive: true, maintainAspectRatio: false, indexAxis: 'y',
                 plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true }, y: { ticks: { color: '#FFF' } } }
+                scales: { 
+                    x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#FFF', font: { size: 16 } } }
+                }
             }
         });
     }
@@ -283,83 +231,83 @@
         state.isLive = true; state.showResult = false;
         state.voterMap = {}; state.options.forEach(o => state.votes[o] = 0);
         updateChart();
-        
-        let totalSec = (parseInt(document.getElementById('t-min').value) * 60) + parseInt(document.getElementById('t-sec').value);
-        document.getElementById('ctrl-btn').classList.add('hidden');
+        document.getElementById('start-btn').classList.add('hidden');
         document.getElementById('end-btn').classList.remove('hidden');
 
-        if(timerInt) clearInterval(timerInt);
+        let total = (parseInt(document.getElementById('t-min').value)*60) + parseInt(document.getElementById('t-sec').value);
         timerInt = setInterval(() => {
-            totalSec--;
-            let m = Math.floor(totalSec/60).toString().padStart(2, '0');
-            let s = (totalSec%60).toString().padStart(2, '0');
+            total--;
+            let m = Math.floor(total/60).toString().padStart(2,'0');
+            let s = (total%60).toString().padStart(2,'0');
             state.timeLeft = `${m}:${s}`;
-            document.getElementById('t-timer-display').innerText = state.timeLeft;
-            if(totalSec <= 0) endSession();
+            document.getElementById('t-timer').innerText = state.timeLeft;
+            if(total <= 0) endSession();
         }, 1000);
     }
 
     function endSession() {
         state.isLive = false; state.showResult = true;
         clearInterval(timerInt);
-        document.getElementById('t-timer-display').innerText = "結束";
-        document.getElementById('ctrl-btn').classList.remove('hidden');
+        document.getElementById('start-btn').classList.remove('hidden');
         document.getElementById('end-btn').classList.add('hidden');
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
 
-    // --- 學生核心 ---
+    function startBroadcast() {
+        setInterval(() => {
+            const p = { ...state, type: 'sync' };
+            Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(p); }));
+        }, 800);
+    }
+
+    // --- 學生端 ---
     let s_conn, s_myVote = "";
-    function initStudent() {
-        const rid = document.getElementById('stu-room-id').value;
-        showView('v-student');
+    function showStuLogin() {
+        const rid = prompt("請輸入 4 位房號:", new URLSearchParams(window.location.search).get('r') || "");
+        if(!rid) return;
+        document.getElementById('welcome').classList.add('hidden');
+        document.getElementById('student-view').classList.remove('hidden');
         peer = new Peer();
         peer.on('open', () => {
             s_conn = peer.connect('LUMINA-' + rid);
             s_conn.on('data', d => {
                 if(d.type === 'sync') {
-                    document.getElementById('s-topic-display').innerText = d.topic;
-                    document.getElementById('s-timer-display').innerText = d.timeLeft;
-                    renderStudentOptions(d);
-                    if(d.showResult) renderStudentResults(d);
+                    document.getElementById('s-topic').innerText = d.topic;
+                    document.getElementById('s-timer').innerText = d.showResult ? "投票結束" : d.timeLeft;
+                    renderStuOpts(d);
                 }
             });
         });
     }
 
-    function renderStudentOptions(data) {
-        const area = document.getElementById('s-option-area');
-        if(data.showResult) { area.innerHTML = ""; return; }
-        area.innerHTML = data.options.map(o => `
-            <button class="option-btn ${s_myVote === o ? 'selected' : ''}" 
-                ${!data.isLive ? 'disabled' : ''} onclick="castVote('${o}')">
-                ${o}
-            </button>
-        `).join('');
-    }
-
-    function castVote(val) {
-        s_myVote = val;
-        s_conn.send({ type: 'vote', val: val });
-    }
-
-    function renderStudentResults(data) {
-        const area = document.getElementById('s-result-area');
-        area.classList.remove('hidden');
-        const total = Object.keys(data.voterMap).length || 1;
-        document.getElementById('s-result-details').innerHTML = data.options.map(o => {
-            const count = data.votes[o] || 0;
-            const pct = Math.round((count / total) * 100);
-            return `<div style="margin-bottom:10px;">${o}: ${count} 票 (${pct}%)</div>`;
-        }).join('');
+    function renderStuOpts(data) {
+        const area = document.getElementById('s-options');
+        const resArea = document.getElementById('s-results');
+        if(data.showResult) {
+            area.innerHTML = "";
+            resArea.classList.remove('hidden');
+            const total = Object.keys(data.voterMap).length || 1;
+            document.getElementById('s-res-list').innerHTML = data.options.map(o => {
+                const count = data.votes[o] || 0;
+                const pct = Math.round((count/total)*100);
+                return `<div style="margin-bottom:10px;">${o}: ${count} 票 (${pct}%)</div>`;
+            }).join('');
+        } else {
+            resArea.classList.add('hidden');
+            area.innerHTML = data.options.map(o => `
+                <button class="option-btn ${s_myVote === o ? 'selected' : ''}" 
+                    ${!data.isLive ? 'disabled' : ''} onclick="s_myVote='${o}'; s_conn.send({type:'vote', val:'${o}'});">
+                    ${o}
+                </button>
+            `).join('');
+        }
     }
 
     function exportData() {
         let csv = "\uFEFF選項,得票\n" + state.options.map(o => `${o},${state.votes[o]||0}`).join("\n");
-        const blob = new Blob([csv], {type: 'text/csv'});
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Result.csv`;
+        link.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+        link.download = "Lumina_Results.csv";
         link.click();
     }
 </script>
