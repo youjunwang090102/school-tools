@@ -3,14 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 10.0</title>
+    <title>班級數位平台 11.0</title>
+    
+    <meta name="theme-color" id="metaThemeColor" content="#f8fafc">
 
     <script>
-        // ⚡ 核心防閃爍腳本：渲染前執行
+        // 1. 頂部橫幅公告內容 (若設為空字串 "" 則會隱藏公告)
+        const GLOBAL_ANNOUNCEMENT = "📢 系統公告：下週一進行段考分析更新，請各位準時上傳成績。";
+
+        // 2. Information 彈窗內容
+        const AUTHOR_CONFIG = {
+            name: "王宥鈞",
+            role: "核心系統架構師",
+            version: "v11.0.2-Flagship",
+            tutorialUrl: "https://your-tutorial-link.com",
+            logs: [
+                "顏色同步：切換模式時，手機網址列與狀態列會同步變色。",
+                "公告系統：新增頂部橫幅警告訊息功能。",
+                "佈局修正：修復手機版切換按鈕消失與溢出問題。",
+                "極速修改：將所有關鍵資訊抽離至程式碼最上方。"
+            ]
+        };
+    </script>
+    <script>
+        // ⚡ 核心防閃爍與主題初始化
         (function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') document.documentElement.classList.add('dark-mode');
-            // 預先設定 Layout 以防止按鈕變大變小
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
             const savedLayout = localStorage.getItem('layout') || 'list-mode';
             document.documentElement.setAttribute('data-layout', savedLayout);
         })();
@@ -20,122 +41,116 @@
         :root {
             --p: #4361ee; --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
             --sub-text: #64748b; --border: #e2e8f0;
-            --nav-bg: rgba(255, 255, 255, 0.7); /* 淺色半透明 */
+            --nav-bg: rgba(255, 255, 255, 0.75);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --warn-bg: #fee2e2; --warn-text: #991b1b;
         }
 
         .dark-mode {
             --bg: #020617; --card: #1e293b; --text: #f1f5f9;
             --sub-text: #94a3b8; --border: #334155;
-            --nav-bg: rgba(30, 41, 59, 0.7); /* 深色半透明 */
+            --nav-bg: rgba(30, 41, 59, 0.75);
+            --warn-bg: #450a0a; --warn-text: #fecaca;
         }
 
-        /* 🛑 徹底封印拉桿 */
+        /* 🛑 徹底鎖定手機拉桿 */
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100dvh; 
             overflow: hidden !important; position: fixed; 
             font-family: 'PingFang TC', system-ui, sans-serif; 
             background-color: var(--bg); color: var(--text);
-            -webkit-text-size-adjust: 100%;
+            transition: background-color 0.3s ease;
         }
 
-        /* --- 頂部 --- */
+        /* --- 頂部公告橫幅 --- */
+        .announcement-bar {
+            background: var(--warn-bg); color: var(--warn-text);
+            padding: 8px 16px; font-size: 0.8rem; font-weight: 700;
+            text-align: center; border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: none; /* 預設隱藏，由 JS 控制顯示 */
+        }
+
+        /* --- Header 修正 --- */
         .header { 
-            height: 65px; width: 100%; padding: 0 16px; display: flex; 
+            height: 65px; width: 100%; padding: 0 12px; display: flex; 
             justify-content: space-between; align-items: center; 
             border-bottom: 1px solid var(--border); background: var(--bg);
             z-index: 1000; box-sizing: border-box;
         }
-        .header-titles h1 { margin: 0; font-size: 1.1rem; font-weight: 900; color: var(--p); }
-        .header-titles p { margin: 0; font-size: 0.6rem; color: var(--sub-text); font-weight: 800; }
-        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header-titles { flex: 1; min-width: 0; }
+        .header-titles h1 { margin: 0; font-size: 1rem; font-weight: 900; color: var(--p); white-space: nowrap; }
+        .header-titles p { margin: 0; font-size: 0.55rem; color: var(--sub-text); font-weight: 800; }
+        
+        /* 確保按鈕在手機上不會被擠壓消失 */
+        .header-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
-        /* 切換器 */
         .segmented-control { display: flex; background: var(--border); padding: 2px; border-radius: 10px; }
-        .seg-btn { width: 32px; height: 28px; border: none; background: none; border-radius: 8px; color: var(--sub-text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .seg-btn { width: 30px; height: 26px; border: none; background: none; border-radius: 8px; color: var(--sub-text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .seg-btn.active { color: var(--p); background: var(--card); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .seg-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 3; }
+        .seg-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; }
 
-        .circle-btn { width: 36px; height: 36px; border: none; border-radius: 10px; background: var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .circle-btn { width: 34px; height: 34px; border: none; border-radius: 10px; background: var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         
         /* 🎨 精製小寫 i */
-        .info-btn svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2.2; fill: none; }
+        .info-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.2; fill: none; }
 
-        /* --- 滾動區 --- */
+        /* --- 內容滾動區 --- */
         .main-scroller { 
-            display: flex; width: 100vw; height: calc(100dvh - 65px); 
+            display: flex; width: 100%; height: calc(100dvh - 65px); 
             overflow-x: auto; overflow-y: hidden; 
             scroll-snap-type: x mandatory; scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
         }
         .main-scroller::-webkit-scrollbar { display: none; }
-        
-        .page-section { 
-            flex: 0 0 100vw; width: 100vw; height: 100%; 
-            scroll-snap-align: start; overflow-y: auto; 
-            padding: 20px 16px 180px; box-sizing: border-box; 
-        }
+        .page-section { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 15px 16px 180px; box-sizing: border-box; }
 
-        /* --- 內容佈局：取消初始過渡動畫以防變大變小 --- */
+        /* --- 佈局邏輯 --- */
         .menu-list { display: grid; gap: 12px; width: 100%; max-width: 1100px; margin: 0 auto; }
-        
-        /* 動態佈局定義 */
         [data-layout="list-mode"] .menu-list { grid-template-columns: 1fr; }
         @media (min-width: 768px) { [data-layout="list-mode"] .menu-list { grid-template-columns: 1fr 1fr; } }
-        
         [data-layout="grid-mode"] .menu-list { grid-template-columns: repeat(3, 1fr); gap: 10px; }
         @media (min-width: 768px) { [data-layout="grid-mode"] .menu-list { grid-template-columns: repeat(6, 1fr); } }
 
-        .menu-item { 
-            background: var(--card); border-radius: 18px; border: 1px solid var(--border); 
-            text-decoration: none; color: inherit; display: flex; 
-            /* 移除 transition 解決變大變小問題 */
-        }
-        .menu-item:active { transform: scale(0.96); opacity: 0.8; }
-
+        .menu-item { background: var(--card); border-radius: 18px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; }
         [data-layout="list-mode"] .menu-item { padding: 18px; align-items: center; }
-        [data-layout="list-mode"] .icon-box { width: 44px; height: 44px; margin-right: 15px; font-size: 20px; border-radius: 12px; background: var(--bg); display: flex; align-items: center; justify-content: center; }
-        
         [data-layout="grid-mode"] .menu-item { flex-direction: column; padding: 20px 10px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
-        [data-layout="grid-mode"] .icon-box { width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        [data-layout="grid-mode"] .info p { display: none; }
-
+        .icon-box { background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        [data-layout="list-mode"] .icon-box { width: 44px; height: 44px; margin-right: 15px; font-size: 20px; border-radius: 12px; }
+        [data-layout="grid-mode"] .icon-box { width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 50%; font-size: 18px; }
         .info h2 { margin: 0; font-size: 0.9rem; font-weight: 800; }
-        .info p { margin: 3px 0 0; font-size: 0.75rem; color: var(--sub-text); }
+        .info p { margin: 3px 0 0; font-size: 0.7rem; color: var(--sub-text); }
 
-        /* --- 半透明底部分頁選單 --- */
-        .bottom-nav-container { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2000; }
-        .bottom-nav { 
-            background: var(--nav-bg); 
-            backdrop-filter: blur(15px) saturate(180%);
-            -webkit-backdrop-filter: blur(15px) saturate(180%);
-            border-radius: 100px; display: flex; padding: 6px; 
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 800; color: #94a3b8; cursor: pointer; border-radius: 100px; }
-        .nav-item.active { color: white; background: var(--p); box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4); }
+        /* --- 玻璃質感導覽欄 --- */
+        .bottom-nav-container { position: fixed; bottom: calc(15px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; z-index: 2000; }
+        .bottom-nav { background: var(--nav-bg); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-radius: 100px; display: flex; padding: 6px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.85rem; font-weight: 800; color: #94a3b8; cursor: pointer; border-radius: 100px; transition: 0.2s; }
+        .nav-item.active { color: white; background: var(--p); box-shadow: 0 4px 15px rgba(67, 97, 238, 0.4); }
 
-        /* --- 資訊 Modal (還原 8.0 樣式) --- */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        /* --- Modal 還原 8.0 經典樣式 --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.show { display: flex; }
-        .modal { background: var(--bg); width: 100%; max-width: 350px; border-radius: 30px; overflow: hidden; animation: pop 0.3s forwards; }
+        .modal { background: var(--bg); width: 100%; max-width: 350px; border-radius: 30px; overflow: hidden; animation: pop 0.3s forwards; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .author-section { background: linear-gradient(135deg, #4361ee, #7209b7); color: white; padding: 35px 20px; text-align: center; }
         .author-section .avatar { width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; border: 2px solid white; }
+        .author-section h3 { margin: 0; font-size: 1.3rem; font-weight: 900; }
         .modal-body { padding: 25px; }
         .meta-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .ver-label { background: var(--border); color: var(--p); padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; }
         .log-list { margin: 15px 0; padding: 0; list-style: none; border-top: 1px solid var(--border); padding-top: 15px; }
-        .log-list li { font-size: 0.8rem; color: var(--sub-text); padding: 5px 0; line-height: 1.5; }
-        .modal-close { width: 100%; margin-top: 20px; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: 18px; font-weight: 900; cursor: pointer; }
+        .log-list li { font-size: 0.85rem; color: var(--sub-text); padding: 6px 0; display: flex; gap: 8px; }
+        .modal-close { width: 100%; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: 18px; font-weight: 900; cursor: pointer; }
+        
+        @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body data-layout="list-mode">
 
+    <div id="announcement" class="announcement-bar"></div>
+
     <div class="header">
         <div class="header-titles">
             <h1>班級數位平台</h1>
-            <p>CLASSROOM HUB PRO v10</p>
+            <p>CLASSROOM HUB ELITE</p>
         </div>
         <div class="header-actions">
             <div class="segmented-control">
@@ -146,15 +161,17 @@
                     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 </button>
             </div>
+            
             <button class="circle-btn" id="themeBtn">
                 <svg id="sunIcon" viewBox="0 0 24 24" style="display:none;fill:none;stroke:currentColor;stroke-width:2.5;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
                 <svg id="moonIcon" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.5;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             </button>
+
             <button class="circle-btn info-btn" onclick="openInfo()">
                 <svg viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" stroke-opacity="0.3"></circle>
                     <path d="M12 11v6"></path>
-                    <circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"></circle>
+                    <circle cx="12" cy="7.5" r="1.2" fill="currentColor" stroke="none"></circle>
                 </svg>
             </button>
         </div>
@@ -162,7 +179,7 @@
 
     <div class="main-scroller" id="mainScroller">
         <section class="page-section"><div class="menu-list">
-            <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>重要時程不漏接</p></div></a>
+            <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>掌握重要時程不漏接</p></div></a>
             <a href="countdown/index.html" class="menu-item"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>戰鬥時刻，精確倒計</p></div></a>
             <a href="homework/index.html" class="menu-item"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>每日作業清單更新</p></div></a>
         </div></section>
@@ -170,7 +187,7 @@
         <section class="page-section"><div class="menu-list">
             <a href="help/student.html" class="menu-item"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>溫和傾聽你的想法</p></div></a>
             <a href="unknownmail/index.html" class="menu-item"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全訊息傳遞</p></div></a>
-            <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>班級互動小天地</p></div></a>
+            <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>班級互動的小天地</p></div></a>
             <a href="board/index.html" class="menu-item"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>參與班級決策</p></div></a>
         </div></section>
 
@@ -200,8 +217,8 @@
         <div class="modal">
             <div class="author-section">
                 <div class="avatar">王</div>
-                <h3 id="m-name">作者載入中</h3>
-                <p>核心開發者</p>
+                <h3 id="m-name">作者</h3>
+                <p id="m-role">核心開發者</p>
             </div>
             <div class="modal-body">
                 <div class="meta-row">
@@ -209,31 +226,48 @@
                     <a href="#" id="m-guide" target="_blank" style="font-size:0.8rem; color:var(--p); font-weight:800; text-decoration:none;">使用教學</a>
                 </div>
                 <ul class="log-list" id="m-log"></ul>
-                <button class="modal-close" onclick="closeInfo()">關閉視窗</button>
+                <button class="modal-close" onclick="closeInfo()">關閉</button>
             </div>
         </div>
     </div>
 
     <script>
-        const AUTHOR_DATA = { name: "王宥鈞", ver: "v10.0-Stable", logs: ["修復按鈕閃爍變大問題。", "底部分頁欄改為高透玻璃質感。", "強化手機版拉桿鎖定。", "還原經典作者資訊區佈局。"] };
         const scroller = document.getElementById('mainScroller');
         const navItems = document.querySelectorAll('.nav-item');
         
         let isDarkMode = localStorage.getItem('theme') === 'dark';
-        let currentLayout = localStorage.getItem('layout') || 'list-mode';
-        let currentPage = parseInt(localStorage.getItem('lastPage')) || 0;
+        let layout = localStorage.getItem('layout') || 'list-mode';
+        let page = parseInt(localStorage.getItem('lastPage')) || 0;
+
+        // 核心：即時同步瀏覽器狀態列顏色
+        function syncBrowserTheme() {
+            const meta = document.getElementById('metaThemeColor');
+            // 根據模式決定網址列顏色
+            const themeColor = isDarkMode ? "#020617" : "#f8fafc";
+            meta.setAttribute('content', themeColor);
+        }
 
         function updateUI() {
             document.documentElement.classList.toggle('dark-mode', isDarkMode);
             document.getElementById('sunIcon').style.display = isDarkMode ? 'block' : 'none';
             document.getElementById('moonIcon').style.display = isDarkMode ? 'none' : 'block';
-            navItems.forEach((item, i) => item.classList.toggle('active', i === currentPage));
+            navItems.forEach((item, i) => item.classList.toggle('active', i === page));
+            syncBrowserTheme(); // 同步變更手機外殼顏色
+        }
+
+        // 公告系統初始化
+        function initAnnouncement() {
+            const bar = document.getElementById('announcement');
+            if (GLOBAL_ANNOUNCEMENT) {
+                bar.innerText = GLOBAL_ANNOUNCEMENT;
+                bar.style.display = 'block';
+            }
         }
 
         scroller.addEventListener('scroll', () => {
-            currentPage = Math.round(scroller.scrollLeft / scroller.offsetWidth);
+            page = Math.round(scroller.scrollLeft / scroller.offsetWidth);
             updateUI();
-            localStorage.setItem('lastPage', currentPage);
+            localStorage.setItem('lastPage', page);
         }, { passive: true });
 
         function scrollToPage(idx) {
@@ -254,20 +288,23 @@
         };
 
         function openInfo() {
-            document.getElementById('m-name').innerText = AUTHOR_DATA.name;
-            document.getElementById('m-ver').innerText = AUTHOR_DATA.ver;
-            document.getElementById('m-log').innerHTML = AUTHOR_DATA.logs.map(l => `<li>• ${l}</li>`).join('');
+            document.getElementById('m-name').innerText = AUTHOR_CONFIG.name;
+            document.getElementById('m-role').innerText = AUTHOR_CONFIG.role;
+            document.getElementById('m-ver').innerText = AUTHOR_CONFIG.version;
+            document.getElementById('m-guide').href = AUTHOR_CONFIG.tutorialUrl;
+            document.getElementById('m-log').innerHTML = AUTHOR_CONFIG.logs.map(l => `<li><span>•</span> ${l}</li>`).join('');
             document.getElementById('infoModal').classList.add('show');
         }
         function closeInfo() { document.getElementById('infoModal').classList.remove('show'); }
 
         // --- 初始化校準 ---
         window.addEventListener('load', () => {
-            setLayout(currentLayout);
+            initAnnouncement();
+            setLayout(layout);
             updateUI();
             setTimeout(() => {
-                scroller.scrollTo({ left: currentPage * scroller.offsetWidth, behavior: 'auto' });
-            }, 50);
+                scroller.scrollTo({ left: page * scroller.offsetWidth, behavior: 'auto' });
+            }, 60);
         });
     </script>
 </body>
