@@ -3,124 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>齒輪撥桿實驗室</title>
+    <title>iOS 鬧鐘感官模擬</title>
     <style>
-        body { margin: 0; background: #0f172a; color: white; font-family: sans-serif; overflow: hidden; }
-        
-        /* 滾輪容器 */
+        :root { --p: #4361ee; --bg: #000000; }
+        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; overflow: hidden; }
+
+        /* 標題與說明 */
+        .info { text-align: center; padding-top: 50px; color: #888; font-size: 14px; }
+
+        /* 🎡 核心滾動容器 */
         .scroller {
-            display: flex; width: 100vw; height: 70dvh;
-            overflow-x: auto; scroll-snap-type: x mandatory;
+            display: flex; width: 100vw; height: 60vh;
+            overflow-x: auto; 
+            /* 🧲 吸附核心：讓它永遠停在整數頁面 */
+            scroll-snap-type: x mandatory; 
             scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
         }
         .scroller::-webkit-scrollbar { display: none; }
 
         .page {
             flex: 0 0 100vw; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center;
+            /* 🧲 吸附對齊 */
+            scroll-snap-align: start; 
         }
-        
+
         .card {
-            width: 80%; height: 60%; background: #1e293b; border-radius: 40px;
-            border: 2px solid #334155; display: flex; align-items: center; justify-content: center;
-            font-size: 100px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            width: 250px; height: 350px; background: #1c1c1e;
+            border-radius: 30px; border: 1px solid #3a3a3c;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
         }
+        .page-num { font-size: 100px; font-weight: 200; font-variant-numeric: tabular-nums; }
+        .page-label { color: var(--p); font-weight: 600; margin-top: 10px; letter-spacing: 2px; }
 
-        /* 模擬刻度線 */
-        .ruler {
-            position: fixed; bottom: 150px; width: 100%; height: 40px;
-            display: flex; justify-content: center; align-items: flex-end; gap: 15px;
+        /* 底部導覽指示器 */
+        .nav {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px;
         }
-        .tick { width: 3px; height: 10px; background: #475569; border-radius: 2px; transition: 0.1s; }
-        .tick.active { height: 25px; background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+        .dot { width: 8px; height: 8px; border-radius: 4px; background: #3a3a3c; transition: 0.3s; }
+        .dot.active { background: white; width: 25px; }
 
-        .hint { text-align: center; padding: 40px; color: #94a3b8; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="hint">請先「點擊螢幕」解鎖齒輪聲<br>然後快速左右滑動卡片</div>
+    <div class="info">請點擊任意處解鎖音效<br>然後左右快速撥動</div>
 
-    <div class="scroller" id="gear-box">
-        <div class="page"><div class="card">1</div></div>
-        <div class="page"><div class="card">2</div></div>
-        <div class="page"><div class="card">3</div></div>
-        <div class="page"><div class="card">4</div></div>
-        <div class="page"><div class="card">5</div></div>
-    </div>
+    <main class="scroller" id="scroller">
+        <div class="page"><div class="card"><div class="page-num">08</div><div class="page-label">時</div></div></div>
+        <div class="page"><div class="card"><div class="page-num">09</div><div class="page-label">時</div></div></div>
+        <div class="page"><div class="card"><div class="page-num">10</div><div class="page-label">時</div></div></div>
+        <div class="page"><div class="card"><div class="page-num">11</div><div class="page-label">時</div></div></div>
+        <div class="page"><div class="card"><div class="page-num">12</div><div class="page-label">時</div></div></div>
+    </main>
 
-    <div class="ruler" id="ruler"></div>
+    <div class="nav" id="nav-dots"></div>
 
     <script>
         /**
-         * 🎧 齒輪物理音頻合成器
+         * 🎧 Taptic Engine 聽覺模擬器 (iOS 鬧鐘專用音頻)
          */
-        const GearSound = {
-            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+        const TapticAudio = {
+            ctx: null,
             
-            // 產生清脆的「嗲」聲
-            click: function() {
+            init() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+
+            // 核心「喀」聲：調整過的參數，模仿 iOS 撥輪
+            playTick() {
+                if (!this.ctx) this.init();
                 if (this.ctx.state === 'suspended') this.ctx.resume();
 
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                const filter = this.ctx.createBiquadFilter();
+                
+                // 使用方形波並透過濾波器，能產生更乾脆的物理敲擊感
+                osc.type = 'sine';
+                
+                // 起始頻率較低，模擬內部齒輪撥動的悶響
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.03);
 
-                // 模擬金屬撥桿的高頻特徵
-                osc.type = 'triangle'; 
-                osc.frequency.setValueAtTime(2500, this.ctx.currentTime); // 起始高頻
-                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.03);
 
-                // 快速衰減的音量控制 (產生「嗲」的短促感)
-                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
-
-                // 高通濾波器：移除低頻雜音，只保留清脆聲
-                filter.type = "highpass";
-                filter.frequency.value = 1500;
-
-                osc.connect(filter);
-                filter.connect(gain);
+                osc.connect(gain);
                 gain.connect(this.ctx.destination);
 
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.04);
+                osc.stop(this.ctx.currentTime + 0.03);
             }
         };
 
-        // 初始化刻度 UI
-        const ruler = document.getElementById('ruler');
-        for(let i=0; i<5; i++) {
-            const tick = document.createElement('div');
-            tick.className = 'tick';
-            ruler.appendChild(tick);
-        }
-
-        const scroller = document.getElementById('gear-box');
+        const scroller = document.getElementById('scroller');
+        const nav = document.getElementById('nav-dots');
         let lastIdx = 0;
 
-        // 監聽滾動位置
+        // 初始化指示器
+        for(let i=0; i<5; i++) {
+            const dot = document.createElement('div');
+            dot.className = i === 0 ? 'dot active' : 'dot';
+            nav.appendChild(dot);
+        }
+
+        /**
+         * 🔄 監聽滾動邏輯
+         */
         scroller.addEventListener('scroll', () => {
             const width = window.innerWidth;
             const currentIdx = Math.round(scroller.scrollLeft / width);
 
-            // 當指針跨過刻度時觸發
+            // 當「吸附」動作發生，或者跨過中心點時觸發聲音
             if (currentIdx !== lastIdx) {
-                GearSound.click(); // 🔊 發出嗲嗲聲
+                TapticAudio.playTick(); // 🔊 發生「喀」一聲
                 
-                // 更新刻度視覺
-                const ticks = document.querySelectorAll('.tick');
-                ticks.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
+                // 更新 UI
+                const dots = document.querySelectorAll('.dot');
+                dots.forEach((d, i) => d.classList.toggle('active', i === currentIdx));
                 
                 lastIdx = currentIdx;
             }
         }, { passive: true });
 
-        // 解鎖音訊
+        // 第一次點擊啟動
         document.body.addEventListener('touchstart', () => {
-            GearSound.click();
-            console.log("齒輪運轉中...");
+            TapticAudio.playTick();
         }, { once: true });
+
     </script>
 </body>
 </html>
