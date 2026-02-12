@@ -3,402 +3,478 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina OS Commander | 旗艦互動系統</title>
+    <title>Lumina Grand Unified | 頂尖教學控制台</title>
+    
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    
+
     <style>
-        :root { 
-            --p: #5856D6; --s: #34C759; --d: #FF3B30; --w: #FF9500;
-            --bg: #0A0A0C; --card: #1C1C1E; --glass: rgba(255,255,255,0.08); 
+        :root {
+            --accent-p: #7B61FF; --accent-s: #00F5A0; --accent-d: #FF385C;
+            --bg-deep: #050505; --bg-surface: #121214; --bg-glass: rgba(255, 255, 255, 0.05);
+            --text-main: #FFFFFF; --text-dim: #A0A0A0;
+            --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'SF Pro Display', 'PingFang TC', system-ui, sans-serif; }
-        body { background: var(--bg); color: #FFF; margin: 0; overflow-x: hidden; }
 
-        /* 背景特效 */
-        .mesh-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 10%, #1a1a2e 0%, #0a0a0c 100%); }
-        .mesh-bg::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); opacity: 0.1; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg-deep); color: var(--text-main);
+            font-family: 'Inter', 'SF Pro Display', 'PingFang TC', sans-serif;
+            overflow: hidden; /* 防止滾動閃爍 */
+        }
 
-        .app { min-height: 100vh; display: flex; flex-direction: column; }
-        .glass { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        /* 權威級動態背景 */
+        .aura-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(123, 97, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 245, 160, 0.05) 0%, transparent 40%);
+        }
+
+        /* SPA 頁面容器 */
+        .page-container {
+            width: 100vw; height: 100vh; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        .view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px; display: flex; flex-direction: column;
+            visibility: hidden; opacity: 0; transition: var(--transition);
+        }
+        .view.active { visibility: visible; opacity: 1; z-index: 10; }
+
+        /* 通用玻璃元件 */
+        .glass-card {
+            background: var(--bg-glass); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+            padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        /* 標題與標籤 */
+        .glow-text { text-shadow: 0 0 20px rgba(123, 97, 255, 0.6); }
+        .badge {
+            padding: 6px 12px; border-radius: 50px; font-size: 12px; font-weight: 800;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .badge-live { background: rgba(0, 245, 160, 0.2); color: var(--accent-s); border: 1px solid var(--accent-s); }
 
         /* 按鈕系統 */
-        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; }
-        .btn-p { background: var(--p); color: white; box-shadow: 0 5px 15px rgba(88,86,214,0.3); }
-        .btn-s { background: var(--s); color: white; }
-        .btn-d { background: var(--d); color: white; }
+        .btn {
+            padding: 14px 28px; border-radius: 16px; border: none; cursor: pointer;
+            font-weight: 700; font-size: 16px; display: inline-flex; align-items: center; 
+            justify-content: center; gap: 10px; transition: var(--transition);
+        }
+        .btn-primary { background: var(--accent-p); color: white; }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(123, 97, 255, 0.4); }
+        .btn-danger { background: rgba(255, 56, 92, 0.1); color: var(--accent-d); border: 1px solid var(--accent-d); }
         .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
-        .btn:active { transform: translateY(0); }
 
-        /* RWD 佈局 */
-        .container { max-width: 1200px; margin: auto; width: 100%; padding: 15px; }
-        .grid-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
-        
-        @media (max-width: 992px) {
-            .grid-layout { grid-template-columns: 1fr; }
-            .desktop-only { display: none !important; }
+        /* 控制台佈局 */
+        .admin-grid {
+            display: grid; grid-template-columns: 1fr 400px; gap: 24px; flex: 1; overflow: hidden;
+        }
+        @media (max-width: 1100px) { .admin-grid { grid-template-columns: 1fr; overflow-y: auto; } }
+
+        /* 輸入框樣式 */
+        input {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            padding: 16px; border-radius: 14px; color: white; font-size: 16px; width: 100%;
+            transition: var(--transition);
+        }
+        input:focus { border-color: var(--accent-p); outline: none; background: rgba(0,0,0,0.5); }
+
+        /* 倒數顯示 */
+        .countdown-timer {
+            font-size: 80px; font-weight: 900; font-family: 'Monaco', monospace;
+            color: var(--accent-s); text-align: center; margin: 10px 0;
         }
 
-        /* 倒數計時 */
-        .timer-unit { font-size: 48px; font-weight: 900; font-family: 'Courier New', Courier, monospace; color: var(--s); text-shadow: 0 0 20px rgba(52,199,89,0.5); }
-        .timer-warning { color: var(--d) !important; animation: shake 0.5s infinite; }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 20% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 1px); } }
-
         /* 學生投票區 */
-        .stu-opt-area { display: grid; gap: 15px; margin-top: 20px; }
-        .stu-btn { padding: 25px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 20px; text-align: left; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
-        .stu-btn.selected { border-color: var(--p); background: rgba(88,86,214,0.2); box-shadow: 0 0 20px rgba(88,86,214,0.4); }
-        .stu-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .option-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 24px; }
+        .option-btn {
+            padding: 24px; border-radius: 20px; background: rgba(255,255,255,0.03);
+            border: 2px solid transparent; color: white; font-size: 20px; font-weight: 600;
+            text-align: left; cursor: pointer; transition: var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .option-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+        .option-btn.selected { border-color: var(--accent-p); background: rgba(123, 97, 255, 0.1); }
+        .option-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        input[type="text"], input[type="number"] { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; outline: none; transition: 0.3s; }
-        input[type="text"]:focus { border-color: var(--p); background: rgba(0,0,0,0.6); }
+        /* 結果顯示 */
+        .result-bar-bg { height: 8px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 8px; }
+        .result-bar-fill { height: 100%; background: var(--accent-p); border-radius: 4px; transition: width 1s ease; }
 
-        .hidden { display: none !important; }
-        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: rgba(255,255,255,0.1); }
-        .badge-online { background: rgba(52,199,89,0.2); color: var(--s); }
+        #qr-canvas { border-radius: 16px; width: 100% !important; height: auto !important; }
         
-        /* 結案遮罩 */
-        .full-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="mesh-bg"></div>
+<div class="aura-bg"></div>
 
-<div class="app">
-    <header style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <div style="font-size: 22px; font-weight: 900; letter-spacing: 2px;">LUMINA <span style="color:var(--p)">COMMANDER</span></div>
-        <div id="sys-status" class="badge">STANDBY</div>
-    </header>
-
-    <div class="container">
-        <div id="v-start" class="animate__animated animate__fadeIn">
-            <div class="glass" style="text-align: center; padding: 60px 20px; margin-top: 50px;">
-                <h1 style="font-size: 50px; margin-bottom: 10px;">讓數據說話</h1>
-                <p style="color: #888; font-size: 18px; margin-bottom: 40px;">專業、穩定、永續的課堂投票方案</p>
-                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn btn-p" onclick="checkRecovery()" style="padding: 20px 40px;">👨‍🏫 我是老師 (進入儀表板)</button>
-                    <button class="btn btn-outline" onclick="showView('v-stu-login')" style="padding: 20px 40px;">📱 我是學生 (加入投票)</button>
+<div class="page-container">
+    
+    <section id="v-welcome" class="view active">
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+            <div class="animate__animated animate__zoomIn">
+                <h1 style="font-size: 64px; margin: 0; letter-spacing: -2px;" class="glow-text">LUMINA <span style="color:var(--accent-s)">GRAND</span></h1>
+                <p style="color: var(--text-dim); font-size: 20px; margin: 20px 0 50px;">網頁權威打造 · 旗艦互動投票系統</p>
+                <div style="display: flex; gap: 24px; justify-content: center;">
+                    <button class="btn btn-primary" onclick="initTeacher()">👨‍🏫 我是老師</button>
+                    <button class="btn btn-outline" onclick="switchToStudentLogin()">📱 我是學生</button>
                 </div>
             </div>
         </div>
+    </section>
 
-        <div id="v-teacher" class="hidden animate__animated animate__fadeIn">
-            <div class="grid-layout">
-                <div class="left-col">
-                    <div class="glass">
-                        <h3>📋 1. 設定問題與選項</h3>
-                        <input type="text" id="t-topic" placeholder="請在此輸入投票題目..." style="width:100%; font-size:18px; margin-bottom:15px;">
-                        <div id="t-opt-list"></div>
-                        <button class="btn btn-outline" onclick="addOptionField()" style="margin-top:10px;">+ 新增選項</button>
-                    </div>
+    <section id="v-stu-login" class="view">
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div class="glass-card animate__animated animate__fadeInUp" style="width: 100%; max-width: 400px; text-align: center;">
+                <h2>請輸入 4 位房號</h2>
+                <input type="text" id="stu-room-id" maxlength="4" style="text-align: center; font-size: 40px; letter-spacing: 10px; margin: 30px 0;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="initStudent()">開始連線</button>
+                <button class="btn btn-outline" style="width: 100%; margin-top: 12px;" onclick="showView('v-welcome')">返回</button>
+            </div>
+        </div>
+    </section>
 
-                    <div class="glass">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3>📊 2. 即時數據監控</h3>
-                            <div id="t-timer" class="timer-unit">01:00</div>
-                        </div>
-                        <div style="height: 350px; position: relative; margin-top: 20px;">
-                            <canvas id="t-chart"></canvas>
-                        </div>
-                    </div>
+    <section id="v-teacher" class="view">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="badge badge-live">Live Control</span>
+                <h2 id="display-room-id" style="margin: 0; color: var(--accent-p);">ID: ----</h2>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" onclick="exportData()">💾 匯出 CSV</button>
+                <button class="btn btn-danger" onclick="confirmReset()">🔄 全域重置</button>
+            </div>
+        </header>
+
+        <div class="admin-grid">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="glass-card">
+                    <h3>1. 題目配置</h3>
+                    <input type="text" id="t-topic" placeholder="請在此輸入投票題目..." style="margin-bottom: 20px;">
+                    <div id="t-option-fields" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <button class="btn btn-outline" style="margin-top: 15px; width: 100%;" onclick="addOption()">+ 新增選項</button>
                 </div>
-
-                <div class="right-col">
-                    <div class="glass" style="text-align: center;">
-                        <h2 id="t-room-id" style="font-size: 50px; color: var(--p); margin: 0;">----</h2>
-                        <canvas id="qr-canvas" style="width: 100%; border-radius: 12px; margin: 15px 0;"></canvas>
-                        <p style="color: #888; font-size: 14px;">請學生掃碼或連入房號</p>
-                        
-                        <div style="display: grid; gap: 10px; margin-top: 20px;">
-                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px;">
-                                限時：<input type="number" id="t-min" value="1" style="width: 50px;"> 分 
-                                <input type="number" id="t-sec" value="0" style="width: 50px;"> 秒
-                            </div>
-                            <button class="btn btn-s" onclick="publishVote()">🚀 開始投票 (同步選項)</button>
-                            <button class="btn btn-d" onclick="confirmReset()">🔄 清空所有數據</button>
-                            <button class="btn btn-outline" onclick="exportToCSV()">💾 下載 CSV 報表</button>
-                        </div>
-                    </div>
-                    
-                    <div class="glass">
-                        <h4>現況分析</h4>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>連線人數</span><span id="stat-online" style="color:var(--s)">0</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>投票率</span><span id="stat-ratio" style="color:var(--p)">0%</span>
-                        </div>
+                
+                <div class="glass-card" style="flex: 1; min-height: 400px; display: flex; flex-direction: column;">
+                    <h3>2. 實時數據流</h3>
+                    <div style="flex: 1; position: relative;">
+                        <canvas id="t-chart"></canvas>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div id="v-stu-login" class="hidden animate__animated animate__fadeIn">
-            <div class="glass" style="max-width: 400px; margin: 80px auto; text-align: center;">
-                <h2>加入投票房</h2>
-                <input type="text" id="s-room-input" maxlength="4" placeholder="請輸入房號" style="width:100%; text-align:center; font-size:40px; margin: 20px 0;">
-                <button class="btn btn-p" style="width: 100%; padding: 15px;" onclick="initStudent()">建立安全連線</button>
-            </div>
-        </div>
-
-        <div id="v-student" class="hidden animate__animated animate__fadeIn">
-            <div class="glass" style="text-align: center; border-bottom: 4px solid var(--p);">
-                <div id="s-timer-display" style="font-size: 24px; font-weight: bold; color: var(--s);">等待老師發布...</div>
-                <h1 id="s-topic-display" style="margin: 15px 0;">--</h1>
-            </div>
-            <div id="s-opt-container" class="stu-opt-area">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="glass-card" style="text-align: center;">
+                    <div class="countdown-timer" id="t-timer-display">01:00</div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0;">
+                        <input type="number" id="t-min" value="1" style="width: 70px; text-align: center;"> 分
+                        <input type="number" id="t-sec" value="0" style="width: 70px; text-align: center;"> 秒
+                    </div>
+                    <button id="ctrl-btn" class="btn btn-primary" style="width: 100%;" onclick="startSession()">🚀 啟動投票</button>
+                    <button id="end-btn" class="btn btn-danger hidden" style="width: 100%;" onclick="endSession()">🛑 提前終止</button>
                 </div>
-            <div id="s-lock-msg" class="hidden" style="text-align:center; margin-top:20px; color:var(--d);">
-                🔒 投票已截止，數據已由系統鎖定
+
+                <div class="glass-card" style="text-align: center;">
+                    <canvas id="qr-canvas"></canvas>
+                    <p style="color: var(--text-dim); margin-top: 15px;">掃描快速加入</p>
+                </div>
+
+                <div class="glass-card">
+                    <h4>連線統計</h4>
+                    <div style="display: flex; justify-content: space-between;"><span>在線學生</span><span id="stat-online">0</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px;"><span>已投票數</span><span id="stat-voted">0</span></div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-<div id="final-screen" class="full-overlay hidden animate__animated animate__fadeIn">
-    <h2 style="color: var(--s); font-size: 30px;">投票任務完成</h2>
-    <div id="winner-card" class="glass" style="min-width: 320px; padding: 40px; border: 2px solid var(--p);">
-        <p>最高得票</p>
-        <h1 id="winner-name" style="font-size: 60px; color: var(--p); margin: 10px 0;">--</h1>
-        <p id="winner-votes" style="font-size: 20px; color: #888;">0 票</p>
-    </div>
-    <div style="display:flex; gap:10px;">
-        <button class="btn btn-outline" onclick="document.getElementById('final-screen').classList.add('hidden')">返回儀表板</button>
-        <button class="btn btn-p" onclick="exportToCSV()">下載數據檔案</button>
-    </div>
+    <section id="v-student" class="view">
+        <div class="container" style="max-width: 600px; margin: auto; width: 100%;">
+            <div class="glass-card" style="text-align: center; margin-bottom: 20px;">
+                <div id="s-timer-display" class="countdown-timer" style="font-size: 32px; margin: 0;">等待老師...</div>
+                <div id="s-badge" class="badge" style="margin-top: 10px;">準備中</div>
+            </div>
+
+            <div class="glass-card">
+                <h1 id="s-topic-display" style="font-size: 24px; text-align: center;">題目載入中...</h1>
+                <div id="s-option-area" class="option-grid"></div>
+            </div>
+
+            <div id="s-result-overlay" class="hidden animate__animated animate__fadeIn">
+                <div class="glass-card" style="margin-top: 20px; border: 1px solid var(--accent-s);">
+                    <h3 style="color: var(--accent-s); text-align: center;">📊 最終統計結果</h3>
+                    <div id="s-result-details"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
 </div>
 
 <script>
+    /**
+     * Lumina Grand Unified - 權威核心邏輯
+     */
     let peer, conn, role, myChart, timerInt;
-    let options = ["同意", "不同意", "沒意見"];
-    let votes = {};
-    let voterMap = new Map();
-    let isLocked = false;
-    let roomID = "";
-
-    const PEER_CONFIG = { 
-        'config': { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'stun:stun1.l.google.com:19302' }] } 
+    let state = {
+        roomID: "",
+        topic: "請選擇一個選項",
+        options: ["選項 A", "選項 B", "選項 C"],
+        votes: {},      // { "選項": 票數 }
+        voterMap: {},   // { peerID: "選項" }
+        isLive: false,
+        timeLeft: "01:00",
+        showResult: false
     };
 
+    const PEER_CONFIG = { 'config': { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] } };
+
+    // --- 介面管理 ---
     function showView(id) {
-        document.querySelectorAll('.app > div').forEach(d => { if(d.id.startsWith('v-')) d.classList.add('hidden'); });
-        document.getElementById(id).classList.remove('hidden');
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        const nextView = document.getElementById(id);
+        nextView.classList.add('active');
+        nextView.classList.add('animate__animated', 'animate__fadeIn');
     }
 
-    // --- 數據持久化核心 ---
-    function saveState() {
-        if (role !== 'teacher') return;
-        const state = {
-            roomID, options, votes, 
-            voterMap: Array.from(voterMap.entries()),
-            topic: document.getElementById('t-topic').value
-        };
-        localStorage.setItem('Lumina_Commander_Backup', JSON.stringify(state));
+    function switchToStudentLogin() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('r')) document.getElementById('stu-room-id').value = urlParams.get('r');
+        showView('v-stu-login');
     }
 
-    function checkRecovery() {
-        const saved = localStorage.getItem('Lumina_Commander_Backup');
-        if (saved) {
-            if (confirm("發現上次未完成的投票記錄，是否恢復？")) {
-                const state = JSON.parse(saved);
-                roomID = state.roomID;
-                options = state.options;
-                votes = state.votes;
-                voterMap = new Map(state.voterMap);
-                initTeacher(roomID, state.topic);
-                return;
-            }
-        }
-        initTeacher();
-    }
-
-    // --- 老師端核心 ---
-    function initTeacher(forceID = null, savedTopic = "") {
+    // --- 老師端邏輯 ---
+    function initTeacher() {
         role = 'teacher';
-        roomID = forceID || Math.floor(1000 + Math.random() * 8999).toString();
-        peer = new Peer('LUMINA-' + roomID, PEER_CONFIG);
+        state.roomID = Math.floor(1000 + Math.random() * 8999).toString();
+        peer = new Peer('LUMINA-' + state.roomID, PEER_CONFIG);
 
         peer.on('open', id => {
             showView('v-teacher');
-            document.getElementById('t-room-id').innerText = roomID;
-            document.getElementById('sys-status').innerText = "ONLINE | " + roomID;
-            document.getElementById('sys-status').classList.add('badge-online');
-            if(savedTopic) document.getElementById('t-topic').value = savedTopic;
+            document.getElementById('display-room-id').innerText = "ROOM: " + state.roomID;
+            QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.origin + window.location.pathname + '?r=' + state.roomID);
             
-            QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.href.split('?')[0] + '?r=' + roomID);
-            renderTeacherOptions();
+            renderOptionInputs();
             initChart();
-            updateChart(); // 恢復數據後的繪圖
-
-            // 狀態廣播心跳
-            setInterval(() => {
-                const msg = {
-                    type: 'sync',
-                    topic: document.getElementById('t-topic').value || "互動投票",
-                    options: options,
-                    isLocked: isLocked,
-                    timeLeft: document.getElementById('t-timer').innerText
-                };
-                Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(msg); }));
-                document.getElementById('stat-online').innerText = Object.keys(peer.connections).length;
-                saveState();
-            }, 1000);
+            startBroadcast();
+            
+            // 嘗試恢復本地備份
+            const saved = localStorage.getItem('LGU_BACKUP');
+            if(saved) {
+                const b = JSON.parse(saved);
+                if(b.roomID === state.roomID) {
+                    state = {...state, ...b};
+                    updateChart();
+                }
+            }
         });
 
         peer.on('connection', c => {
             c.on('data', d => {
-                if(d.type === 'vote' && !isLocked) {
-                    if(voterMap.has(c.peer)) votes[voterMap.get(c.peer)]--;
-                    voterMap.set(c.peer, d.val);
-                    votes[d.val] = (votes[d.val] || 0) + 1;
-                    updateChart();
+                if(d.type === 'vote' && state.isLive) {
+                    handleVote(c.peer, d.val);
                 }
             });
         });
     }
 
-    function renderTeacherOptions() {
-        const container = document.getElementById('t-opt-list');
-        container.innerHTML = options.map((opt, i) => `
-            <div class="animate__animated animate__fadeIn" style="display:flex; gap:10px; margin-bottom:8px;">
-                <input type="text" value="${opt}" oninput="options[${i}]=this.value" style="flex:1">
-                <button class="btn btn-outline" onclick="options.splice(${i},1); renderTeacherOptions()">✕</button>
+    function renderOptionInputs() {
+        const container = document.getElementById('t-option-fields');
+        container.innerHTML = state.options.map((opt, i) => `
+            <div style="display:flex; gap:10px;">
+                <input type="text" value="${opt}" oninput="state.options[${i}]=this.value; updateChart();">
+                <button class="btn btn-outline" style="padding:10px;" onclick="removeOption(${i})">✕</button>
             </div>
         `).join('');
     }
-    function addOptionField() { options.push("新選項 " + (options.length+1)); renderTeacherOptions(); }
+
+    function addOption() { state.options.push("新選項 " + (state.options.length+1)); renderOptionInputs(); updateChart(); }
+    function removeOption(i) { state.options.splice(i, 1); renderOptionInputs(); updateChart(); }
+
+    function handleVote(pid, val) {
+        if(state.voterMap[pid]) state.votes[state.voterMap[pid]]--;
+        state.voterMap[pid] = val;
+        state.votes[val] = (state.votes[val] || 0) + 1;
+        updateChart();
+        localStorage.setItem('LGU_BACKUP', JSON.stringify(state));
+    }
 
     function initChart() {
         const ctx = document.getElementById('t-chart').getContext('2d');
         myChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: options, datasets: [{ data: [], backgroundColor: '#5856D6', borderRadius: 8 }] },
+            data: { labels: state.options, datasets: [{ data: [], backgroundColor: '#7B61FF', borderRadius: 10 }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
+                indexAxis: 'y',
                 plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } }
+                scales: { 
+                    x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { grid: { display: false }, ticks: { color: '#FFF' } }
+                }
             }
         });
     }
 
     function updateChart() {
-        myChart.data.labels = options;
-        myChart.data.datasets[0].data = options.map(o => votes[o] || 0);
-        myChart.update();
-        const total = voterMap.size;
-        const online = Object.keys(peer.connections).length;
-        document.getElementById('stat-ratio').innerText = online > 0 ? Math.round(total/online*100) + "%" : "0%";
+        myChart.data.labels = state.options;
+        myChart.data.datasets[0].data = state.options.map(o => state.votes[o] || 0);
+        myChart.update('none'); // 使用 'none' 模式在修改選項時不閃爍
+        document.getElementById('stat-voted').innerText = Object.keys(state.voterMap).length;
+        document.getElementById('stat-online').innerText = Object.keys(peer.connections).length;
     }
 
-    function publishVote() {
-        isLocked = false;
-        voterMap.clear();
-        options.forEach(o => votes[o] = 0);
+    function startSession() {
+        state.isLive = true;
+        state.showResult = false;
+        state.voterMap = {};
+        state.options.forEach(o => state.votes[o] = 0);
         updateChart();
 
         let totalSec = (parseInt(document.getElementById('t-min').value) * 60) + parseInt(document.getElementById('t-sec').value);
-        if(timerInt) clearInterval(timerInt);
         
+        document.getElementById('ctrl-btn').classList.add('hidden');
+        document.getElementById('end-btn').classList.remove('hidden');
+
+        if(timerInt) clearInterval(timerInt);
         timerInt = setInterval(() => {
             totalSec--;
-            let m = Math.floor(totalSec/60).toString().padStart(2,'0');
-            let s = (totalSec%60).toString().padStart(2,'0');
-            const timerEl = document.getElementById('t-timer');
-            timerEl.innerText = `${m}:${s}`;
+            let m = Math.floor(totalSec/60).toString().padStart(2, '0');
+            let s = (totalSec%60).toString().padStart(2, '0');
+            state.timeLeft = `${m}:${s}`;
+            document.getElementById('t-timer-display').innerText = state.timeLeft;
             
-            if(totalSec <= 10) timerEl.classList.add('timer-warning');
-            else timerEl.classList.remove('timer-warning');
-
-            if(totalSec <= 0) {
-                clearInterval(timerInt);
-                endVoting();
-            }
+            if(totalSec <= 0) endSession();
         }, 1000);
     }
 
-    function endVoting() {
-        isLocked = true;
-        let max = -1, winner = "無";
-        for(let o in votes) { if(votes[o] > max) { max = votes[o]; winner = o; } }
-        document.getElementById('winner-name').innerText = winner;
-        document.getElementById('winner-votes').innerText = (votes[winner] || 0) + " 票";
-        document.getElementById('final-screen').classList.remove('hidden');
+    function endSession() {
+        state.isLive = false;
+        state.showResult = true;
+        clearInterval(timerInt);
+        document.getElementById('t-timer-display').innerText = "00:00";
+        document.getElementById('ctrl-btn').classList.remove('hidden');
+        document.getElementById('end-btn').classList.add('hidden');
+        
+        // 華麗結束特效
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#7B61FF', '#00F5A0'] });
+    }
+
+    function startBroadcast() {
+        setInterval(() => {
+            state.topic = document.getElementById('t-topic').value;
+            const payload = { ...state, type: 'sync' };
+            Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(payload); }));
+        }, 800);
+    }
+
+    // --- 學生端邏輯 ---
+    let s_conn, s_myVote = "";
+    function initStudent() {
+        const rid = document.getElementById('stu-room-id').value;
+        if(!rid) return;
+        showView('v-student');
+        peer = new Peer(PEER_CONFIG);
+        peer.on('open', () => {
+            connectToTeacher(rid);
+            setInterval(() => { if(!s_conn || !s_conn.open) connectToTeacher(rid); }, 3000);
+        });
+    }
+
+    function connectToTeacher(rid) {
+        s_conn = peer.connect('LUMINA-' + rid, { reliable: true });
+        s_conn.on('data', d => {
+            if(d.type === 'sync') syncStudentUI(d);
+        });
+    }
+
+    function syncStudentUI(data) {
+        document.getElementById('s-topic-display').innerText = data.topic;
+        document.getElementById('s-timer-display').innerText = data.timeLeft;
+        const badge = document.getElementById('s-badge');
+        
+        if(data.isLive) {
+            badge.innerText = "正在投票"; badge.className = "badge badge-live";
+        } else if(data.showResult) {
+            badge.innerText = "投票結束"; badge.className = "badge";
+        } else {
+            badge.innerText = "準備中"; badge.className = "badge";
+        }
+
+        renderStudentOptions(data);
+        if(data.showResult) renderStudentResults(data);
+        else document.getElementById('s-result-overlay').classList.add('hidden');
+    }
+
+    function renderStudentOptions(data) {
+        const area = document.getElementById('s-option-area');
+        area.innerHTML = data.options.map(o => `
+            <button class="option-btn ${s_myVote === o ? 'selected' : ''}" 
+                ${!data.isLive ? 'disabled' : ''} onclick="castVote('${o}')">
+                ${o}
+            </button>
+        `).join('');
+    }
+
+    function castVote(val) {
+        s_myVote = val;
+        s_conn.send({ type: 'vote', val: val });
+        if(window.navigator.vibrate) window.navigator.vibrate(40);
+    }
+
+    function renderStudentResults(data) {
+        const overlay = document.getElementById('s-result-overlay');
+        overlay.classList.remove('hidden');
+        const total = Object.keys(data.voterMap).length || 1;
+        
+        document.getElementById('s-result-details').innerHTML = data.options.map(o => {
+            const count = data.votes[o] || 0;
+            const pct = Math.round((count / total) * 100);
+            return `
+                <div style="margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; font-size:14px;">
+                        <span>${o}</span><span>${count} 票 (${pct}%)</span>
+                    </div>
+                    <div class="result-bar-bg"><div class="result-bar-fill" style="width:${pct}%"></div></div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function exportData() {
+        let csv = "\uFEFF選項,得票數\n" + state.options.map(o => `${o},${state.votes[o]||0}`).join("\n");
+        const blob = new Blob([csv], {type: 'text/csv'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Lumina_Result_${state.roomID}.csv`;
+        link.click();
     }
 
     function confirmReset() {
-        if(confirm("確定要清空所有資料嗎？這將刪除備份。")) {
-            localStorage.removeItem('Lumina_Commander_Backup');
+        if(confirm("將重置所有選項與票數，確定嗎？")) {
+            localStorage.removeItem('LGU_BACKUP');
             location.reload();
         }
     }
 
-    // --- 報表導出 ---
-    function exportToCSV() {
-        let csv = "\uFEFF題目," + document.getElementById('t-topic').value + "\n選項,票數,百分比\n";
-        const total = voterMap.size;
-        options.forEach(o => {
-            const p = total > 0 ? Math.round(votes[o]/total*100) : 0;
-            csv += `${o},${votes[o] || 0},${p}%\n`;
-        });
-        csv += `\n總投票人數,${total}`;
-        
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `投票報表_${new Date().toLocaleDateString()}.csv`;
-        link.click();
-    }
-
-    // --- 學生端核心 ---
-    let s_conn, s_lastSel = "";
-    function initStudent() {
-        const rid = document.getElementById('s-room-input').value || new URLSearchParams(window.location.search).get('r');
-        if(!rid) return alert("請輸入房號");
-        
-        showView('v-student');
-        peer = new Peer(PEER_CONFIG);
-        peer.on('open', () => {
-            connectToHost(rid);
-            setInterval(() => { if(!s_conn || !s_conn.open) connectToHost(rid); }, 3000);
-        });
-    }
-
-    function connectToHost(rid) {
-        s_conn = peer.connect('LUMINA-' + rid, { reliable: true });
-        s_conn.on('data', d => {
-            if(d.type === 'sync') {
-                document.getElementById('s-topic-display').innerText = d.topic;
-                document.getElementById('s-timer-display').innerText = d.isLocked ? "投票結束" : "剩餘時間 " + d.timeLeft;
-                renderStudentOptions(d.options, d.isLocked);
-            }
-        });
-    }
-
-    function renderStudentOptions(opts, locked) {
-        const area = document.getElementById('s-opt-container');
-        area.innerHTML = opts.map(o => `
-            <button class="stu-btn ${s_lastSel===o?'selected':''} animate__animated animate__fadeInUp" 
-                ${locked?'disabled':''} onclick="castVote('${o}')">
-                ${o}
-            </button>
-        `).join('');
-        document.getElementById('s-lock-msg').classList.toggle('hidden', !locked);
-    }
-
-    function castVote(val) {
-        s_lastSel = val;
-        s_conn.send({ type: 'vote', val: val });
-        if(window.navigator.vibrate) window.navigator.vibrate(50);
-    }
-
-    // 初始化檢測 URL 房號
+    // URL 自動帶入房號
     window.onload = () => {
         const r = new URLSearchParams(window.location.search).get('r');
-        if(r) { document.getElementById('s-room-input').value = r; showView('v-stu-login'); }
+        if(r) {
+            document.getElementById('stu-room-id').value = r;
+            switchToStudentLogin();
+        }
     };
 </script>
 </body>
