@@ -3,245 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina Pro | Android 強化版</title>
+    <title>Lumina Vote | P2P 互動投票</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
-        :root { --p: #007AFF; --s: #34C759; --d: #FF3B30; --bg: #F2F2F7; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
-        .app { max-width: 800px; margin: auto; padding: 15px; }
-        .glass { background: #FFF; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        .hidden { display: none !important; }
-        .btn { padding: 12px 15px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-p { background: var(--p); color: #FFF; width: 100%; }
-        .btn-s { background: var(--s); color: #FFF; }
-        .btn-d { background: var(--d); color: #FFF; }
-        
-        #lockMask { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 999999; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .q-nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
-        .q-num-btn { min-width: 45px; height: 45px; border-radius: 10px; border: 1px solid #DDD; display: flex; align-items: center; justify-content: center; background: #FFF; flex-shrink: 0; }
-        .q-num-btn.active { background: var(--p); color: #FFF; }
-        .q-num-btn.done { border: 2px solid var(--p); color: var(--p); }
-        input[type="text"], input[type="number"] { padding: 12px; border-radius: 10px; border: 1px solid #DDD; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { padding: 10px 5px; border-bottom: 1px solid #EEE; text-align: center; }
+        :root { --p: #007AFF; --bg: #F2F2F7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; text-align: center; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { padding: 15px 25px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; width: 100%; margin: 5px 0; }
+        .btn-p { background: var(--p); color: white; }
+        .hidden { display: none; }
+        .vote-btn { height: 80px; font-size: 24px; background: #E5E5EA; color: #1D1D1F; }
+        .vote-btn:active { background: var(--p); color: white; }
+        .bar-container { background: #E5E5EA; border-radius: 10px; height: 30px; margin: 10px 0; overflow: hidden; position: relative; }
+        .bar-fill { background: var(--p); height: 100%; width: 0%; transition: 0.5s; }
+        .bar-label { position: absolute; left: 10px; top: 5px; font-size: 14px; font-weight: bold; color: #000; }
     </style>
 </head>
 <body>
 
-<div id="lockMask" class="hidden">
-    <h1 style="font-size: 60px;">🔒</h1>
-    <h2>作答暫停中</h2>
-    <p>請抬頭聽老師講解</p>
-</div>
-
-<div class="app">
-    <div id="v-start" class="glass" style="text-align:center; margin-top:50px;">
-        <h1 style="color:var(--p);">Lumina Pro</h1>
-        <button class="btn btn-p" onclick="showView('v-teacher-setup')" style="margin-bottom:10px;">教師端</button>
-        <button class="btn" onclick="showView('v-student-login')" style="width:100%; background:#8E8E93; color:white;">學生端</button>
+<div class="container">
+    <div id="v-start">
+        <h1 style="margin-top: 100px;">Lumina Vote</h1>
+        <button class="btn btn-p" onclick="initTeacher()">我是老師 (發起投票)</button>
+        <button class="btn" style="background:#8E8E93; color:white;" onclick="showView('v-stu-login')">我是學生 (參與投票)</button>
     </div>
 
-    <div id="v-student-login" class="hidden glass">
-        <h2>✍️ 學生登入</h2>
-        <input type="text" id="stuRoomId" placeholder="房號 (ID)" style="width:100%;">
-        <input type="text" id="stuNo" placeholder="座號" style="width:100%;">
-        <button class="btn btn-p" onclick="initStudent()">進入考場</button>
-    </div>
-
-    <div id="v-teacher-setup" class="hidden glass">
-        <h2>👨‍🏫 設定題目</h2>
-        <input type="text" id="customRoomId" placeholder="自訂房號" style="width:100%;">
-        <div id="qList"></div>
-        <button class="btn btn-s" onclick="addQuestion()" style="width:100%;">+ 新增題目</button>
-        <button class="btn btn-p" onclick="initTeacher()" style="margin-top:20px;">啟動考場</button>
-    </div>
-
-    <div id="v-teacher-main" class="hidden">
-        <div class="glass" style="text-align:center;">
-            <h2 id="roomDisplay">ID: ----</h2>
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button class="btn btn-s" onclick="triggerBroadcast()">🚀 派送考卷</button>
-                <button id="allLockBtn" class="btn btn-d" onclick="toggleAllLock()">🔒 全體鎖定</button>
-            </div>
-            <canvas id="roomQR" style="margin-top:10px;"></canvas>
+    <div id="v-teacher" class="hidden">
+        <div class="card">
+            <h2 id="roomIDDisp">房號: --</h2>
+            <canvas id="qrcode" style="margin: auto;"></canvas>
         </div>
-        <div class="glass">
-            <table id="monitorTable">
-                <thead><tr><th>座號</th><th>進度</th><th>離頁</th><th>狀態</th><th>控管</th></tr></thead>
-                <tbody id="monitorBody"></tbody>
-            </table>
-            <button class="btn btn-s" onclick="exportExcel()" style="width:100%; margin-top:15px;">💾 匯出 Excel</button>
+        <div class="card">
+            <input type="text" id="voteTopic" placeholder="輸入投票主題" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #DDD;">
+            <div id="resultArea">
+                <div class="bar-container"><div class="bar-fill" id="bar-A"></div><span class="bar-label">A: <span id="count-A">0</span> 票</span></div>
+                <div class="bar-container"><div class="bar-fill" id="bar-B"></div><span class="bar-label">B: <span id="count-B">0</span> 票</span></div>
+                <div class="bar-container"><div class="bar-fill" id="bar-C"></div><span class="bar-label">C: <span id="count-C">0</span> 票</span></div>
+                <div class="bar-container"><div class="bar-fill" id="bar-D"></div><span class="bar-label">D: <span id="count-D">0</span> 票</span></div>
+            </div>
+            <button class="btn btn-p" onclick="resetVotes()">清空重新投票</button>
+        </div>
+        <p>當前在線人數: <span id="onlineCount">0</span></p>
+    </div>
+
+    <div id="v-stu-login" class="hidden">
+        <div class="card" style="margin-top: 50px;">
+            <h2>輸入老師房號</h2>
+            <input type="text" id="joinID" style="width:100%; padding:15px; font-size:20px; text-align:center; border-radius:10px; border:1px solid #DDD;">
+            <button class="btn btn-p" style="margin-top:15px;" onclick="initStudent()">進入投票</button>
         </div>
     </div>
 
     <div id="v-student" class="hidden">
-        <div class="glass">
-            <b id="stuInfoDisplay">座號: --</b>
-            <div id="qNav" class="q-nav" style="margin-top:10px;"></div>
-        </div>
-        <div id="quizContainer" class="glass" style="min-height:200px;">
-            <div id="waitMsg" style="text-align:center; padding-top:50px;">
-                <p>連線成功，等待老師派題...</p>
-                <button class="btn btn-s" onclick="requestExam()">手動同步題目</button>
+        <div class="card">
+            <h2 id="displayTopic">等待老師出題...</h2>
+            <div id="voteOptions">
+                <button class="btn vote-btn" onclick="castVote('A')">A</button>
+                <button class="btn vote-btn" onclick="castVote('B')">B</button>
+                <button class="btn vote-btn" onclick="castVote('C')">C</button>
+                <button class="btn vote-btn" onclick="castVote('D')">D</button>
             </div>
+            <p id="statusMsg" style="color: gray;">請點選選項投下一票</p>
         </div>
-        <button id="subBtn" class="btn btn-p hidden" onclick="studentSubmit()" style="padding:15px;">繳交考卷</button>
     </div>
 </div>
 
 <script>
-    let peer, conn, myRoomId, myNo;
-    let masterQuiz = [], studentData = {}, connections = {};
-    let isAllLocked = false, isExamSent = false;
+    let peer, conn, myID;
+    let votes = { A: 0, B: 0, C: 0, D: 0 };
+    let voterRecords = new Set(); // 防止重複投票
 
     function showView(id) {
-        ['v-start','v-student-login','v-teacher-setup','v-teacher-main','v-student'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        ['v-start', 'v-teacher', 'v-stu-login', 'v-student'].forEach(v => document.getElementById(v).classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // --- 教師邏輯 ---
-    function addQuestion() {
-        const idx = document.querySelectorAll('.edit-card').length;
-        document.getElementById('qList').insertAdjacentHTML('beforeend', `
-            <div class="edit-card glass" style="padding:10px; margin-bottom:10px; border:1px solid #EEE;">
-                <b>Q${idx+1}</b> <input type="text" placeholder="題目" class="in-q" style="width:70%;">
-                <input type="text" placeholder="答" class="in-ans" style="width:40px;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
-                    <input type="text" placeholder="A" class="in-a"> <input type="text" placeholder="B" class="in-b">
-                </div>
-            </div>`);
-    }
-
+    // --- 老師端邏輯 ---
     function initTeacher() {
-        const cards = document.querySelectorAll('.edit-card');
-        masterQuiz = Array.from(cards).map(c => ({
-            q: c.querySelector('.in-q').value,
-            opts: {A: c.querySelector('.in-a').value, B: c.querySelector('.in-b').value},
-            ans: c.querySelector('.in-ans').value.toUpperCase().trim(),
-            point: 10
-        }));
-        myRoomId = document.getElementById('customRoomId').value.toUpperCase() || "ROOM" + Math.floor(Math.random()*999);
-        peer = new Peer(myRoomId);
+        myID = "VOTE" + Math.floor(1000 + Math.random() * 9000);
+        peer = new Peer(myID);
         peer.on('open', id => {
-            showView('v-teacher-main');
-            document.getElementById('roomDisplay').innerText = "房號: " + id;
-            QRCode.toCanvas(document.getElementById('roomQR'), window.location.href.split('?')[0] + '?room=' + id);
+            showView('v-teacher');
+            document.getElementById('roomIDDisp').innerText = "房號: " + id;
+            QRCode.toCanvas(document.getElementById('qrcode'), window.location.href.split('?')[0] + '?room=' + id);
+            
+            // 每秒廣播一次目前的題目，確保 Android 學生進場就能看到
+            setInterval(() => {
+                let topic = document.getElementById('voteTopic').value || "請投下你的一票";
+                Object.values(peer.connections).forEach(conns => {
+                    conns.forEach(c => {
+                        if(c.open) c.send({ type: 'sync', topic: topic });
+                    });
+                });
+            }, 1000);
         });
+
         peer.on('connection', c => {
-            const no = c.metadata.no;
-            connections[no] = c;
-            if(!studentData[no]) studentData[no] = { no: no, progress: "0%", cheats: 0, isLocked: false, ans: {} };
-            studentData[no].status = "在線";
-            
             c.on('data', d => {
-                if(d.type === 'req_exam') sendExamToStudent(no);
-                if(d.type === 'sync') { studentData[no].progress = d.progress; studentData[no].cheats = d.cheats; studentData[no].ans = d.ans; updateMonitor(); }
-                if(d.type === 'submit') { calculateScore(no, d.ans); }
+                if (d.type === 'vote') {
+                    if (!voterRecords.has(c.peer)) {
+                        votes[d.choice]++;
+                        voterRecords.add(c.peer);
+                        updateCharts();
+                    }
+                }
             });
-            c.on('close', () => { studentData[no].status = "離線"; updateMonitor(); });
-            
-            // 自動偵測重連並補發鎖定狀態
-            if(isAllLocked || studentData[no].isLocked) c.send({type: 'lock', state: true});
+            updateOnlineStatus();
         });
     }
 
-    function triggerBroadcast() {
-        isExamSent = true;
-        Object.keys(connections).forEach(no => sendExamToStudent(no));
-        alert("已派送");
+    function updateCharts() {
+        const total = Object.values(votes).reduce((a, b) => a + b, 0);
+        ['A', 'B', 'C', 'D'].forEach(opt => {
+            const count = votes[opt];
+            const percent = total === 0 ? 0 : (count / total * 100);
+            document.getElementById(`bar-${opt}`).style.width = percent + "%";
+            document.getElementById(`count-${opt}`).innerText = count;
+        });
     }
 
-    function sendExamToStudent(no) {
-        if(connections[no] && connections[no].open) {
-            connections[no].send({type: 'exam', quiz: masterQuiz.map(({ans, ...r})=>r)});
+    function resetVotes() {
+        votes = { A: 0, B: 0, C: 0, D: 0 };
+        voterRecords.clear();
+        updateCharts();
+    }
+
+    function updateOnlineStatus() {
+        document.getElementById('onlineCount').innerText = Object.keys(peer.connections).length;
+    }
+
+    // --- 學生端邏輯 ---
+    function initStudent() {
+        const targetID = document.getElementById('joinID').value.toUpperCase() || new URLSearchParams(window.location.search).get('room');
+        if (!targetID) return alert("請輸入房號");
+        
+        peer = new Peer();
+        peer.on('open', (id) => {
+            conn = peer.connect(targetID);
+            showView('v-student');
+            
+            conn.on('data', d => {
+                if (d.type === 'sync') {
+                    document.getElementById('displayTopic').innerText = d.topic;
+                }
+            });
+            
+            conn.on('open', () => {
+                document.getElementById('statusMsg').innerText = "連線成功，請投票";
+            });
+        });
+    }
+
+    function castVote(choice) {
+        if (conn && conn.open) {
+            conn.send({ type: 'vote', choice: choice });
+            document.getElementById('statusMsg').innerText = "已投票給 " + choice + "！";
+            // 投完變色
+            document.querySelectorAll('.vote-btn').forEach(b => b.style.background = "#E5E5EA");
+            event.target.style.background = "#34C759";
+        } else {
+            alert("連線中斷，請重新整理頁面。");
         }
     }
 
-    function toggleAllLock() {
-        isAllLocked = !isAllLocked;
-        Object.values(connections).forEach(c => c.send({type: 'lock', state: isAllLocked}));
-        document.getElementById('allLockBtn').innerText = isAllLocked ? "🔓 解除全體" : "🔒 全體鎖定";
-    }
-
-    function toggleSingleLock(no) {
-        studentData[no].isLocked = !studentData[no].isLocked;
-        if(connections[no]) connections[no].send({type: 'lock', state: studentData[no].isLocked});
-        updateMonitor();
-    }
-
-    function updateMonitor() {
-        document.getElementById('monitorBody').innerHTML = Object.values(studentData).map(s => `
-            <tr>
-                <td>${s.no}</td><td>${s.progress}</td><td>${s.cheats}</td>
-                <td style="color:${s.status==='在線'?'green':'red'}">${s.status}</td>
-                <td><button class="btn" style="padding:4px 8px; background:${s.isLocked?'#34C759':'#FF3B30'}; color:white" onclick="toggleSingleLock('${s.no}')">${s.isLocked?'解':'鎖'}</button></td>
-            </tr>`).join('');
-    }
-
-    // --- 學生邏輯 ---
-    function initStudent() {
-        const id = document.getElementById('stuRoomId').value.toUpperCase().trim();
-        myNo = document.getElementById('stuNo').value.trim();
-        showView('v-student');
-        document.getElementById('stuInfoDisplay').innerText = "座號: " + myNo;
-
-        peer = new Peer();
-        peer.on('open', () => {
-            conn = peer.connect(id, { metadata: { no: myNo } });
-            conn.on('open', () => {
-                requestExam(); // 連線成功後主動要題目
-                setInterval(() => { if(conn.open) conn.send({type:'ping'}); }, 3000); // 心跳包預防 Android 凍結
-            });
-            conn.on('data', d => {
-                if(d.type === 'exam') { stuQuiz = d.quiz; renderStuExam(); }
-                if(d.type === 'lock') document.getElementById('lockMask').classList.toggle('hidden', !d.state);
-                if(d.type === 'report') { alert("得分: " + d.score); location.reload(); }
-            });
-        });
-
-        document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'hidden') { stuCheats++; syncStu(); } });
-    }
-
-    function requestExam() { if(conn && conn.open) conn.send({type: 'req_exam'}); }
-
-    function renderStuExam() {
-        myAnswers = JSON.parse(localStorage.getItem('ans_'+myNo) || "{}");
-        let html = '';
-        stuQuiz.forEach((_, i) => html += `<div class="q-num-btn ${myAnswers[i]?'done':''}" id="nb-${i}" onclick="jumpTo(${i})">${i+1}</div>`);
-        document.getElementById('qNav').innerHTML = html;
-        jumpTo(0);
-    }
-
-    function jumpTo(idx) {
-        const q = stuQuiz[idx];
-        let opts = '';
-        Object.entries(q.opts).forEach(([k, v]) => {
-            if(!v) return;
-            opts += `<label style="display:block; padding:15px; background:#F2F2F7; margin-bottom:10px; border-radius:12px;">
-                <input type="checkbox" value="${k}" ${(myAnswers[idx]||"").includes(k)?'checked':''} onchange="saveAns(${idx})"> ${k}. ${v}
-            </label>`;
-        });
-        document.getElementById('quizContainer').innerHTML = `<h3>第 ${idx+1} 題</h3><p>${q.q}</p>${opts}`;
-        document.getElementById('subBtn').classList.toggle('hidden', idx !== stuQuiz.length-1);
-    }
-
-    function saveAns(idx) {
-        const sel = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(e => e.value).sort().join('');
-        myAnswers[idx] = sel;
-        localStorage.setItem('ans_'+myNo, JSON.stringify(myAnswers));
-        document.getElementById('nb-'+idx).classList.add('done');
-        syncStu();
-    }
-
-    function syncStu() {
-        const done = Object.values(myAnswers).filter(v => v !== "").length;
-        const prog = Math.round((done / stuQuiz.length) * 100) + "%";
-        if(conn && conn.open) conn.send({type: 'sync', progress: prog, cheats: stuCheats, ans: myAnswers});
-    }
-
-    function studentSubmit() { if(confirm("確定繳交？")) conn.send({type: 'submit', ans: myAnswers}); }
+    // 自動填入房號 (來自 QR Code)
+    window.onload = () => {
+        const r = new URLSearchParams(window.location.search).get('room');
+        if(r) {
+            document.getElementById('joinID').value = r;
+            showView('v-stu-login');
+        }
+    };
 </script>
 </body>
 </html>
