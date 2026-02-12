@@ -2,301 +2,263 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LuminaOS Sequoia v15.3 | Stable Core</title>
-    
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>macOS Sequoia Simulator | Architect Edition</title>
     <style>
         :root {
-            --apple-blue: #007AFF;
-            --win-bg: rgba(255, 255, 255, 0.85);
-            --glass: blur(30px) saturate(180%);
+            --menu-h: 30px;
+            --dock-h: 65px;
+            --win-base: rgba(255, 255, 255, 0.7);
+            --blur: blur(25px) saturate(180%);
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; font-family: -apple-system, sans-serif; overflow: hidden; background: #000; }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: var(--font); overflow: hidden; }
 
-        /* --- 穩定版啟動器 --- */
-        #boot-screen {
-            position: fixed; inset: 0; background: #000; z-index: 99999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* --- 桌面背景 --- */
+        #desktop-wallpaper {
+            position: fixed; inset: 0; 
+            background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover;
+            z-index: -1; transition: background 0.5s ease;
         }
-        .apple-logo { font-size: 60px; color: #fff; margin-bottom: 40px; }
-        .progress-container { width: 200px; height: 4px; background: #333; border-radius: 2px; position: relative; }
-        #boot-bar { width: 0%; height: 100%; background: #fff; border-radius: 2px; }
 
-        /* --- 登入畫面 --- */
-        #login-screen {
-            position: fixed; inset: 0; z-index: 99998; display: none;
-            background: url('https://raw.githubusercontent.com/apple/sequoia-wallpaper/main/sequoia.jpg') center/cover;
-            flex-direction: column; align-items: center; justify-content: center;
+        /* --- Menu Bar --- */
+        .menu-bar {
+            position: fixed; top: 0; width: 100%; height: var(--menu-h);
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: var(--blur);
+            display: flex; align-items: center; padding: 0 15px; color: #fff;
+            font-size: 13px; font-weight: 600; z-index: 10000;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.1);
         }
-        .login-box { backdrop-filter: blur(20px); padding: 50px; border-radius: 40px; text-align: center; color: #fff; }
-        .avatar { width: 100px; height: 100px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; font-size: 50px; display: flex; align-items: center; justify-content: center; border: 1px solid #fff; }
-        .mode-btn { padding: 12px 24px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; margin: 10px; transition: 0.2s; }
-        .btn-mac { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
-        .btn-ios { background: #fff; color: #000; }
-        .mode-btn:hover { transform: scale(1.05); }
+        .menu-left, .menu-right { display: flex; gap: 15px; align-items: center; }
+        .menu-right { flex: 1; justify-content: flex-end; }
+        .menu-item:active { opacity: 0.6; }
 
-        /* --- macOS 桌面環境 --- */
-        #desktop { width: 100%; height: 100%; background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover; display: none; }
-        
-        .menu-bar { height: 32px; background: rgba(255,255,255,0.2); backdrop-filter: blur(15px); position: fixed; top: 0; width: 100%; display: flex; align-items: center; padding: 0 15px; color: #fff; font-size: 13px; font-weight: 600; z-index: 1000; }
-        .menu-left { display: flex; gap: 15px; }
-
-        /* 視窗系統 */
+        /* --- Window System --- */
         .window {
-            position: absolute; width: 850px; height: 550px; background: var(--win-bg); backdrop-filter: var(--glass);
-            border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.4);
+            position: absolute; min-width: 300px; min-height: 200px;
+            background: var(--win-base); backdrop-filter: var(--blur);
+            border-radius: 12px; box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+            display: flex; flex-direction: column; overflow: hidden;
+            border: 0.5px solid rgba(255,255,255,0.4); z-index: 100;
         }
-        .win-header { height: 45px; display: flex; align-items: center; padding: 0 15px; cursor: move; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .controls { display: flex; gap: 8px; width: 70px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.1); cursor: pointer; position: relative; }
-        .close { background: #FF5F57; } .min { background: #FEBC2E; } .max { background: #28C840; }
+        .win-header { height: 42px; display: flex; align-items: center; padding: 0 12px; cursor: default; }
+        .traffic-lights { display: flex; gap: 8px; width: 60px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; }
+        .dot-close { background: #FF5F57; } .dot-min { background: #FEBC2E; } .dot-max { background: #28C840; }
+        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #333; opacity: 0.8; }
+        .win-body { flex: 1; position: relative; background: #fff; }
 
-        /* 綠色按鈕：懸停 Tiling */
-        .tiling-menu {
-            position: absolute; top: 25px; left: 0; background: #222; padding: 10px; border-radius: 8px; 
-            display: none; grid-template-columns: 1fr 1fr; gap: 8px; z-index: 1001;
+        /* --- 8向縮放控制器 --- */
+        .resizer { position: absolute; z-index: 10; }
+        .resizer.r { top: 0; right: 0; width: 6px; height: 100%; cursor: ew-resize; }
+        .resizer.l { top: 0; left: 0; width: 6px; height: 100%; cursor: ew-resize; }
+        .resizer.b { bottom: 0; left: 0; width: 100%; height: 6px; cursor: ns-resize; }
+        .resizer.t { top: 0; left: 0; width: 100%; height: 6px; cursor: ns-resize; }
+        .resizer.rb { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+        .resizer.lb { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+
+        /* --- Dock --- */
+        .dock-container {
+            position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: var(--blur);
+            border-radius: 22px; padding: 6px 10px; display: flex; align-items: flex-end;
+            gap: 10px; border: 0.5px solid rgba(255,255,255,0.3); z-index: 10000;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        .max:hover .tiling-menu { display: grid; }
-        .tile-box { width: 40px; height: 30px; border: 1px solid #555; border-radius: 4px; }
-        .tile-box:hover { background: var(--apple-blue); }
+        .dock-app {
+            width: 50px; height: 50px; border-radius: 12px; cursor: pointer;
+            transition: width 0.2s, height 0.2s, transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; flex-shrink: 0;
+        }
+        .dock-app img { width: 100%; height: 100%; object-fit: contain; }
+        .dock-app:hover { transform: translateY(-15px) scale(1.4); margin: 0 10px; }
+        .app-dot { 
+            position: absolute; bottom: -8px; width: 4px; height: 4px; 
+            background: #fff; border-radius: 50%; opacity: 0; 
+        }
+        .app-dot.active { opacity: 1; }
 
-        /* 視窗內容 */
-        .win-container { flex: 1; display: flex; }
-        .sidebar { width: 180px; background: rgba(0,0,0,0.03); padding: 20px 10px; border-right: 1px solid rgba(0,0,0,0.05); }
-        .side-btn { padding: 10px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; font-size: 14px; }
-        .side-btn.active { background: #fff; color: var(--apple-blue); font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .content { flex: 1; padding: 30px; background: #fff; overflow-y: auto; }
+        /* --- Apps --- */
+        .iframe-container { width: 100%; height: 100%; border: none; }
+        .settings-grid { padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .wp-thumb { width: 100%; aspect-ratio: 16/10; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+        .wp-thumb:hover { border-color: var(--apple-blue); }
 
-        /* --- iPhone 介面 --- */
-        #iphone { position: fixed; inset: 0; background: #F2F2F7; display: none; flex-direction: column; z-index: 10000; }
-        .ios-head { padding: 60px 20px 30px; background: #fff; }
-        .ios-body { flex: 1; padding: 20px; }
-        .option-card { background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 12px; border: 2px solid transparent; font-size: 18px; font-weight: 600; transition: 0.2s; cursor: pointer; display: flex; justify-content: space-between; }
-        .option-card.active { border-color: var(--apple-blue); background: rgba(0,122,255,0.05); }
-        .submit-btn { width: 100%; padding: 18px; border-radius: 15px; background: var(--apple-blue); color: #fff; border: none; font-size: 18px; font-weight: 700; margin-top: 20px; }
-
-        .dock { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.3); backdrop-filter: blur(20px); border-radius: 20px; padding: 10px; display: flex; gap: 15px; border: 1px solid rgba(255,255,255,0.2); }
-        .dock-app { width: 50px; height: 50px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; }
-        
         .hidden { display: none !important; }
-        input.apple-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0; outline: none; }
     </style>
 </head>
 <body>
 
-<div id="boot-screen">
-    <div class="apple-logo"></div>
-    <div class="progress-container"><div id="boot-bar"></div></div>
+<div id="desktop-wallpaper"></div>
+
+<nav class="menu-bar">
+    <div class="menu-left">
+        <span class="menu-item" style="font-size: 18px;"></span>
+        <span class="menu-item" id="active-app-name">Finder</span>
+        <span class="menu-item">檔案</span>
+        <span class="menu-item">編輯</span>
+        <span class="menu-item">顯示</span>
+        <span class="menu-item">視窗</span>
+        <span class="menu-item">幫助</span>
+    </div>
+    <div class="menu-right">
+        <span class="menu-item">🔋 100%</span>
+        <span class="menu-item">📶</span>
+        <span class="menu-item" id="clock">9:41 AM</span>
+    </div>
+</nav>
+
+<div id="win-safari" class="window hidden" style="width: 900px; height: 600px; top: 100px; left: 200px;">
+    <div class="win-header" onmousedown="WindowServer.drag(event, 'win-safari')">
+        <div class="traffic-lights">
+            <div class="dot dot-close" onclick="WindowServer.close('win-safari')"></div>
+            <div class="dot dot-min" onclick="WindowServer.close('win-safari')"></div>
+            <div class="dot dot-max"></div>
+        </div>
+        <div class="win-title">Safari - Google</div>
+    </div>
+    <div class="win-body">
+        <iframe src="https://www.google.com/search?igu=1" class="iframe-container"></iframe>
+    </div>
+    <div class="resizer r" onmousedown="WindowServer.resize(event, 'win-safari', 'r')"></div>
+    <div class="resizer b" onmousedown="WindowServer.resize(event, 'win-safari', 'b')"></div>
+    <div class="resizer rb" onmousedown="WindowServer.resize(event, 'win-safari', 'rb')"></div>
 </div>
 
-<div id="login-screen">
-    <div class="login-box">
-        <div class="avatar">👤</div>
-        <h2>歡迎使用 Sequoia</h2>
-        <div style="margin-top:20px;">
-            <button class="mode-btn btn-mac" onclick="App.start('teacher')">我是老師</button>
-            <button class="mode-btn btn-ios" onclick="App.start('student')">我是學生</button>
+<div id="win-settings" class="window hidden" style="width: 600px; height: 450px; top: 150px; left: 300px;">
+    <div class="win-header" onmousedown="WindowServer.drag(event, 'win-settings')">
+        <div class="traffic-lights">
+            <div class="dot dot-close" onclick="WindowServer.close('win-settings')"></div>
+            <div class="dot dot-min"></div>
+            <div class="dot dot-max"></div>
+        </div>
+        <div class="win-title">系統設定</div>
+    </div>
+    <div class="win-body">
+        <div class="settings-grid">
+            <img src="https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg" class="wp-thumb" onclick="WindowServer.setWP(this.src)">
+            <img src="https://wallpaperaccess.com/full/1154563.jpg" class="wp-thumb" onclick="WindowServer.setWP(this.src)">
+            <img src="https://wallpaperaccess.com/full/538747.jpg" class="wp-thumb" onclick="WindowServer.setWP(this.src)">
         </div>
     </div>
+    <div class="resizer rb" onmousedown="WindowServer.resize(event, 'win-settings', 'rb')"></div>
 </div>
 
-<div id="desktop">
-    <div class="menu-bar">
-        <div class="menu-left"><span></span><strong>System</strong><span>File</span><span>View</span></div>
+<div class="dock-container" id="dock">
+    <div class="dock-app" title="Finder" onclick="WindowServer.open('win-safari', 'Finder')">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Finder_Icon_macOS_Big_Sur.png">
+        <div class="app-dot" id="dot-safari"></div>
     </div>
-
-    <div id="main-win" class="window" style="top:100px; left:150px;">
-        <div class="win-header" onmousedown="UI.drag(event, 'main-win')">
-            <div class="controls">
-                <div class="dot close" onclick="UI.toggle('main-win')"></div>
-                <div class="dot min"></div>
-                <div class="dot max">
-                    <div class="tiling-menu">
-                        <div class="tile-box" onclick="UI.tile('left')"></div>
-                        <div class="tile-box" onclick="UI.tile('right')"></div>
-                    </div>
-                </div>
-            </div>
-            <div style="flex:1; text-align:center; font-size:13px; font-weight:700;">任務發布中心</div>
-        </div>
-        <div class="win-container">
-            <div class="sidebar">
-                <div class="side-btn active" onclick="UI.tab('tab-setup')">任務設定</div>
-                <div class="side-btn" onclick="UI.tab('tab-live')">實時數據</div>
-                <div style="margin-top:30px; font-size:12px; color:#888;">房號：<b id="display-id">----</b></div>
-            </div>
-            <div class="content">
-                <div id="tab-setup">
-                    <h3>發布新任務</h3>
-                    <input type="text" id="inp-topic" class="apple-input" placeholder="請輸入題目...">
-                    <div id="opt-container"></div>
-                    <button onclick="App.addOpt()" style="color:var(--apple-blue); background:none; border:none; cursor:pointer; font-weight:600;">+ 新增選項</button>
-                    <button onclick="App.launch()" style="width:100%; padding:15px; background:var(--apple-blue); color:#fff; border:none; border-radius:10px; margin-top:30px; font-weight:700;">啟動任務</button>
-                </div>
-                <div id="tab-live" class="hidden">
-                    <h2 id="live-topic">等待中...</h2>
-                    <div style="height:300px; margin-top:20px;"><canvas id="myChart"></canvas></div>
-                </div>
-            </div>
-        </div>
+    <div class="dock-app" title="Safari" onclick="WindowServer.open('win-safari', 'Safari')">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.png">
     </div>
-
-    <div class="dock">
-        <div class="dock-app" onclick="UI.toggle('main-win')">📊</div>
-        <div class="dock-app">⚙️</div>
+    <div class="dock-app" title="System Settings" onclick="WindowServer.open('win-settings', 'Settings')">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Apple_Settings_icon.svg/1024px-Apple_Settings_icon.svg.png">
     </div>
-</div>
-
-<div id="iphone">
-    <div class="ios-head">
-        <h1 id="ios-topic">等待老師開始...</h1>
-        <p id="ios-stat" style="color:#007AFF; font-weight:600; margin-top:5px;">正在連接...</p>
-    </div>
-    <div class="ios-body">
-        <div id="ios-opts"></div>
-        <button id="ios-submit" class="submit-btn hidden" onclick="App.sendVote()">送出投票結果</button>
+    <div class="dock-app" title="Photos">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Photos_Special_Icon_macOS_Big_Sur.png/1024px-Photos_Special_Icon_macOS_Big_Sur.png">
     </div>
 </div>
 
 <script>
-const UI = {
+/**
+ * macOS WindowServer Engine v2.0
+ * 權威架構師開發
+ */
+
+const WindowServer = {
+    z: 100,
+
     drag(e, id) {
         const el = document.getElementById(id);
-        let ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
-        const move = (ev) => { el.style.left = (ev.clientX - ox) + 'px'; el.style.top = (ev.clientY - oy) + 'px'; };
-        const stop = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
+        this.focus(el);
+        let startX = e.clientX - el.offsetLeft;
+        let startY = e.clientY - el.offsetTop;
+
+        const move = (ev) => {
+            el.style.left = (ev.clientX - startX) + 'px';
+            el.style.top = (ev.clientY - startY) + 'px';
+        };
+        const stop = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', stop);
+        };
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', stop);
     },
-    toggle(id) { document.getElementById(id).classList.toggle('hidden'); },
-    tab(id) {
-        ['tab-setup', 'tab-live'].forEach(t => document.getElementById(t).classList.toggle('hidden', t !== id));
-        document.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(id === 'tab-setup' ? '設定' : '數據')));
+
+    resize(e, id, type) {
+        e.stopPropagation();
+        const el = document.getElementById(id);
+        let startW = el.offsetWidth;
+        let startH = el.offsetHeight;
+        let startX = e.clientX;
+        let startY = e.clientY;
+
+        const move = (ev) => {
+            if (type.includes('r')) el.style.width = (startW + (ev.clientX - startX)) + 'px';
+            if (type.includes('b')) el.style.height = (startH + (ev.clientY - startY)) + 'px';
+        };
+        const stop = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', stop);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', stop);
     },
-    tile(side) {
-        const win = document.getElementById('main-win');
-        win.style.transition = '0.4s cubic-bezier(0.2, 1, 0.2, 1)';
-        win.style.top = '32px'; win.style.height = 'calc(100% - 100px)';
-        win.style.width = '50%'; win.style.left = (side === 'left' ? '0' : '50%');
-        setTimeout(() => win.style.transition = 'none', 500);
+
+    focus(el) {
+        this.z++;
+        el.style.zIndex = this.z;
+    },
+
+    open(id, name) {
+        const el = document.getElementById(id);
+        el.classList.remove('hidden');
+        this.focus(el);
+        document.getElementById('active-app-name').innerText = name;
+        // 點亮 Dock 小圓點
+        const dotId = 'dot-' + id.split('-')[1];
+        if(document.getElementById(dotId)) document.getElementById(dotId).classList.add('active');
+    },
+
+    close(id) {
+        document.getElementById(id).classList.add('hidden');
+        const dotId = 'dot-' + id.split('-')[1];
+        if(document.getElementById(dotId)) document.getElementById(dotId).classList.remove('active');
+    },
+
+    setWP(url) {
+        document.getElementById('desktop-wallpaper').style.backgroundImage = `url('${url}')`;
     }
 };
 
-const App = {
-    state: { room: '', topic: '', opts: ['非常滿意', '還需改進'], votes: {}, selected: '', peer: null, chart: null },
-    
-    start(role) {
-        document.getElementById('login-screen').style.display = 'none';
-        if(role === 'teacher') {
-            document.getElementById('desktop').style.display = 'block';
-            this.initTeacher();
-        } else {
-            document.getElementById('iphone').style.display = 'flex';
-            this.initStudent();
-        }
-    },
+// 系統時鐘更新
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}, 1000);
 
-    initTeacher() {
-        this.state.room = Math.floor(1000 + Math.random() * 8999).toString();
-        document.getElementById('display-id').innerText = this.state.room;
-        this.state.peer = new Peer('LUMINA-' + this.state.room);
-        this.renderOpts();
-        this.state.peer.on('connection', conn => {
-            conn.on('data', data => {
-                if(data.type === 'vote') { this.state.votes[conn.peer] = data.val; this.updateChart(); }
-            });
-        });
-        setInterval(() => {
-            Object.values(this.state.peer.connections).forEach(conns => {
-                conns.forEach(c => { if(c.open) c.send({ type: 'sync', ...this.state }); });
-            });
-        }, 1000);
-    },
+// Dock 魚眼物理效果強化 (純 CSS 較難達成完美，此處增加 JS 輔助滑動流暢度)
+document.getElementById('dock').addEventListener('mousemove', (e) => {
+    const apps = document.querySelectorAll('.dock-app');
+    const mouseX = e.clientX;
+    apps.forEach(app => {
+        const rect = app.getBoundingClientRect();
+        const center = rect.left + rect.width / 2;
+        const dist = Math.abs(mouseX - center);
+        const scale = Math.max(1, 1.5 - dist / 200);
+        app.style.transform = `translateY(${(scale-1)*-20}px) scale(${scale})`;
+    });
+});
 
-    initStudent() {
-        const r = new URLSearchParams(window.location.search).get('r') || prompt("輸入房號：");
-        this.state.peer = new Peer();
-        this.state.peer.on('open', () => {
-            const conn = this.state.peer.connect('LUMINA-' + r);
-            conn.on('open', () => document.getElementById('ios-stat').innerText = "連線成功！");
-            conn.on('data', data => {
-                if(data.type === 'sync') this.renderIOS(data);
-            });
-            this.state.conn = conn;
-        });
-    },
-
-    addOpt() { this.state.opts.push('新選項'); this.renderOpts(); },
-    renderOpts() {
-        const cont = document.getElementById('opt-container');
-        cont.innerHTML = this.state.opts.map((o, i) => `
-            <input type="text" class="apple-input" value="${o}" oninput="App.state.opts[${i}]=this.value">
-        `).join('');
-    },
-
-    launch() {
-        this.state.topic = document.getElementById('inp-topic').value || '未命名任務';
-        this.state.votes = {};
-        UI.tab('tab-live');
-        document.getElementById('live-topic').innerText = this.state.topic;
-        this.initChart();
-    },
-
-    initChart() {
-        const ctx = document.getElementById('myChart').getContext('2d');
-        if(this.state.chart) this.state.chart.destroy();
-        this.state.chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: this.state.opts, datasets: [{ data: [], backgroundColor: '#007AFF', borderRadius: 10 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
-        });
-    },
-
-    updateChart() {
-        if(!this.state.chart) return;
-        this.state.chart.data.datasets[0].data = this.state.opts.map(o => Object.values(this.state.votes).filter(v => v === o).length);
-        this.state.chart.update();
-    },
-
-    renderIOS(data) {
-        document.getElementById('ios-topic').innerText = data.topic || '等待任務中';
-        const cont = document.getElementById('ios-opts');
-        cont.innerHTML = data.opts.map(o => `
-            <div class="option-card ${this.state.selected === o ? 'active' : ''}" onclick="App.state.selected='${o}'; App.renderIOS(${JSON.stringify(data)})">
-                ${o} <span>${this.state.selected === o ? '✓' : ''}</span>
-            </div>
-        `).join('');
-        document.getElementById('ios-submit').classList.toggle('hidden', !data.topic);
-    },
-
-    sendVote() {
-        if(!this.state.selected) return;
-        this.state.conn.send({ type: 'vote', val: this.state.selected });
-        document.getElementById('ios-submit').innerText = "✅ 已送出結果";
-        document.getElementById('ios-submit').style.background = "#28C840";
-    }
-};
-
-window.onload = () => {
-    const bar = document.getElementById('boot-bar');
-    let p = 0;
-    const intv = setInterval(() => {
-        p += Math.random() * 15;
-        bar.style.width = Math.min(p, 100) + '%';
-        if(p >= 100) {
-            clearInterval(intv);
-            setTimeout(() => {
-                document.getElementById('boot-screen').style.display = 'none';
-                document.getElementById('login-screen').style.display = 'flex';
-            }, 500);
-        }
-    }, 150);
-};
+document.getElementById('dock').addEventListener('mouseleave', () => {
+    document.querySelectorAll('.dock-app').forEach(app => app.style.transform = 'scale(1)');
+});
 </script>
+
 </body>
 </html>
