@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 4.0</title>
+    <title>班級數位平台 5.0</title>
 
     <script>
         const AUTHOR_INFO = {
             name: "王宥鈞",
             role: "核心開發者",
-            version: "v4.0.2-pro",
-            updateTime: "2026/02/12 16:10"
+            version: "v5.0.0-Stable",
+            updateTime: "2026/02/12"
         };
         const CONFIG_LOG_ITEMS = [
-            "物理滑動感：新增 CSS Scroll Snap 物理回彈機制。",
-            "SVG 圖示化：全面取代 Emoji，提升介面精緻度。",
-            "即時跟手：分頁容器現在支援手動跟滑功能。",
-            "介面優化：調整資訊視窗佈局，分層顯示作者與版本資訊。"
+            "修復橫向捲軸：修正手機瀏覽時出現的溢出拉桿問題。",
+            "功能完整恢復：保留所有原始服務項目，不因動畫簡化內容。",
+            "雙模式切換：完美相容『列表』與『方塊』顯示邏輯。",
+            "純 SVG 介面：移除所有 Emoji 符號，提升專業質感。"
         ];
     </script>
 
@@ -25,107 +25,105 @@
             --p: #4361ee; --s: #2ec4b6; --a: #ff9f1c; --t: #ef233c;
             --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
             --sub-text: #64748b; --border: #e2e8f0;
-            --glass-bg: rgba(248, 250, 252, 0.9);
+            --glass-bg: rgba(248, 250, 252, 0.95);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         body.dark-mode {
             --bg: #020617; --card: #1e293b; --text: #f1f5f9;
             --sub-text: #94a3b8; --border: #334155;
-            --glass-bg: rgba(2, 6, 23, 0.9);
+            --glass-bg: rgba(2, 6, 23, 0.95);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; font-family: 'PingFang TC', sans-serif; background-color: var(--bg); color: var(--text); overflow: hidden; display: flex; flex-direction: column; height: 100dvh; }
-
-        /* --- 頂部 --- */
-        .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-        .header { max-width: 1200px; margin: 0 auto; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .header-titles h1 { margin: 0; font-size: 1.25rem; font-weight: 900; color: var(--p); }
-        .header-titles p { margin: 0; font-size: 0.6rem; color: var(--sub-text); letter-spacing: 1px; font-weight: 700; }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-
-        /* 圖示按鈕 */
-        .icon-btn { 
-            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; 
-            background: var(--border); border: none; border-radius: 12px; cursor: pointer; color: var(--text); transition: 0.3s;
+        
+        /* 徹底防止網頁橫向溢出 */
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100dvh; 
+            overflow: hidden; position: fixed; 
+            font-family: 'PingFang TC', -apple-system, sans-serif;
+            background-color: var(--bg); color: var(--text);
         }
-        .icon-btn:active { transform: scale(0.9); }
-        .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* --- 物理滑動容器 --- */
+        /* --- 頂部導覽 --- */
+        .fixed-top { z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+        .header { max-width: 1200px; margin: 0 auto; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .header-titles h1 { margin: 0; font-size: 1.15rem; font-weight: 900; color: var(--p); letter-spacing: -0.5px; }
+        .header-titles p { margin: 0; font-size: 0.6rem; color: var(--sub-text); font-weight: 700; }
+        
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        /* SVG 按鈕樣式 */
+        .icon-btn { 
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; 
+            background: var(--border); border: none; border-radius: 10px; cursor: pointer; color: var(--text); transition: 0.2s;
+        }
+        .icon-btn.active { background: var(--p); color: white; }
+        .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* --- 物理滑動核心 --- */
         .main-scroller {
-            flex-grow: 1;
             display: flex;
+            width: 100vw;
+            height: calc(100dvh - 65px); /* 扣除頂部高度 */
             overflow-x: auto;
             overflow-y: hidden;
-            scroll-snap-type: x mandatory; /* 物理吸附關鍵 */
+            scroll-snap-type: x mandatory;
             scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox 隱藏捲軸 */
         }
-        .main-scroller::-webkit-scrollbar { display: none; }
+        .main-scroller::-webkit-scrollbar { display: none; } /* Chrome 隱藏捲軸 */
 
         .page-section {
-            flex: 0 0 100%; /* 每頁佔 100% */
-            width: 100%;
+            flex: 0 0 100vw; /* 確保每一頁精確等於螢幕寬度 */
+            width: 100vw;
             height: 100%;
-            scroll-snap-align: start; /* 吸附起點 */
+            scroll-snap-align: start;
             overflow-y: auto;
-            padding: 20px 20px 140px 20px;
+            padding: 16px 16px 150px 16px;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* --- 內容卡片 --- */
-        .menu-list { display: grid; gap: 14px; max-width: 1000px; margin: 0 auto; }
-        .menu-list.list-mode { grid-template-columns: 1fr; }
-        .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); }
-        @media (min-width: 768px) {
-            .menu-list.list-mode { grid-template-columns: repeat(2, 1fr); }
-            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-        }
+        /* --- 模式切換樣式 --- */
+        .menu-list { display: grid; gap: 12px; width: 100%; max-width: 1000px; margin: 0 auto; }
+        
+        /* 列表模式 */
+        .list-mode { grid-template-columns: 1fr; }
+        .list-mode .menu-item { padding: 16px; align-items: center; flex-direction: row; }
+        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 14px; font-size: 20px; }
+        
+        /* 方塊模式 */
+        .grid-mode { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .grid-mode .menu-item { flex-direction: column; padding: 15px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
+        .grid-mode .icon-box { width: 38px; height: 38px; margin: 0 auto 8px; border-radius: 50%; font-size: 18px; }
+        .grid-mode .info p { display: none; }
 
         .menu-item { 
-            background: var(--card); border-radius: 18px; border: 1px solid var(--border); 
-            text-decoration: none; color: inherit; display: flex; transition: 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            background: var(--card); border-radius: 16px; border: 1px solid var(--border); 
+            text-decoration: none; color: inherit; display: flex; transition: transform 0.1s;
         }
-        .list-mode .menu-item { padding: 16px; align-items: center; }
-        .grid-mode .menu-item { flex-direction: column; padding: 15px 10px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
-        
-        .menu-item:active { transform: scale(0.97); background: var(--border); }
-
-        .icon-box { background: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 14px; }
-        .grid-mode .icon-box { width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 50%; }
-
-        .info h2 { margin: 0; font-size: 0.9rem; font-weight: 800; }
+        .menu-item:active { transform: scale(0.96); opacity: 0.8; }
+        .icon-box { background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .info h2 { margin: 0; font-size: 0.85rem; font-weight: 800; }
         .info p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); }
 
         /* --- 底部導覽 --- */
-        .bottom-nav-container { position: fixed; bottom: calc(15px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2000; }
-        .bottom-nav { background: #1e293b; border-radius: 100px; display: flex; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .bottom-nav-container { position: fixed; bottom: calc(15px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 2000; }
+        .bottom-nav { background: #1e293b; border-radius: 100px; display: flex; padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         body:not(.dark-mode) .bottom-nav { background: rgba(255,255,255,0.95); border: 1px solid #cbd5e1; }
-
-        .nav-item { flex: 1; text-align: center; padding: 10px 0; font-size: 0.8rem; font-weight: 800; color: #94a3b8; cursor: pointer; border-radius: 100px; transition: 0.3s; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.8rem; font-weight: 800; color: #94a3b8; cursor: pointer; border-radius: 100px; transition: 0.3s; }
         .nav-item.active { color: white; background: var(--p); }
-        body:not(.dark-mode) .nav-item.active { color: white; }
 
-        /* --- 資訊 Modal --- */
+        /* --- Modal --- */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
-        .modal { background: var(--bg); width: 88%; max-width: 360px; border-radius: 28px; overflow: hidden; animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .modal-header { background: var(--p); color: white; padding: 25px; text-align: center; }
-        .author-avatar { width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px; border: 2px solid white; }
-        .modal-header h3 { margin: 0; font-size: 1.2rem; }
-        .modal-header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.75rem; }
-
+        .modal { background: var(--bg); width: 85%; max-width: 340px; border-radius: 24px; overflow: hidden; animation: pop 0.3s forwards; }
+        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-header { background: var(--p); color: white; padding: 20px; text-align: center; }
         .modal-body { padding: 20px; }
-        .version-badge { display: inline-block; padding: 4px 12px; background: var(--border); border-radius: 50px; font-size: 0.7rem; font-weight: 800; margin-bottom: 15px; }
-        .log-list { margin: 0; padding: 0; list-style: none; }
-        .log-list li { font-size: 0.85rem; padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--sub-text); line-height: 1.4; }
-        .modal-close { width: calc(100% - 40px); margin: 0 20px 20px; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: 15px; font-weight: 800; cursor: pointer; }
-
+        .version-tag { background: var(--border); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; }
+        .log-list { margin: 15px 0; padding: 0; list-style: none; font-size: 0.8rem; color: var(--sub-text); line-height: 1.6; }
+        .modal-close { width: 100%; padding: 12px; background: var(--text); color: var(--bg); border: none; border-radius: 12px; font-weight: 800; }
     </style>
 </head>
 <body>
@@ -134,14 +132,20 @@
         <div class="header">
             <div class="header-titles">
                 <h1>班級數位平台</h1>
-                <p>DIGITAL CLASSHUB SYSTEM</p>
+                <p>CLASSROOM HUB SYSTEM</p>
             </div>
             <div class="header-actions">
-                <button class="icon-btn" id="themeBtn" title="切換主題">
-                    <svg id="themeIconSun" viewBox="0 0 24 24" style="display: none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                    <svg id="themeIconMoon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <button class="icon-btn" id="listModeBtn" onclick="setLayout('list-mode')">
+                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </button>
-                <button class="icon-btn" onclick="openInfo()" title="系統資訊">
+                <button class="icon-btn" id="gridModeBtn" onclick="setLayout('grid-mode')">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+                <button class="icon-btn" id="themeBtn">
+                    <svg id="sunIcon" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg id="moonIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <button class="icon-btn" onclick="openInfo()">
                     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </button>
             </div>
@@ -150,30 +154,35 @@
 
     <div class="main-scroller" id="mainScroller">
         <section class="page-section">
-            <div class="menu-list" id="list-0">
-                <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>掌握重要時程</p></div></a>
-                <a href="countdown/index.html" class="menu-item"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>精確倒計</p></div></a>
-                <a href="homework/index.html" class="menu-item"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>每日更新</p></div></a>
+            <div class="menu-list" id="group-0">
+                <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>重要時程不漏接</p></div></a>
+                <a href="countdown/index.html" class="menu-item"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>倒數精確時刻</p></div></a>
+                <a href="homework/index.html" class="menu-item"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>每日進度更新</p></div></a>
             </div>
         </section>
+
         <section class="page-section">
-            <div class="menu-list" id="list-1">
-                <a href="help/student.html" class="menu-item"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>溫和傾聽</p></div></a>
-                <a href="unknownmail/index.html" class="menu-item"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>訊息傳遞</p></div></a>
-                <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>互動天地</p></div></a>
+            <div class="menu-list" id="group-1">
+                <a href="help/student.html" class="menu-item"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>學生心理健康支援</p></div></a>
+                <a href="unknownmail/index.html" class="menu-item"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全訊息管道</p></div></a>
+                <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>班級心情交流</p></div></a>
+                <a href="board/index.html" class="menu-item"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>班級事務討論</p></div></a>
             </div>
         </section>
+
         <section class="page-section">
-            <div class="menu-list" id="list-2">
-                <a href="cleaning/index.html" class="menu-item"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>分工明確</p></div></a>
-                <a href="seating/index.html" class="menu-item"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>換位機制</p></div></a>
-                <a href="vote/index.html" class="menu-item"><div class="info"><h2>數位投票</h2><p>一鍵表決</p></div></a>
+            <div class="menu-list" id="group-2">
+                <a href="cleaning/index.html" class="menu-item"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>打掃區域管理</p></div></a>
+                <a href="seating/index.html" class="menu-item"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>公平座位分配</p></div></a>
+                <a href="vote/index.html" class="menu-item"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票</h2><p>民主決策平台</p></div></a>
+                <a href="grouping/index.html" class="menu-item"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組</h2><p>多元分組機制</p></div></a>
             </div>
         </section>
+
         <section class="page-section">
-            <div class="menu-list" id="list-3">
-                <a href="exam_calc/index.html" class="menu-item"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>數據核算</p></div></a>
-                <a href="final_calc/index.html" class="menu-item"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>學習回饋</p></div></a>
+            <div class="menu-list" id="group-3">
+                <a href="exam_calc/index.html" class="menu-item"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>成績落點計算</p></div></a>
+                <a href="final_calc/index.html" class="menu-item"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>學分預估系統</p></div></a>
             </div>
         </section>
     </div>
@@ -190,16 +199,14 @@
     <div class="modal-overlay" id="infoModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="author-avatar" id="authorInitial">王</div>
-                <h3 id="authorName">作者資訊載入中...</h3>
-                <p id="authorRole">Role</p>
+                <h3 id="m-name">作者</h3>
+                <p id="m-role">Role</p>
             </div>
             <div class="modal-body">
-                <div class="version-badge" id="versionTag">v0.0.0</div>
-                <div style="font-size: 0.7rem; color: var(--sub-text); margin-bottom: 10px;">更新時間：<span id="updateTime">2026</span></div>
-                <ul class="log-list" id="logList"></ul>
+                <span class="version-tag" id="m-ver">v.0.0</span>
+                <ul class="log-list" id="m-log"></ul>
+                <button class="modal-close" onclick="closeInfo()">確定</button>
             </div>
-            <button class="modal-close" onclick="closeInfo()">關閉</button>
         </div>
     </div>
 
@@ -208,56 +215,50 @@
         const navItems = document.querySelectorAll('.nav-item');
         let isDarkMode = localStorage.getItem('theme') === 'dark';
 
-        // --- 滑動偵測與導覽列同步 ---
+        // 監聽滾動：同步底部導覽列
         scroller.addEventListener('scroll', () => {
             const index = Math.round(scroller.scrollLeft / window.innerWidth);
-            navItems.forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
+            navItems.forEach((item, i) => item.classList.toggle('active', i === index));
         });
 
         function scrollToPage(index) {
-            scroller.scrollTo({
-                left: index * window.innerWidth,
-                behavior: 'smooth'
-            });
+            scroller.scrollTo({ left: index * window.innerWidth, behavior: 'smooth' });
         }
 
-        // --- 資訊視窗 ---
+        // 佈局切換
+        function setLayout(mode) {
+            document.querySelectorAll('.menu-list').forEach(el => {
+                el.classList.remove('list-mode', 'grid-mode');
+                el.classList.add(mode);
+            });
+            document.getElementById('listModeBtn').classList.toggle('active', mode === 'list-mode');
+            document.getElementById('gridModeBtn').classList.toggle('active', mode === 'grid-mode');
+            localStorage.setItem('layout', mode);
+        }
+
+        // 資訊視窗
         function openInfo() {
-            document.getElementById('authorName').innerText = AUTHOR_INFO.name;
-            document.getElementById('authorRole').innerText = AUTHOR_INFO.role;
-            document.getElementById('authorInitial').innerText = AUTHOR_INFO.name.charAt(0);
-            document.getElementById('versionTag').innerText = AUTHOR_INFO.version;
-            document.getElementById('updateTime').innerText = AUTHOR_INFO.updateTime;
-            
-            const logList = document.getElementById('logList');
-            logList.innerHTML = CONFIG_LOG_ITEMS.map(item => `<li>${item}</li>`).join('');
-            
+            document.getElementById('m-name').innerText = AUTHOR_INFO.name;
+            document.getElementById('m-role').innerText = AUTHOR_INFO.role;
+            document.getElementById('m-ver').innerText = AUTHOR_INFO.version;
+            document.getElementById('m-log').innerHTML = CONFIG_LOG_ITEMS.map(i => `<li>• ${i}</li>`).join('');
             document.getElementById('infoModal').classList.add('show');
         }
+        function closeInfo() { document.getElementById('infoModal').classList.remove('show'); }
 
-        function closeInfo() {
-            document.getElementById('infoModal').classList.remove('show');
-        }
-
-        // --- 主題切換 ---
+        // 主題切換
         function applyTheme() {
             document.body.classList.toggle('dark-mode', isDarkMode);
-            document.getElementById('themeIconSun').style.display = isDarkMode ? 'block' : 'none';
-            document.getElementById('themeIconMoon').style.display = isDarkMode ? 'none' : 'block';
+            document.getElementById('sunIcon').style.display = isDarkMode ? 'block' : 'none';
+            document.getElementById('moonIcon').style.display = isDarkMode ? 'none' : 'block';
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         }
 
-        document.getElementById('themeBtn').onclick = () => {
-            isDarkMode = !isDarkMode;
-            applyTheme();
-        };
+        document.getElementById('themeBtn').onclick = () => { isDarkMode = !isDarkMode; applyTheme(); };
 
         // 初始化
         applyTheme();
-        // 預設為網格模式 (可在這調整)
-        document.querySelectorAll('.menu-list').forEach(l => l.classList.add('grid-mode'));
+        setLayout(localStorage.getItem('layout') || 'list-mode');
     </script>
 </body>
 </html>
