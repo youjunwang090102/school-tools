@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級作業管理系統 v3.0</title>
+    <title>班級作業管理系統 v3.1</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -52,7 +52,7 @@
 
 <div class="container">
     <div id="loginCard" class="card">
-        <h2 style="text-align: center;">📝 作業管理系統 v3.0</h2>
+        <h2 style="text-align: center;">📝 作業管理系統 v3.1</h2>
         <input type="number" id="stuId" placeholder="座號 (例如: 5)">
         <input type="password" id="stuPw" placeholder="密碼">
         <button onclick="doLogin()">登入系統</button>
@@ -92,6 +92,7 @@
 </div>
 
 <script>
+    // Firebase 初始化
     const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -109,6 +110,7 @@
 
     let me = null;
 
+    // --- 登入邏輯 (包含 status="active" 驗證) ---
     async function doLogin() {
         const idInput = document.getElementById('stuId').value;
         const pwInput = document.getElementById('stuPw').value;
@@ -117,11 +119,29 @@
         const id = idInput.padStart(2, '0'); 
         try {
             const doc = await db.collection("students").doc(id).get();
-            if (doc.exists && doc.data().password === pwInput) {
-                me = { id, ...doc.data() };
-                renderMain();
-            } else { alert("座號或密碼錯誤"); }
-        } catch (e) { alert("連線失敗"); }
+            if (doc.exists) {
+                const data = doc.data();
+                
+                // 1. 驗證密碼
+                if (data.password === pwInput) {
+                    // 2. 驗證帳號狀態是否為 active
+                    if (data.status === "active") {
+                        me = { id, ...data };
+                        renderMain();
+                    } else {
+                        // 狀態不為 active 時的提示
+                        alert("您的帳號尚未啟用，請等待管理員核准後才可登入。");
+                    }
+                } else {
+                    alert("密碼錯誤");
+                }
+            } else { 
+                alert("座號不存在"); 
+            }
+        } catch (e) { 
+            console.error(e);
+            alert("連線失敗"); 
+        }
     }
 
     function renderMain() {
@@ -147,7 +167,7 @@
         loadHomework();
     }
 
-    // --- 管理員：摺疊清單與排序邏輯 ---
+    // --- 管理員控制台功能 ---
     function loadStudentManager() {
         db.collection("students").onSnapshot(snap => {
             const container = document.getElementById('studentList');
@@ -195,7 +215,7 @@
         await ref.update({ subject_roles: action });
     }
 
-    // --- 作業處理：自動過濾 30 天前作業 ---
+    // --- 作業處理邏輯 ---
     async function addHw() {
         const title = document.getElementById('hwTitle').value;
         const date = document.getElementById('hwDate').value;
@@ -217,7 +237,6 @@
             today.setHours(0,0,0,0);
             const todayStr = today.toISOString().split('T')[0];
             
-            // 計算 30 天前的日期
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const limitStr = thirtyDaysAgo.toISOString().split('T')[0];
@@ -225,7 +244,7 @@
             let activeItems = "", expiredItems = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                if (d.date < limitStr) return; // 自動隱藏 30 天前的作業
+                if (d.date < limitStr) return; 
 
                 const isExpired = d.date < todayStr;
                 const hasDone = d.done_list?.includes(me.id);
