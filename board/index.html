@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆 v4.0</title>
+    <title>班級動態牆 v5.0 - 穩定管理版</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
         :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; --card: #ffffff; --teacher: #8e44ad; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; padding-bottom: 120px; }
+        .container { width: 100%; max-width: 600px; padding-bottom: 150px; }
         .card { background: var(--card); border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
         button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
         
-        /* 留言樣式 */
         .msg-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 5px solid #cbd5e1; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .is-teacher { border-left-color: var(--teacher); }
         .msg-info { font-size: 0.8rem; color: #64748b; margin-bottom: 5px; display: flex; justify-content: space-between; }
-        .mute-warning { color: var(--d); font-weight: bold; font-size: 0.85rem; margin-top: 5px; display: none; }
+        .mute-warning { color: var(--d); font-weight: bold; font-size: 0.85rem; margin-top: 5px; display: none; background: #fff1f2; padding: 10px; border-radius: 8px; }
 
         /* 🛡️ 老師管理面板 */
         #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; color: white; padding: 15px; box-sizing: border-box; z-index: 100; border-radius: 20px 20px 0 0; }
@@ -32,7 +31,7 @@
 
 <div class="container">
     <div id="loginCard" class="card">
-        <h2 style="text-align: center;">💬 班級動態牆 登入</h2>
+        <h2 style="text-align: center;">💬 班級動態牆</h2>
         <input type="number" id="stuId" placeholder="座號 (例如: 5)">
         <input type="password" id="stuPw" placeholder="密碼">
         <button onclick="doLogin()">登入系統</button>
@@ -40,36 +39,38 @@
 
     <div id="mainView" style="display: none;">
         <div class="card">
-            <h3 id="userName">載入中...</h3>
+            <h3 id="userName" style="margin-top:0;">載入中...</h3>
             <div style="display: flex; gap: 8px;">
                 <input type="text" id="msgInput" placeholder="分享你的想法..." style="margin:0;">
                 <button onclick="sendMsg()" style="width: 80px; margin:0;">發佈</button>
             </div>
-            <div id="selfMuteHint" class="mute-warning">⚠️ 您目前被禁言中</div>
+            <div id="selfMuteHint" class="mute-warning"></div>
         </div>
         <div id="msgList"></div>
     </div>
 </div>
 
 <div id="adminPanel">
-    <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 8px;">🛡️ 禁言管理控制台</div>
+    <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between;">
+        <span>🛡️ 禁言管理控制台</span>
+        <span onclick="this.parentElement.parentElement.style.display='none'" style="cursor:pointer">關閉</span>
+    </div>
     <div class="mute-ctrl">
         <select id="targetSelect" style="flex:2; margin:0;"></select>
         <select id="daysSelect" style="flex:1; margin:0;">
+            <option value="0.0416">1小時</option>
             <option value="1">1天</option>
             <option value="3">3天</option>
-            <option value="7">7天</option>
             <option value="999">永久</option>
         </select>
         <button onclick="executeMute()" style="flex:1; margin:0; background:var(--d);">禁言</button>
     </div>
-    <div id="activeMuteList" class="mute-list">
-        </div>
+    <div id="activeMuteList" class="mute-list"></div>
 </div>
 
 <script>
-    // 使用您作業系統的設定
-    const firebaseConfig = { 
+    // Firebase 配置 (沿用您的設定)
+    const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
         projectId: "vote-6668",
@@ -81,8 +82,9 @@
     const db = firebase.firestore();
 
     let me = null;
+    let isMuted = false;
 
-    // --- 完全對接您成功的登入邏輯 ---
+    // --- 登入邏輯 ---
     async function doLogin() {
         const idInput = document.getElementById('stuId').value;
         const pwInput = document.getElementById('stuPw').value;
@@ -100,7 +102,7 @@
                     } else { alert("帳號尚未啟用"); }
                 } else { alert("密碼錯誤"); }
             } else { alert("座號不存在"); }
-        } catch (e) { alert("連線失敗"); }
+        } catch (e) { alert("連線失敗：" + e.message); }
     }
 
     function startApp() {
@@ -111,90 +113,90 @@
         const isTeacher = (me.role === 'teacher' || me.role === 'admin');
         if (isTeacher) {
             document.getElementById('adminPanel').style.display = 'block';
-            syncStudentMuteList();
+            loadStudentSelector();
+            listenMuteList();
         }
         
         listenMessages(isTeacher);
-        checkMyMuteStatus();
+        checkMyMute();
     }
 
-    // --- 禁言管理核心 ---
-    function syncStudentMuteList() {
-        db.collection("students").onSnapshot(snap => {
-            const select = document.getElementById('targetSelect');
-            const listArea = document.getElementById('activeMuteList');
-            
-            // 排序名單
-            const sortedDocs = snap.docs.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-            
-            select.innerHTML = '<option value="">選擇學生...</option>';
-            listArea.innerHTML = '';
-            let muteCount = 0;
-
-            sortedDocs.forEach(doc => {
-                const s = doc.data();
-                if (s.role === 'teacher' || s.role === 'admin') return;
-
-                // 填充選擇下拉選單
+    // --- 禁言管理 (使用獨立集合 mute_records) ---
+    async function loadStudentSelector() {
+        const snap = await db.collection("students").get();
+        const select = document.getElementById('targetSelect');
+        const sorted = snap.docs.sort((a,b) => parseInt(a.id) - parseInt(b.id));
+        select.innerHTML = '<option value="">選擇學生...</option>';
+        sorted.forEach(doc => {
+            if(doc.data().role !== 'teacher') {
                 const opt = document.createElement('option');
                 opt.value = doc.id;
-                opt.innerText = `${parseInt(doc.id)}號 ${s.name}`;
+                opt.innerText = `${parseInt(doc.id)}號 ${doc.data().name}`;
                 select.appendChild(opt);
+            }
+        });
+    }
 
-                // 填充禁言中清單
-                if (s.muteUntil && s.muteUntil > Date.now()) {
-                    muteCount++;
+    function listenMuteList() {
+        db.collection("mute_records").onSnapshot(async snap => {
+            const listArea = document.getElementById('activeMuteList');
+            listArea.innerHTML = '';
+            
+            // 為了顯示名字，我們需要對照表
+            const stuSnap = await db.collection("students").get();
+            let names = {};
+            stuSnap.forEach(d => names[d.id] = d.data().name);
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.until > Date.now()) {
                     const div = document.createElement('div');
                     div.className = 'mute-list-item';
                     div.innerHTML = `
-                        <span>${parseInt(doc.id)}號 ${s.name} (至 ${new Date(s.muteUntil).toLocaleDateString()})</span>
-                        <button class="btn-sm" style="background:var(--s)" onclick="unmute('${doc.id}')">解禁</button>
+                        <span>${parseInt(doc.id)}號 ${names[doc.id] || '學生'} (至 ${new Date(data.until).toLocaleString()})</span>
+                        <button class="btn-sm" style="background:var(--s)" onclick="unmute('${doc.id}')">解除</button>
                     `;
                     listArea.appendChild(div);
                 }
             });
-            if(muteCount === 0) listArea.innerHTML = '<div style="text-align:center; color:#64748b; padding:10px;">目前無人被禁言</div>';
         });
     }
 
     async function executeMute() {
         const sid = document.getElementById('targetSelect').value;
         const days = parseFloat(document.getElementById('daysSelect').value);
-        if(!sid) return alert("請先選擇學生");
-        const time = Date.now() + (days * 24 * 60 * 60 * 1000);
-        await db.collection("students").doc(sid).update({ muteUntil: time });
-        alert("禁言指令已執行");
+        if(!sid) return alert("請選擇學生");
+        const until = Date.now() + (days * 24 * 60 * 60 * 1000);
+        
+        // 寫入獨立集合，不會閃退
+        await db.collection("mute_records").doc(sid).set({ until: until });
+        alert("禁言設定成功");
     }
 
     async function unmute(sid) {
-        await db.collection("students").doc(sid).update({ muteUntil: 0 });
+        await db.collection("mute_records").doc(sid).delete();
     }
 
-    // --- 學生自我狀態檢查 ---
-    function checkMyMuteStatus() {
-        setInterval(async () => {
-            const doc = await db.collection("students").doc(me.id).get();
-            const until = doc.data().muteUntil || 0;
+    // --- 學生端檢查 ---
+    function checkMyMute() {
+        db.collection("mute_records").doc(me.id).onSnapshot(doc => {
             const hint = document.getElementById('selfMuteHint');
-            if (Date.now() < until) {
+            if (doc.exists && doc.data().until > Date.now()) {
+                isMuted = true;
                 hint.style.display = 'block';
-                hint.innerText = `⚠️ 您已被禁言，將於 ${new Date(until).toLocaleString()} 解除`;
+                hint.innerText = `⚠️ 禁言中，預計解禁：${new Date(doc.data().until).toLocaleString()}`;
             } else {
+                isMuted = false;
                 hint.style.display = 'none';
             }
-        }, 5000);
+        });
     }
 
     // --- 留言板邏輯 ---
     async function sendMsg() {
+        if (isMuted) return alert("您目前處於禁言狀態！");
         const content = document.getElementById('msgInput').value.trim();
         if(!content) return;
-
-        // 發送前最後確認禁言狀態
-        const doc = await db.collection("students").doc(me.id).get();
-        if (Date.now() < (doc.data().muteUntil || 0)) {
-            return alert("您目前處於禁言狀態，無法發佈訊息。");
-        }
 
         await db.collection("messages").add({
             author: me.name,
@@ -213,10 +215,8 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
-                const isMsgTeacher = (d.role === 'teacher' || d.role === 'admin');
-                
                 const div = document.createElement('div');
-                div.className = `msg-item ${isMsgTeacher ? 'is-teacher' : ''}`;
+                div.className = `msg-item ${d.role === 'teacher' ? 'is-teacher' : ''}`;
                 div.innerHTML = `
                     <div class="msg-info">
                         <span><b>${d.author}</b> (#${d.authorId})</span>
@@ -229,7 +229,7 @@
         });
     }
 
-    async function deleteMsg(mid) { if(confirm("確定刪除留言？")) await db.collection("messages").doc(mid).delete(); }
+    async function deleteMsg(mid) { if(confirm("刪除留言？")) await db.collection("messages").doc(mid).delete(); }
 </script>
 </body>
 </html>
