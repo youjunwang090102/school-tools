@@ -2,71 +2,124 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>感官補償實驗</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>齒輪撥桿實驗室</title>
     <style>
-        body { margin: 0; background: #000; color: white; overflow: hidden; font-family: sans-serif; }
-        .scroll-box { display: flex; width: 100vw; height: 100vh; overflow-x: auto; scroll-snap-type: x mandatory; }
-        .page { flex: 0 0 100vw; display: flex; align-items: center; justify-content: center; font-size: 80px; }
-        .hint { position: fixed; top: 20%; width: 100%; text-align: center; color: #aaa; }
+        body { margin: 0; background: #0f172a; color: white; font-family: sans-serif; overflow: hidden; }
+        
+        /* 滾輪容器 */
+        .scroller {
+            display: flex; width: 100vw; height: 70dvh;
+            overflow-x: auto; scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+        }
+        .scroller::-webkit-scrollbar { display: none; }
+
+        .page {
+            flex: 0 0 100vw; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        .card {
+            width: 80%; height: 60%; background: #1e293b; border-radius: 40px;
+            border: 2px solid #334155; display: flex; align-items: center; justify-content: center;
+            font-size: 100px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        /* 模擬刻度線 */
+        .ruler {
+            position: fixed; bottom: 150px; width: 100%; height: 40px;
+            display: flex; justify-content: center; align-items: flex-end; gap: 15px;
+        }
+        .tick { width: 3px; height: 10px; background: #475569; border-radius: 2px; transition: 0.1s; }
+        .tick.active { height: 25px; background: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+
+        .hint { text-align: center; padding: 40px; color: #94a3b8; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <div class="hint">請先點擊畫面任何處「授權感官回饋」<br>然後左右滑動</div>
-    <div class="scroll-box" id="scroller">
-        <div class="page" style="background:#111">A</div>
-        <div class="page" style="background:#222">B</div>
-        <div class="page" style="background:#333">C</div>
-        <div class="page" style="background:#444">D</div>
+    <div class="hint">請先「點擊螢幕」解鎖齒輪聲<br>然後快速左右滑動卡片</div>
+
+    <div class="scroller" id="gear-box">
+        <div class="page"><div class="card">1</div></div>
+        <div class="page"><div class="card">2</div></div>
+        <div class="page"><div class="card">3</div></div>
+        <div class="page"><div class="card">4</div></div>
+        <div class="page"><div class="card">5</div></div>
     </div>
 
+    <div class="ruler" id="ruler"></div>
+
     <script>
-        // 🎼 建立一個極短的「物理撞擊」音效產生器
-        const AudioHaptic = {
+        /**
+         * 🎧 齒輪物理音頻合成器
+         */
+        const GearSound = {
             ctx: new (window.AudioContext || window.webkitAudioContext)(),
-            play: function() {
+            
+            // 產生清脆的「嗲」聲
+            click: function() {
                 if (this.ctx.state === 'suspended') this.ctx.resume();
-                
+
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                
-                osc.type = 'sine'; 
-                osc.frequency.setValueAtTime(150, this.ctx.currentTime); // 低頻撞擊聲
-                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
-                
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
-                
-                osc.connect(gain);
+                const filter = this.ctx.createBiquadFilter();
+
+                // 模擬金屬撥桿的高頻特徵
+                osc.type = 'triangle'; 
+                osc.frequency.setValueAtTime(2500, this.ctx.currentTime); // 起始高頻
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+
+                // 快速衰減的音量控制 (產生「嗲」的短促感)
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
+
+                // 高通濾波器：移除低頻雜音，只保留清脆聲
+                filter.type = "highpass";
+                filter.frequency.value = 1500;
+
+                osc.connect(filter);
+                filter.connect(gain);
                 gain.connect(this.ctx.destination);
-                
+
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.1);
+                osc.stop(this.ctx.currentTime + 0.04);
             }
         };
 
-        let lastIdx = 0;
-        const scroller = document.getElementById('scroller');
+        // 初始化刻度 UI
+        const ruler = document.getElementById('ruler');
+        for(let i=0; i<5; i++) {
+            const tick = document.createElement('div');
+            tick.className = 'tick';
+            ruler.appendChild(tick);
+        }
 
+        const scroller = document.getElementById('gear-box');
+        let lastIdx = 0;
+
+        // 監聽滾動位置
         scroller.addEventListener('scroll', () => {
-            const currentIdx = Math.round(scroller.scrollLeft / window.innerWidth);
+            const width = window.innerWidth;
+            const currentIdx = Math.round(scroller.scrollLeft / width);
+
+            // 當指針跨過刻度時觸發
             if (currentIdx !== lastIdx) {
-                // 🔊 執行「聽覺震動」
-                AudioHaptic.play();
+                GearSound.click(); // 🔊 發出嗲嗲聲
                 
-                // 📳 如果是安卓，同時補一個真震動
-                if (navigator.vibrate) navigator.vibrate(10);
+                // 更新刻度視覺
+                const ticks = document.querySelectorAll('.tick');
+                ticks.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
                 
                 lastIdx = currentIdx;
-                console.log("感知震動切換至:", currentIdx);
             }
-        });
+        }, { passive: true });
 
-        // 必須點擊一次來解鎖音訊瀏覽器政策
+        // 解鎖音訊
         document.body.addEventListener('touchstart', () => {
-            AudioHaptic.play();
-            console.log("感官回饋已就緒");
+            GearSound.click();
+            console.log("齒輪運轉中...");
         }, { once: true });
     </script>
 </body>
