@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS VOTE System  | Pro</title>
+    <title>NEXUS VOTE System | Pro Refined</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -16,14 +16,14 @@
         /* --- 1. 全局變數與基礎設定 --- */
         :root {
             --bg-deep: #0b0c15;
-            --bg-panel: rgba(20, 24, 35, 0.65);
+            --bg-panel: rgba(20, 24, 35, 0.75);
             --bg-panel-solid: #141823;
-            --primary: #3b82f6;      /* 專業藍 */
+            --primary: #3b82f6;       
             --primary-glow: rgba(59, 130, 246, 0.4);
-            --accent: #10b981;       /* 成功綠 */
-            --danger: #ef4444;       /* 警告紅 */
+            --accent: #10b981;        
+            --danger: #ef4444;        
             --text-main: #f3f4f6;
-            --text-dim: #9ca3af;
+            --text-dim: #6b7280; /* 加深一點，讓 Placeholder 更明顯是灰色 */
             --border: rgba(255, 255, 255, 0.1);
             --font-ui: 'Rajdhani', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -39,9 +39,9 @@
             background-image: radial-gradient(circle at 50% 50%, #161b2c 0%, #0b0c15 100%);
             color: var(--text-main);
             font-family: var(--font-ui);
-            height: 100dvh; /* 鎖定視窗高度 */
+            height: 100dvh; 
             width: 100vw;
-            overflow: hidden; /* 禁止全頁捲動 */
+            overflow: hidden; 
             display: flex;
             flex-direction: column;
         }
@@ -50,12 +50,25 @@
         .full-h { height: 100%; display: flex; flex-direction: column; }
         .hidden { display: none !important; }
         
-        /* 呼吸燈效果 (微動畫) */
+        /* 呼吸燈效果 */
         .breathing { animation: breathe 4s ease-in-out infinite; }
         @keyframes breathe {
             0%, 100% { opacity: 0.8; text-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
             50% { opacity: 1; text-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
         }
+
+        /* 錯誤搖晃動畫 */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger) !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* 列表過渡動畫 (Vue TransitionGroup) */
+        .list-enter-active, .list-leave-active { transition: all 0.3s ease; }
+        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-20px); }
 
         /* 玻璃擬態面板 */
         .glass-panel {
@@ -82,7 +95,8 @@
             transition: 0.2s;
             font-size: 0.9rem;
         }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+        input::placeholder { color: var(--text-dim); font-style: italic; opacity: 0.7; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); background: rgba(0,0,0,0.5); }
         
         button { cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         button:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
@@ -91,43 +105,56 @@
         button.btn-danger:hover { background: var(--danger); border-color: var(--danger); }
         button.btn-success { border-color: var(--accent); color: var(--accent); }
         button.btn-success:hover { background: var(--accent); color: #000; }
+        button.btn-ghost { background: transparent; border: 1px dashed var(--text-dim); color: var(--text-dim); }
+        button.btn-ghost:hover { border-color: var(--primary); color: var(--primary); background: rgba(59,130,246,0.1); }
         
-        /* 滾動條美化 (僅在必要區域出現) */
         .scrollable { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
         .scrollable::-webkit-scrollbar { width: 4px; }
         .scrollable::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
 
-        /* --- 3. 佈局架構 (Grid System) --- */
+        /* --- 3. 佈局架構 --- */
         #app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
-        /* 頂部導航列 */
         .navbar {
             height: 60px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 20px;
             border-bottom: 1px solid var(--border);
             background: rgba(11, 12, 21, 0.9);
+            z-index: 10;
         }
         .brand { font-size: 1.4rem; font-weight: 700; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
         .brand span { font-family: var(--font-mono); font-size: 0.8rem; color: var(--primary); background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; }
 
-        /* 主畫面容器 */
         .main-container {
             flex: 1; 
             padding: var(--gap);
-            overflow: hidden; /* 防止內部溢出導致整體捲動 */
+            overflow: hidden;
+            position: relative;
         }
 
-        /* Host 儀表板佈局 (Desktop) */
+        /* Toast 通知 */
+        .toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 300px; }
+        .toast { 
+            background: rgba(20, 20, 20, 0.95); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+            padding: 12px 16px; border-radius: 4px; color: #fff; font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); pointer-events: auto;
+            display: flex; align-items: center; gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.success { border-left-color: var(--accent); }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Host 佈局 */
         .host-grid {
             display: grid;
-            grid-template-columns: 320px 1fr 280px; /* 左控台 | 中圖表 | 右數據 */
+            grid-template-columns: 350px 1fr 280px; /* 加寬控制區以便容納輸入框 */
             grid-template-rows: 1fr;
             gap: var(--gap);
             height: 100%;
         }
 
-        /* Flex Column for inner panels */
         .panel-header {
             padding: 12px 16px; border-bottom: 1px solid var(--border);
             font-weight: 700; display: flex; justify-content: space-between; align-items: center;
@@ -136,8 +163,8 @@
         .panel-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
         /* 左側控制區 */
-        .control-group { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
-        .control-group label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px; }
+        .control-group { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .control-group label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
 
         /* 中間視覺區 */
         .visual-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; }
@@ -154,21 +181,13 @@
         .log-vote { border-left-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
         .log-err { border-left-color: var(--danger); color: var(--danger); }
 
-        /* --- 4. 手機版適配 (Mobile / Portrait) --- */
-        /* 手機版使用 Tab 切換，不使用捲動 */
-        .mobile-dock { display: none; } /* Desktop 隱藏 */
+        /* --- 4. RWD & Mobile --- */
+        .mobile-dock { display: none; }
 
         @media (max-width: 1024px) {
-            .host-grid {
-                display: flex;
-                flex-direction: column;
-                height: calc(100% - 60px); /* 預留底部 Dock */
-            }
-            
-            /* 在手機上，同一時間只顯示一個 Panel */
+            .host-grid { display: flex; flex-direction: column; height: calc(100% - 60px); }
             .host-panel-wrapper { display: none; height: 100%; }
             .host-panel-wrapper.active { display: flex; }
-
             .mobile-dock {
                 display: flex; height: 60px;
                 background: var(--bg-panel-solid);
@@ -185,25 +204,18 @@
             .dock-icon { font-size: 1.2rem; }
         }
 
-        /* Intro 畫面 */
-        .intro-screen {
-            display: flex; gap: 30px; justify-content: center; align-items: center; height: 100%;
-        }
+        /* Intro & Voter */
+        .intro-screen { display: flex; gap: 30px; justify-content: center; align-items: center; height: 100%; flex-wrap: wrap; }
         .role-card {
             width: 280px; height: 320px;
-            cursor: pointer; text-align: center; justify-content: center; align-items: center;
-            gap: 20px;
+            cursor: pointer; text-align: center; justify-content: center; align-items: center; gap: 20px;
             transition: transform 0.2s;
         }
         .role-card:hover { transform: translateY(-5px); border-color: var(--primary); }
         .role-icon { font-size: 4rem; color: var(--text-dim); transition: 0.3s; }
         .role-card:hover .role-icon { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
 
-        /* Voter 畫面 */
-        .voter-wrapper {
-            max-width: 500px; width: 100%; margin: 0 auto;
-            height: 100%; display: flex; flex-direction: column; justify-content: center;
-        }
+        .voter-wrapper { max-width: 500px; width: 100%; margin: 0 auto; height: 100%; display: flex; flex-direction: column; justify-content: center; }
         .option-btn {
             width: 100%; padding: 18px; margin-bottom: 12px;
             text-align: left; background: rgba(255,255,255,0.05);
@@ -214,14 +226,18 @@
             background: var(--primary); color: #fff; border-color: var(--primary);
             box-shadow: 0 0 15px var(--primary-glow);
         }
-        
-        /* QR Code 容器 */
         #qrcode { background: #fff; padding: 10px; border-radius: 4px; width: fit-content; margin: 0 auto; }
     </style>
 </head>
 <body>
 
 <div id="app">
+    <div class="toast-container">
+        <div v-for="toast in toasts" :key="toast.id" class="toast" :class="toast.type">
+            <span>{{ toast.icon }}</span> {{ toast.msg }}
+        </div>
+    </div>
+
     <nav class="navbar">
         <div class="brand">
             NEXUS VOTE <span class="breathing">PRO</span>
@@ -254,8 +270,8 @@
             <div class="glass-panel" style="padding: 30px; text-align: center;">
                 <h3>輸入 4 碼投票 ID</h3>
                 <input v-model="targetId" maxlength="4" placeholder="例如: A1B2" style="font-size: 2rem; text-align: center; letter-spacing: 5px; text-transform: uppercase; margin: 20px 0; width: 100%;">
-                <button class="btn-success" @click="connectToHost(targetId)" style="padding: 15px;">連線參加</button>
-                <button @click="view = 'intro'" style="margin-top: 10px; background: transparent; border: none; color: var(--text-dim);">返回</button>
+                <button class="btn-success" @click="connectToHost(targetId)" style="padding: 15px; width:100%">連線參加</button>
+                <button @click="view = 'intro'" style="margin-top: 15px; background: transparent; border: none; color: var(--text-dim);">返回</button>
             </div>
         </div>
 
@@ -273,29 +289,44 @@
                     <div v-if="pollStatus === 'idle'">
                         <div class="control-group">
                             <label>投票主題</label>
-                            <input v-model="pollData.title" placeholder="請輸入主題..." style="width: 100%;">
+                            <input v-model="pollData.title" 
+                                   :class="{ shake: errors.title }"
+                                   @input="errors.title = false"
+                                   placeholder="請輸入投票主題..." 
+                                   style="width: 100%;">
                         </div>
                         <div class="control-group">
                             <label>倒數時間 (秒)</label>
-                            <input type="number" v-model.number="pollData.duration" style="width: 100%;">
+                            <input type="number" v-model.number="pollData.duration" style="width: 100%;" min="10">
                         </div>
                         <div class="control-group">
-                            <label>選項配置</label>
-                            <div v-for="(opt, idx) in pollData.options" :key="idx" style="display:flex; gap:5px; margin-bottom:5px;">
-                                <input v-model="pollData.options[idx]" placeholder="選項內容">
-                                <button class="btn-danger" @click="removeOption(idx)" style="padding: 0 10px;">×</button>
-                            </div>
-                            <button @click="addOption" style="width: 100%; border-style: dashed; margin-top:5px;">+ 新增選項</button>
+                            <label>選項配置 (至少 2 項)</label>
+                            <transition-group name="list" tag="div">
+                                <div v-for="(opt, idx) in pollData.options" :key="idx" style="display:flex; gap:5px; margin-bottom:8px;">
+                                    <input v-model="pollData.options[idx]" 
+                                           :placeholder="'選項 ' + (idx + 1)" 
+                                           :ref="el => { if(el) optionInputs[idx] = el }"
+                                           :class="{ shake: errors.options }"
+                                           @input="errors.options = false"
+                                           style="flex:1">
+                                    <button v-if="pollData.options.length > 2" class="btn-danger" @click="removeOption(idx)" style="padding: 0 10px;">×</button>
+                                </div>
+                            </transition-group>
+                            <button class="btn-ghost" @click="addOption" style="width: 100%; margin-top:5px;">+ 新增選項</button>
                         </div>
-                        <button class="btn-success" style="width: 100%; padding: 15px; margin-top: 10px;" @click="startPoll">啟動投票</button>
+                        <button class="btn-success" style="width: 100%; padding: 15px; margin-top: 10px;" @click="validateAndStart">啟動投票</button>
                     </div>
 
                     <div v-if="pollStatus === 'active'" style="text-align: center;">
                         <h3 class="breathing" style="color: var(--accent);">VOTING IN PROGRESS</h3>
+                        <p style="color:var(--text-dim); margin-bottom:20px;">投票進行中，請稍候...</p>
                         <button class="btn-danger" style="width: 100%; padding: 15px;" @click="stopPoll">停止投票 / 結算</button>
                     </div>
 
                     <div v-if="pollStatus === 'ended'">
+                        <div style="text-align:center; padding:20px 0;">
+                            <h3 style="margin:0">投票已結束</h3>
+                        </div>
                         <button class="btn-success" style="width: 100%; margin-bottom: 10px;" @click="exportCSV">下載 CSV 報表</button>
                         <button style="width: 100%;" @click="resetPoll">重置下一輪</button>
                     </div>
@@ -405,46 +436,49 @@
 </div>
 
 <script>
-    const { createApp, reactive, ref, computed, onMounted, nextTick, watch } = Vue;
+    const { createApp, reactive, ref, computed, nextTick } = Vue;
 
     createApp({
         setup() {
             // --- State ---
-            const view = ref('intro'); // intro, host, voter-login, voter-active
-            const activeTab = ref('control'); // Mobile Dock tab
+            const view = ref('intro');
+            const activeTab = ref('control');
             const myId = ref('');
             const targetId = ref('');
             const isConnected = ref(false);
             
-            // PeerJS
+            // UI Refs
+            const qrRef = ref(null);
+            const logContainer = ref(null);
+            const optionInputs = ref([]); 
+            const toasts = ref([]);
+            const errors = reactive({ title: false, options: false });
+
+            // PeerJS & Logic
             let peer = null;
             const connections = ref([]);
+            const pollStatus = ref('idle');
             
-            // Logic
-            const pollStatus = ref('idle'); // idle, active, ended
+            // 預設初始化：空標題，2個空選項
             const pollData = reactive({
                 title: '',
-                options: ['', '', ''],
+                options: ['', ''],
                 duration: 60
             });
             const timer = ref(0);
             let timerInterval = null;
             
-            // Voting
-            const votes = ref([]); // { userId, option, timestamp }
+            // Voting Data
+            const votes = ref([]); 
             const results = ref({});
             const hasVoted = ref(false);
             const selectedOption = ref(null);
             
-            // System
             const logs = ref([]);
-            const qrRef = ref(null);
-            const logContainer = ref(null);
             let chart = null;
 
             // --- Utilities ---
             const generateShortId = () => {
-                // 產生 4 碼 ID (去除容易混淆的字元)
                 const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                 let result = '';
                 for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -459,16 +493,25 @@
                 });
             };
 
+            const showToast = (msg, type = 'info') => {
+                const id = Date.now();
+                const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : 'ℹ️');
+                toasts.value.push({ id, msg, type, icon });
+                setTimeout(() => {
+                    toasts.value = toasts.value.filter(t => t.id !== id);
+                }, 3000);
+            };
+
             const displayTimer = computed(() => {
                 const m = Math.floor(timer.value / 60).toString().padStart(2, '0');
                 const s = (timer.value % 60).toString().padStart(2, '0');
                 return `${m}:${s}`;
             });
 
-            // --- Host Functions ---
+            // --- Host Logic ---
             const initHost = () => {
                 const id = generateShortId();
-                peer = new Peer(id); // 嘗試註冊 4 碼 ID
+                peer = new Peer(id);
                 
                 peer.on('open', (id) => {
                     myId.value = id;
@@ -480,11 +523,9 @@
 
                 peer.on('error', (err) => {
                     if (err.type === 'unavailable-id') {
-                        // 如果 ID 衝突，遞迴重試
-                        console.log('ID Collision, retrying...');
                         initHost(); 
                     } else {
-                        alert('連線初始化失敗: ' + err.type);
+                        showToast('連線初始化失敗', 'error');
                     }
                 });
 
@@ -493,7 +534,6 @@
                     addLog(`Client ${conn.peer} 已連線`, 'sys');
                     
                     conn.on('open', () => {
-                        // 同步當前狀態給新連線者
                         conn.send({ 
                             type: 'SYNC', 
                             status: pollStatus.value, 
@@ -513,16 +553,42 @@
                 });
             };
 
-            const generateQR = () => {
-                const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
-                nextTick(() => {
-                    qrRef.value.innerHTML = '';
-                    new QRCode(qrRef.value, {
-                        text: url, width: 150, height: 150,
-                        colorDark: "#000000", colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
-                });
+            // *** 核心驗證邏輯 ***
+            const validateAndStart = () => {
+                // 1. 檢查標題
+                if (!pollData.title.trim()) {
+                    errors.title = true;
+                    showToast('請輸入投票主題', 'error');
+                    setTimeout(() => errors.title = false, 500);
+                    return;
+                }
+
+                // 2. 處理選項：去除空白
+                const validOptions = pollData.options.map(o => o.trim()).filter(o => o !== '');
+                
+                // 3. 檢查數量 (至少2個)
+                if (validOptions.length < 2) {
+                    errors.options = true;
+                    showToast('至少需要兩個有效選項', 'error');
+                    setTimeout(() => errors.options = false, 500);
+                    return;
+                }
+
+                // 4. 檢查重複
+                const uniqueSet = new Set(validOptions);
+                if (uniqueSet.size !== validOptions.length) {
+                    errors.options = true;
+                    showToast('選項內容不能重複', 'error');
+                    setTimeout(() => errors.options = false, 500);
+                    return;
+                }
+
+                // 通過驗證，寫回乾淨的數據並開始
+                pollData.options = validOptions; 
+                // 確保 UI 至少有兩個格子(如果被過濾掉的話補回空字串，但邏輯上上面已經擋了，這裡只是保險)
+                while(pollData.options.length < 2) pollData.options.push('');
+                
+                startPoll();
             };
 
             const startPoll = () => {
@@ -534,6 +600,7 @@
                 
                 broadcast({ type: 'START', data: pollData, timer: timer.value });
                 addLog('投票開始', 'sys');
+                showToast('投票已啟動', 'success');
                 updateChart();
                 
                 if (timerInterval) clearInterval(timerInterval);
@@ -554,32 +621,60 @@
                 pollStatus.value = 'idle';
                 votes.value = [];
                 results.value = {};
+                pollData.title = '';
+                pollData.options = ['', '']; // 重置為預設狀態
                 broadcast({ type: 'RESET' });
                 addLog('系統重置', 'sys');
-                // Update chart to empty
                 updateChart();
             };
 
+            // Option Management with Auto Focus
+            const addOption = () => {
+                pollData.options.push(''); // 預設為空
+                nextTick(() => {
+                    const inputs = optionInputs.value;
+                    const lastInput = inputs[pollData.options.length - 1];
+                    if (lastInput) lastInput.focus(); // 自動聚焦
+                });
+            };
+
+            const removeOption = (i) => {
+                if (pollData.options.length > 2) {
+                    pollData.options.splice(i, 1);
+                }
+            };
+
+            // --- Shared / Other ---
             const broadcast = (msg) => {
                 connections.value.forEach(c => c.send(msg));
             };
 
             const handleVote = (data, peerId) => {
                 if (pollStatus.value !== 'active') return;
-                // 檢查是否投過 (雖然 Client 端有擋，但 Host 端也要擋)
                 if (votes.value.find(v => v.userId === peerId)) return;
 
                 votes.value.push({ userId: peerId, option: data.option, timestamp: new Date().toISOString() });
-                if (!results.value[data.option]) results.value[data.option] = 0;
-                results.value[data.option]++;
+                if (results.value[data.option] !== undefined) results.value[data.option]++;
                 
                 addLog(`收到投票: ${data.option}`, 'vote');
                 updateChart();
             };
 
-            // --- Voter Functions ---
+            const generateQR = () => {
+                const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
+                nextTick(() => {
+                    qrRef.value.innerHTML = '';
+                    new QRCode(qrRef.value, {
+                        text: url, width: 150, height: 150,
+                        colorDark: "#000000", colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                });
+            };
+
+            // --- Voter Logic ---
             const connectToHost = (hostId) => {
-                if (!hostId) return;
+                if (!hostId) { showToast('請輸入 ID', 'error'); return; }
                 targetId.value = hostId.toUpperCase();
                 
                 peer = new Peer();
@@ -589,6 +684,7 @@
                     conn.on('open', () => {
                         isConnected.value = true;
                         view.value = 'voter-active';
+                        showToast('連線成功', 'success');
                     });
 
                     conn.on('data', (data) => {
@@ -597,7 +693,6 @@
                             Object.assign(pollData, data.data);
                             timer.value = data.timer;
                             
-                            // 如果是 RESET 或新的一輪，重置本地狀態
                             if (data.type === 'START') {
                                 hasVoted.value = false;
                                 selectedOption.value = null;
@@ -614,21 +709,21 @@
                             pollStatus.value = 'idle';
                             hasVoted.value = false;
                             selectedOption.value = null;
+                            showToast('主持人已重置投票', 'info');
                         }
                     });
 
-                    conn.on('error', (err) => alert('連線中斷'));
+                    conn.on('error', () => showToast('連線中斷', 'error'));
                 });
             };
 
             const submitVote = () => {
                 if (!selectedOption.value) return;
-                // 發送給 Host (PeerJS connection object 在這裡沒有全域存，需優化)
-                // 由於 PeerJS 架構，我們這裡直接從 peer.connections 找
                 const conns = peer.connections[targetId.value];
                 if (conns && conns[0]) {
                     conns[0].send({ type: 'VOTE', option: selectedOption.value });
                     hasVoted.value = true;
+                    showToast('投票已送出', 'success');
                 }
             };
 
@@ -639,7 +734,7 @@
                 }, 1000);
             };
 
-            // --- Chart.js ---
+            // --- Chart & Export ---
             const initChart = () => {
                 nextTick(() => {
                     const ctx = document.getElementById('voteChart');
@@ -679,14 +774,15 @@
                 chart.update();
             };
 
-            // --- Misc ---
-            const addOption = () => pollData.options.push('新選項');
-            const removeOption = (i) => pollData.options.splice(i, 1);
-            
+            const getPercent = (count) => {
+                const total = Object.values(results.value).reduce((a, b) => a + b, 0);
+                return total === 0 ? 0 : (count / total * 100);
+            };
+
             const copyLink = () => {
                 const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
                 navigator.clipboard.writeText(url);
-                alert('連結已複製: ' + url);
+                showToast('連結已複製', 'success');
             };
 
             const exportCSV = () => {
@@ -700,28 +796,23 @@
                 link.download = `VOTE_REPORT_${myId.value}.csv`;
                 link.click();
             };
-
-            const getPercent = (count) => {
-                const total = Object.values(results.value).reduce((a,b)=>a+b, 0);
-                return total === 0 ? 0 : (count / total * 100);
-            };
-
-            // --- Auto Join ---
-            onMounted(() => {
-                const params = new URLSearchParams(window.location.search);
-                const joinId = params.get('join');
-                if (joinId) {
-                    targetId.value = joinId;
-                    connectToHost(joinId);
-                }
-            });
+            
+            // Auto Join from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const joinId = urlParams.get('join');
+            if(joinId) {
+                view.value = 'voter-login';
+                targetId.value = joinId;
+            }
 
             return {
-                view, activeTab, myId, targetId, isConnected, connections,
-                pollStatus, pollData, timer, displayTimer, logs, logContainer,
-                results, hasVoted, selectedOption, qrRef,
-                initHost, connectToHost, startPoll, stopPoll, resetPoll,
-                addOption, removeOption, submitVote, copyLink, exportCSV, getPercent
+                view, activeTab, myId, targetId, isConnected,
+                pollStatus, pollData, timer, displayTimer,
+                votes, results, hasVoted, selectedOption,
+                logs, logContainer, qrRef, connections, optionInputs, toasts, errors,
+                initHost, connectToHost, startPoll, stopPoll, resetPoll, validateAndStart,
+                addOption, removeOption, submitVote,
+                copyLink, exportCSV, getPercent
             };
         }
     }).mount('#app');
