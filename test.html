@@ -2,293 +2,411 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級作業管理系統 v3.1 - 安全修正版</title>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>班級數位平台</title>
     <style>
-        :root { --p: #4361ee; --s: #2ec4b6; --d: #ef233c; --bg: #f4f7fe; --card: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; }
-        
-        .card { background: var(--card); border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2, h3 { margin-top: 0; color: #1e293b; }
-        
-        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; transition: 0.3s; }
-        input:focus { border-color: var(--p); outline: none; box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1); }
-        button { background: var(--p); color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { opacity: 0.9; }
-        
-        /* 角色標籤 */
-        .role-badge-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-        .role-badge { background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.3); }
+        :root {
+            --p: #4361ee;    /* 座位 - 藍 */
+            --s: #2ec4b6;    /* 段考 - 綠 */
+            --a: #ff9f1c;    /* 學期 - 橘 */
+            --t: #ef233c;    /* 倒數 - 紅 */
+            --g: #7209b7;    /* 分組 - 紫 */
+            --m: #ffd60a;    /* 留言 - 黃 */
+            --v: #38b000;    /* 投票 - 草綠 */
+            --cal: #5856D6;  /* 行事曆 - 靛藍 */
+            --whi: #AF52DE;  /* 匿名板 - 紫羅蘭 */
+            --help: #ff758c; /* 心聲箱 - 暖粉紅 */
+            --duty: #4cc9f0; /* 勤務 - 天藍 */
+            --homework: #b5a442; /* 作業 - 褐金 */
+            --unknownmail: #0081a7; /* 匿名信箱 - 深青藍 */
 
-        /* 管理清單優化 */
-        .stu-group { margin-bottom: 5px; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9; }
-        .stu-row { padding: 12px 15px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        .stu-row:hover { background: #f8fafc; }
-        .stu-group.active .stu-row { background: #e2e8f0; }
-        .mini-role-tag { font-size: 0.7rem; background: #cbd5e1; color: #475569; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+            /* 淺色模式變數 */
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #2b2d42;
+            --sub-text: #8d99ae;
+            --border: rgba(0,0,0,0.03);
+            --banner-bg: #fff9db;
+            --banner-text: #856404;
+        }
+
+        /* 深色模式樣式 */
+        [data-theme="dark"] {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --sub-text: #a0a0a0;
+            --border: rgba(255,255,255,0.05);
+            --banner-bg: #332b00;
+            --banner-text: #ffd43b;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* 提醒橫幅 */
+        .notice-banner {
+            width: 100%;
+            background-color: var(--banner-bg);
+            color: var(--banner-text);
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            text-align: center;
+            box-sizing: border-box;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            line-height: 1.5;
+        }
+
+        /* 主題切換按鈕 */
+        .theme-toggle {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: var(--text);
+            z-index: 100;
+        }
+
+        /* 頂部標題區 */
+        .header {
+            width: 100%; padding: 50px 20px 30px;
+            background: var(--card); box-sizing: border-box;
+            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .header h1 {
+            margin: 0; font-size: 1.8rem; font-weight: 800;
+            color: var(--text); user-select: none;
+        }
+
+        .header p { margin: 8px 0 0; font-size: 0.9rem; color: var(--sub-text); }
+
+        /* 列表容器 */
+        .menu-list {
+            width: 100%; max-width: 500px; padding: 20px;
+            box-sizing: border-box; display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .category-label {
+            margin: 15px 0 5px 10px;
+            font-size: 0.85rem;
+            color: var(--sub-text);
+            font-weight: bold;
+            letter-spacing: 1px;
+            grid-column: 1 / -1;
+        }
+
+        .menu-item {
+            background: var(--card); border-radius: 20px; padding: 18px;
+            display: flex; align-items: center;
+            text-decoration: none; color: inherit;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid var(--border);
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (hover: hover) {
+            .menu-item:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+                border-color: rgba(0,0,0,0.1);
+            }
+            .menu-item:hover .arrow {
+                transform: translateX(5px);
+                color: var(--p);
+            }
+        }
+
+        .menu-item:active { transform: scale(0.97); }
+
+        .icon-box {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-right: 16px; flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item:hover .icon-box { transform: rotate(-5deg) scale(1.1); }
+
+        .info { flex-grow: 1; }
+        .info h2 { margin: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
+        .info p { margin: 0; font-size: 0.82rem; color: var(--sub-text); line-height: 1.4; }
+        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; transition: all 0.3s ease; }
+
+        /* --- 顏色與邊框定義 --- */
+        .calendar { border-left: 6px solid var(--cal); }
+        .calendar .icon-box { background: rgba(88, 86, 214, 0.1); color: var(--cal); }
+
+        .timer { border-left: 6px solid var(--t); }
+        .timer .icon-box { background: rgba(239, 35, 60, 0.1); color: var(--t); }
+
+        .homework { border-left: 6px solid var(--homework); }
+        .homework .icon-box { background: rgba(181, 164, 66, 0.1); color: var(--homework); }
+
+        .teacher-help { border-left: 6px solid var(--help); }
+        .teacher-help .icon-box { background: rgba(255, 117, 140, 0.1); color: var(--help); }
+
+        .unknownmail { border-left: 6px solid var(--unknownmail); }
+        .unknownmail .icon-box { background: rgba(0, 129, 167, 0.1); color: var(--unknownmail); }
+
+        .whisper { border-left: 6px solid var(--whi); }
+        .whisper .icon-box { background: rgba(175, 82, 222, 0.1); color: var(--whi); }
+
+        .board { border-left: 6px solid var(--m); }
+        .board .icon-box { background: rgba(255, 214, 10, 0.1); color: #f59e0b; }
+
+        .duty { border-left: 6px solid var(--duty); }
+        .duty .icon-box { background: rgba(76, 201, 240, 0.1); color: var(--duty); }
+
+        .seat { border-left: 6px solid var(--p); }
+        .seat .icon-box { background: rgba(67, 97, 238, 0.1); color: var(--p); }
         
-        .role-editor { display: none; background: #f8fafc; padding: 15px; border-top: 1px solid #e2e8f0; }
-        .stu-group.active .role-editor { display: block; }
-        .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-        .role-option { font-size: 0.85rem; display: flex; align-items: center; cursor: pointer; }
-        .role-option input { width: auto; margin-right: 6px; }
+        .vote { border-left: 6px solid var(--v); }
+        .vote .icon-box { background: rgba(56, 176, 0, 0.1); color: var(--v); }
 
-        /* 作業項目 */
-        .hw-item { background: #f8fafc; border-left: 5px solid var(--p); padding: 15px; border-radius: 15px; margin-bottom: 15px; position: relative; }
-        .subject-badge { display: inline-block; background: var(--p); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; }
-        .expired { opacity: 0.6; filter: grayscale(0.3); }
-        .section-title { font-size: 1rem; color: #64748b; margin: 25px 0 10px; display: flex; align-items: center; }
-        .section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 10px; }
+        .group { border-left: 6px solid var(--g); }
+        .group .icon-box { background: rgba(114, 9, 183, 0.1); color: var(--g); }
 
-        .status-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 10px; font-size: 0.85rem; margin: 10px 0; color: #92400e; }
-        .done-btn { background: var(--s); margin-top: 10px; }
-        .done-btn.already { background: #cbd5e1; cursor: default; }
+        .exam { border-left: 6px solid var(--s); }
+        .exam .icon-box { background: rgba(46, 196, 182, 0.1); color: var(--s); }
+        
+        .final { border-left: 6px solid var(--a); }
+        .final .icon-box { background: rgba(255, 159, 28, 0.1); color: var(--a); }
+
+        @media (min-width: 768px) {
+            .menu-list {
+                max-width: 850px;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                padding: 30px;
+            }
+            .header {
+                padding: 70px 20px 50px;
+                border-bottom-left-radius: 60px;
+                border-bottom-right-radius: 60px;
+            }
+            .header h1 { font-size: 2.4rem; }
+            .theme-toggle { top: 90px; right: 40px; }
+        }
+
+        @media (min-width: 1100px) {
+            .menu-list {
+                max-width: 1200px;
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        footer {
+            margin: 40px 0 20px; padding: 20px;
+            font-size: 0.75rem; color: var(--sub-text); text-align: center;
+            line-height: 1.6;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="loginCard" class="card">
-        <h2 style="text-align: center;">📝 作業管理系統 v3.1</h2>
-        <input type="number" id="stuId" placeholder="座號 (例如: 5)">
-        <input type="password" id="stuPw" placeholder="密碼">
-        <button onclick="doLogin()">登入系統</button>
+    <div class="notice-banner">
+        💡 <b>重要提醒：</b>本平台資源有每日配額限制。<b>留言板</b>與<b>許願池</b>功能消耗量較大，請節約使用，以確保其他班務服務能維持正常運作。
     </div>
 
-    <div id="mainView" style="display: none;">
-        <div class="card" style="background: linear-gradient(135deg, #4361ee, #4cc9f0); color: white;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div>
-                    <h2 id="helloName" style="margin:0; color: white;">載入中...</h2>
-                    <div id="roleList" class="role-badge-container"></div>
-                </div>
-                <button onclick="location.reload()" style="width: auto; background: rgba(0,0,0,0.2); margin: 0; padding: 8px 15px; font-size: 0.8rem;">登出</button>
+    <div class="header">
+        <button class="theme-toggle" id="themeBtn">
+            <span id="themeIcon">🌓</span> <span id="themeText">自動模式</span>
+        </button>
+        <h1>班級數位平台</h1>
+        <p>整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
+    </div>
+
+    <div class="menu-list">
+        
+        <div class="category-label">🔔 提醒系列</div>
+        <a href="行事曆/index.html" class="menu-item calendar">
+            <div class="icon-box">📅</div>
+            <div class="info">
+                <h2>班級重要行事曆</h2>
+                <p>考試、活動、補課日程不漏接</p>
             </div>
-        </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="countdown/index.html" class="menu-item timer">
+            <div class="icon-box">⏳</div>
+            <div class="info">
+                <h2>大考與日程倒數</h2>
+                <p>掌握統測、學測倒數時間</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="homework/index.html" class="menu-item homework">
+            <div class="icon-box">📒</div>
+            <div class="info">
+                <h2>各科作業提醒</h2>
+                <p>小老師發佈作業，同步進度</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
 
-        <div id="adminBox" class="card" style="display: none;">
-            <h3>👑 導師/管理員控制台</h3>
-            <input type="text" id="stuSearch" placeholder="🔍 輸入座號或姓名搜尋..." oninput="filterStudents()">
-            <div id="studentList" style="max-height: 450px; overflow-y: auto; margin-top: 10px;"></div>
-        </div>
+        <div class="category-label">🤝 互動系列</div>
+        <a href="help/student.html" class="menu-item teacher-help">
+            <div class="icon-box">🌱</div>
+            <div class="info">
+                <h2>導師悄悄話 (心聲箱)</h2>
+                <p>遇到困難了嗎？點這裡私下告訴老師</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="unknownmail/index.html" class="menu-item unknownmail">
+            <div class="icon-box">🤫</div>
+            <div class="info">
+                <h2>匿名信箱</h2>
+                <p>有什麼想告訴誰怕尷尬嗎？可以一次傳送給多位同學</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="匿名/index.html" class="menu-item whisper">
+            <div class="icon-box">🤫</div>
+            <div class="info">
+                <h2>班級匿名許願池</h2>
+                <p>有什麼想說的？悄悄告訴大家</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="board/index.html" class="menu-item board">
+            <div class="icon-box">💬</div>
+            <div class="info">
+                <h2>班級互動留言板</h2>
+                <p>班級事務公開討論區</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
 
-        <div id="managerBox" class="card" style="display: none; border: 2px solid var(--s);">
-            <h3 id="mgrTitle">📢 發佈作業</h3>
-            <label style="font-size: 0.85rem; color: #64748b;">發佈身份：</label>
-            <select id="postSubjectSelector"></select>
-            <input type="text" id="hwTitle" placeholder="作業內容 (例如: 習作 P.1-P.5)">
-            <input type="date" id="hwDate">
-            <button onclick="addHw()" style="background: var(--s);">確認發佈</button>
-        </div>
+        <div class="category-label">⚙️ 班務處理</div>
+        <a href="cleaning/index.html" class="menu-item duty">
+            <div class="icon-box">🧹</div>
+            <div class="info">
+                <h2>班級勤務管理系統</h2>
+                <p>內外衛生檢查與記點獎懲統計</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="seating/index.html" class="menu-item seat">
+            <div class="icon-box">🪑</div>
+            <div class="info">
+                <h2>數位教室選位系統</h2>
+                <p>現場超刺激抽籤選位</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="vote/index.html" class="menu-item vote">
+            <div class="icon-box">🗳️</div>
+            <div class="info">
+                <h2>線上投票決策系統</h2>
+                <p>重要班級事務一鍵表決</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="grouping/index.html" class="menu-item group">
+            <div class="icon-box">🎲</div>
+            <div class="info">
+                <h2>隨機分組小幫手</h2>
+                <p>輸入名單自動公平分組</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
 
-        <div class="card">
-            <h3>📅 作業清單</h3>
-            <div id="hwList"></div>
-        </div>
+        <div class="category-label">📊 成績系列</div>
+        <a href="exam_calc/index.html" class="menu-item exam">
+            <div class="icon-box">📝</div>
+            <div class="info">
+                <h2>段考成績加權計算</h2>
+                <p>計算段考加權平均分數</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
+        <a href="final_calc/index.html" class="menu-item final">
+            <div class="icon-box">📈</div>
+            <div class="info">
+                <h2>科目學期總成績</h2>
+                <p>計算平時、段考與期末加權</p>
+            </div>
+            <div class="arrow">❯</div>
+        </a>
     </div>
-</div>
 
-<script>
-    // Firebase 初始化 (請務必在 Google Cloud 設定網站限制，以免 apiKey 被盜用)
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
-        authDomain: "vote-6668.firebaseapp.com",
-        projectId: "vote-6668",
-        storageBucket: "vote-6668.firebasestorage.app",
-        messagingSenderId: "389284021944",
-        appId: "1:389284021944:web:3c5311697cbfc7c010564d"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    <footer>
+        © 2026 班級數位服務系統
+        <br>Designed by 王宥鈞
+    </footer>
 
-    const OFFICER_ROLES = ["班長", "副班長", "學藝股長", "輔導股長", "資訊股長"];
-    const SUBJECT_TEACHERS = ["國文", "英文", "數學", "經濟", "會計", "商業概論", "文書", "程式語言"];
-    const ALL_ROLES = [...OFFICER_ROLES, ...SUBJECT_TEACHERS];
+    <script>
+        // 主題切換邏輯
+        const themeBtn = document.getElementById('themeBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        const themes = ['auto', 'light', 'dark'];
+        let currentThemeIndex = 0;
 
-    let me = null;
+        // 初始化檢查 localStorage
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        currentThemeIndex = themes.indexOf(savedTheme);
+        applyTheme(savedTheme);
 
-    async function doLogin() {
-        const idInput = document.getElementById('stuId').value;
-        const pwInput = document.getElementById('stuPw').value;
-        if(!idInput || !pwInput) return alert("請輸入座號與密碼");
+        themeBtn.addEventListener('click', () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            const newTheme = themes[currentThemeIndex];
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
 
-        const id = idInput.padStart(2, '0'); 
-        try {
-            const doc = await db.collection("students").doc(id).get();
-            if (doc.exists) {
-                const data = doc.data();
-                if (data.password === pwInput) {
-                    if (data.status === "active") {
-                        me = { id, ...data };
-                        renderMain();
-                    } else {
-                        alert("您的帳號尚未啟用，請等待管理員核准後才可登入。");
-                    }
-                } else {
-                    alert("密碼錯誤");
-                }
-            } else { 
-                alert("座號不存在"); 
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            if (theme === 'auto') {
+                root.removeAttribute('data-theme');
+                themeIcon.textContent = '🌓';
+                themeText.textContent = '自動模式';
+                const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                // 自動模式下檢查系統偏好
+            } else if (theme === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = '深色模式';
+            } else {
+                root.setAttribute('data-theme', 'light');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = '淺色模式';
             }
-        } catch (e) { 
-            console.error(e);
-            alert("連線失敗"); 
-        }
-    }
-
-    function renderMain() {
-        document.getElementById('loginCard').style.display = 'none';
-        document.getElementById('mainView').style.display = 'block';
-        document.getElementById('helloName').innerText = `👋 歡迎，${me.name}`;
-        
-        const roles = me.subject_roles || [];
-        document.getElementById('roleList').innerHTML = roles.length > 0 ? 
-            roles.map(r => `<span class="role-badge">${r}</span>`).join('') : `<span class="role-badge">📖 一般學生</span>`;
-
-        const isAdmin = (me.role === 'admin' || me.role === 'teacher');
-        if (isAdmin) {
-            document.getElementById('adminBox').style.display = 'block';
-            loadStudentManager(); // 管理員登入時執行一次抓取
         }
 
-        if (isAdmin || roles.length > 0) {
-            document.getElementById('managerBox').style.display = 'block';
-            const canPost = isAdmin ? ALL_ROLES : roles;
-            document.getElementById('postSubjectSelector').innerHTML = canPost.map(r => `<option value="${r}">${r}</option>`).join('');
-        }
-        loadHomework();
-    }
-
-    // --- 安全優化：改用 get() 避免編輯時觸發無限讀取 ---
-    async function loadStudentManager() {
-        try {
-            const snap = await db.collection("students").get();
-            const container = document.getElementById('studentList');
-            container.innerHTML = "";
-            const sortedDocs = snap.docs.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-
-            sortedDocs.forEach(doc => {
-                const d = doc.data();
-                const currentRoles = d.subject_roles || [];
-                const roleBadges = currentRoles.map(r => `<span class="mini-role-tag">${r}</span>`).join('');
-                
-                const group = document.createElement('div');
-                group.className = 'stu-group';
-                group.setAttribute('data-search', `${doc.id} ${d.name}`);
-                group.innerHTML = `
-                    <div class="stu-row" onclick="this.parentElement.classList.toggle('active')">
-                        <span><strong>${parseInt(doc.id)}號</strong> ${d.name} ${roleBadges}</span>
-                        <span style="font-size:0.75rem; color:var(--p);">編輯 ▾</span>
-                    </div>
-                    <div class="role-editor">
-                        <div class="role-grid">
-                            ${ALL_ROLES.map(r => `
-                                <label class="role-option">
-                                    <input type="checkbox" ${currentRoles.includes(r) ? 'checked' : ''} 
-                                    onchange="toggleRole('${doc.id}', '${r}', this.checked)"> ${r}
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>`;
-                container.appendChild(group);
-            });
-        } catch (e) { console.error("加載學生失敗", e); }
-    }
-
-    function filterStudents() {
-        const q = document.getElementById('stuSearch').value.toLowerCase();
-        document.querySelectorAll('.stu-group').forEach(g => {
-            g.style.display = g.getAttribute('data-search').toLowerCase().includes(q) ? 'block' : 'none';
-        });
-    }
-
-    async function toggleRole(sid, role, isAdd) {
-        const ref = db.collection("students").doc(sid);
-        const action = isAdd ? firebase.firestore.FieldValue.arrayUnion(role) : firebase.firestore.FieldValue.arrayRemove(role);
-        try {
-            await ref.update({ subject_roles: action });
-            // 更新完不需要 reloadStudentManager()，UI 會維持 checkbox 狀態
-        } catch (e) { alert("更新權限失敗"); }
-    }
-
-    // --- 作業處理邏輯 ---
-    async function addHw() {
-        const title = document.getElementById('hwTitle').value;
-        const date = document.getElementById('hwDate').value;
-        const subject = document.getElementById('postSubjectSelector').value;
-        if(!title || !date) return alert("請填寫完整");
-
-        await db.collection("homework_reminders").add({
-            subject, title, date, authorId: me.id, authorName: me.name,
-            done_list: [], createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        document.getElementById('hwTitle').value = "";
-        alert("發佈成功！");
-    }
-
-    // --- 安全優化：加上時間過濾與數量限制 ---
-    function loadHomework() {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const todayStr = today.toISOString().split('T')[0];
-        
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const limitStr = thirtyDaysAgo.toISOString().split('T')[0];
-
-        // 使用 where 和 limit 確保即使有幾萬條數據，每次只會讀取最新的 30 條
-        db.collection("homework_reminders")
-          .where("date", ">=", limitStr)
-          .orderBy("date", "asc")
-          .limit(30)
-          .onSnapshot(snap => {
-            const list = document.getElementById('hwList');
-            let activeItems = "", expiredItems = "";
-            
-            snap.forEach(doc => {
-                const d = doc.data();
-                const isExpired = d.date < todayStr;
-                const hasDone = d.done_list?.includes(me.id);
-                const isOwner = (me.id === d.authorId || me.role === 'admin' || me.role === 'teacher');
-
-                const html = `
-                    <div class="hw-item ${isExpired ? 'expired' : ''}">
-                        <span class="subject-badge" style="${isExpired ? 'background:#94a3b8' : ''}">${d.subject}</span>
-                        <div class="hw-title">${d.title}</div>
-                        <div class="hw-info">截止日期：${d.date} | 發佈：${d.authorName}</div>
-                        ${isOwner ? `<div class="status-box">📊 已完成: ${d.done_list.length}人 (${d.done_list.join(", ")})</div>` : ''}
-                        <div style="display:flex; gap:8px;">
-                            <button class="done-btn ${hasDone ? 'already' : ''}" onclick="markDone('${doc.id}', ${hasDone})" style="flex:3;">
-                                ${hasDone ? '✅ 已完成' : '回報完成'}
-                            </button>
-                            ${isOwner ? `<button onclick="deleteHw('${doc.id}')" style="flex:1; background:var(--d);">刪除</button>` : ''}
-                        </div>
-                    </div>`;
-                if (isExpired) expiredItems += html; else activeItems += html;
-            });
-
-            list.innerHTML = `<div class="section-title">進行中</div>${activeItems || '<p>暫無作業</p>'}
-                              <div class="section-title">先前作業 (僅顯示30天內)</div>${expiredItems || '<p>暫無紀錄</p>'}`;
-        }, error => {
-            if (error.code === 'resource-exhausted') {
-                alert("今日系統免費額度已用完，請明天再試。");
+        // 監聽系統主題變化 (當設定為自動時)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (localStorage.getItem('theme') === 'auto') {
+                applyTheme('auto');
             }
         });
-    }
-
-    async function markDone(hid, hasDone) {
-        if(hasDone) return;
-        await db.collection("homework_reminders").doc(hid).update({ 
-            done_list: firebase.firestore.FieldValue.arrayUnion(me.id) 
-        });
-    }
-
-    async function deleteHw(hid) {
-        if(confirm("確定刪除？")) await db.collection("homework_reminders").doc(hid).delete();
-    }
-</script>
+    </script>
 </body>
 </html>
