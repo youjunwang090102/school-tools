@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>菁英班級數位平台 v18.5 旗艦穩定版</title>
+    <title>班級數位平台 v3.1.0(bata)</title>
 
     <meta name="theme-color" id="chrome-theme" content="#f8fafc">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,19 +36,19 @@
 
         // 🏗️ 全域開發者資訊配置
         const SYS_CONFIG = {
-            banner: "🚀 v18.5 穩定版：已修復佈局切換顏色對比、座標偏移及 SVG 消失 Bug。",
+            banner: "許願池系統負載較高，請節省頻率以維持其他服務正常。。",
             author: {
                 name: "王宥鈞",
-                role: "核心系統架構師 / Lead Developer",
-                ver: "v18.5.2-Stability-Gold",
+                role: "主要開發者 / Lead Developer",
+                ver: "v3.1.0(bata)",
                 docUrl: "#",
                 updates: [
-                    "2026/02/12 - 強化深色模式按鈕高對比顯示。",
-                    "2026/02/12 - 修正重新整理後 Page Index 偏移問題。",
-                    "2026/02/11 - 導入 MutationObserver 監控系統狀態。",
-                    "2026/02/10 - 解決 iOS Safari 網址列變色延遲。",
-                    "2026/02/09 - 最佳化 SVG 向量渲染路徑。",
-                    "2026/02/08 - 增加方塊模式下圖示觸控面積。"
+                    "強化深色模式按鈕高對比顯示，優化使用體驗。",
+                    "修正重新整理後 Page Index 偏移問題。",
+                    "增加下方選單，方便切換服務項目類別。",
+                    "最佳化 SVG 向量渲染路徑，以免行動裝置版圖示顯示異常。",
+                    "支援滑動頁面功能，優化用戶體驗",
+                    "增加圖示觸控面積，對觸控使用者較為友善。"
                 ]
             }
         };
@@ -312,27 +312,27 @@
     <main class="viewport" id="scroll-engine">
         <section class="page-panel"><div class="content-grid">
             <a href="行事曆/index.html" class="card"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
-            <a href="countdown/index.html" class="card"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>戰鬥時刻，每一秒都精確計算</p></div></a>
-            <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業彙整</h2><p>今日事今日畢，作業清單更新</p></div></a>
+            <a href="countdown/index.html" class="card"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
+            <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>小老師新增作業 同學即時查看不遺漏</p></div></a>
         </div></section>
 
         <section class="page-panel"><div class="content-grid">
-            <a href="help/student.html" class="card"><div class="card-icon">🌱</div><div class="card-info"><h2>心聲諮詢</h2><p>傾聽你的壓力與想法</p></div></a>
-            <a href="unknownmail/index.html" class="card"><div class="card-icon">㊙️</div><div class="card-info"><h2>加密信箱</h2><p>安全匿名的訊息傳遞渠道</p></div></a>
+            <a href="help/student.html" class="card"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>匿名求助導師</p></div></a>
+            <a href="unknownmail/index.html" class="card"><div class="card-icon">㊙️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學 避免尷尬</p></div></a>
             <a href="匿名/index.html" class="card"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
-            <a href="board/index.html" class="card"><div class="card-icon">💬</div><div class="card-info"><h2>公務討論區</h2><p>民主決策，每一票都重要</p></div></a>
+            <a href="board/index.html" class="card"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>實名留下想說的話</p></div></a>
         </div></section>
 
         <section class="page-panel"><div class="content-grid">
-            <a href="cleaning/index.html" class="card"><div class="card-icon">🧹</div><div class="card-info"><h2>勤務追蹤</h2><p>整潔區域與責任分工</p></div></a>
-            <a href="seating/index.html" class="card"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>公平透明的座位調整機制</p></div></a>
+            <a href="cleaning/index.html" class="card"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看自己掃區、未掃登記點數</p></div></a>
+            <a href="seating/index.html" class="card"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>刺激的隨機選位 即時生成座位表</p></div></a>
             <a href="vote/index.html" class="card"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
-            <a href="grouping/index.html" class="card"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組演算法</p></div></a>
+            <a href="grouping/index.html" class="card"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組方式</p></div></a>
         </div></section>
 
         <section class="page-panel"><div class="content-grid">
-            <a href="exam_calc/index.html" class="card"><div class="card-icon">📝</div><div class="card-info"><h2>段考分析</h2><p>數據化你的成績表現</p></div></a>
-            <a href="final_calc/index.html" class="card"><div class="card-icon">📈</div><div class="card-info"><h2>學期評估</h2><p>預測學分與學習曲線</p></div></a>
+            <a href="exam_calc/index.html" class="card"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算段考加權平均與總分</p></div></a>
+            <a href="final_calc/index.html" class="card"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>判斷通過、補考、死當</p></div></a>
         </div></section>
     </main>
 
@@ -348,7 +348,7 @@
     <div class="overlay" id="ui-overlay">
         <div class="modal">
             <div class="modal-header">
-                <div class="avatar">王</div>
+                <div class="avatar">👤</div>
                 <h3 id="author-name" style="margin:0"></h3>
                 <p id="author-title" style="margin:5px 0 0; font-size:12px; opacity:0.8"></p>
             </div>
