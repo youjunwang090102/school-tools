@@ -3,178 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina Vote | P2P 互動投票</title>
+    <title>Lumina Vote | 強韌連線版</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
-        :root { --p: #007AFF; --bg: #F2F2F7; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; text-align: center; }
-        .container { max-width: 600px; margin: auto; padding: 20px; }
-        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn { padding: 15px 25px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; width: 100%; margin: 5px 0; }
+        :root { --p: #007AFF; --s: #34C759; --d: #FF3B30; }
+        body { font-family: -apple-system, sans-serif; background: #F2F2F7; margin: 0; text-align: center; color: #1C1C1E; }
+        .container { max-width: 500px; margin: auto; padding: 20px; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .btn { padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; transition: 0.2s; margin: 5px 0; }
         .btn-p { background: var(--p); color: white; }
-        .hidden { display: none; }
-        .vote-btn { height: 80px; font-size: 24px; background: #E5E5EA; color: #1D1D1F; }
-        .vote-btn:active { background: var(--p); color: white; }
-        .bar-container { background: #E5E5EA; border-radius: 10px; height: 30px; margin: 10px 0; overflow: hidden; position: relative; }
-        .bar-fill { background: var(--p); height: 100%; width: 0%; transition: 0.5s; }
-        .bar-label { position: absolute; left: 10px; top: 5px; font-size: 14px; font-weight: bold; color: #000; }
+        .hidden { display: none !important; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .opt-btn { height: 100px; font-size: 28px; background: #F2F2F7; border: 2px solid transparent; }
+        .opt-btn.active { border-color: var(--p); background: #E5F1FF; color: var(--p); }
+        .bar { height: 12px; background: #E5E5EA; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+        .bar-inner { height: 100%; background: var(--p); width: 0%; transition: 0.6s cubic-bezier(0.1, 0.7, 0.1, 1); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="v-start">
-        <h1 style="margin-top: 100px;">Lumina Vote</h1>
-        <button class="btn btn-p" onclick="initTeacher()">我是老師 (發起投票)</button>
-        <button class="btn" style="background:#8E8E93; color:white;" onclick="showView('v-stu-login')">我是學生 (參與投票)</button>
+        <h1 style="margin: 50px 0;">Lumina Vote</h1>
+        <button class="btn btn-p" onclick="initTeacher()">我是老師 (開啟房號)</button>
+        <button class="btn" style="background:#8E8E93; color:white;" onclick="showView('v-stu-login')">我是學生 (掃碼投票)</button>
     </div>
 
     <div id="v-teacher" class="hidden">
         <div class="card">
-            <h2 id="roomIDDisp">房號: --</h2>
+            <h2 id="t-id">房號: ----</h2>
             <canvas id="qrcode" style="margin: auto;"></canvas>
         </div>
         <div class="card">
-            <input type="text" id="voteTopic" placeholder="輸入投票主題" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #DDD;">
-            <div id="resultArea">
-                <div class="bar-container"><div class="bar-fill" id="bar-A"></div><span class="bar-label">A: <span id="count-A">0</span> 票</span></div>
-                <div class="bar-container"><div class="bar-fill" id="bar-B"></div><span class="bar-label">B: <span id="count-B">0</span> 票</span></div>
-                <div class="bar-container"><div class="bar-fill" id="bar-C"></div><span class="bar-label">C: <span id="count-C">0</span> 票</span></div>
-                <div class="bar-container"><div class="bar-fill" id="bar-D"></div><span class="bar-label">D: <span id="count-D">0</span> 票</span></div>
-            </div>
-            <button class="btn btn-p" onclick="resetVotes()">清空重新投票</button>
+            <input type="text" id="topic" placeholder="在此輸入投票主題..." style="width:100%; border:1px solid #DDD; padding:10px; border-radius:8px;">
+            <div id="stats" style="text-align: left; margin-top: 15px;"></div>
+            <button class="btn" style="background:#EEE;" onclick="resetVotes()">清空統計</button>
         </div>
-        <p>當前在線人數: <span id="onlineCount">0</span></p>
     </div>
 
-    <div id="v-stu-login" class="hidden">
-        <div class="card" style="margin-top: 50px;">
-            <h2>輸入老師房號</h2>
-            <input type="text" id="joinID" style="width:100%; padding:15px; font-size:20px; text-align:center; border-radius:10px; border:1px solid #DDD;">
-            <button class="btn btn-p" style="margin-top:15px;" onclick="initStudent()">進入投票</button>
-        </div>
+    <div id="v-stu-login" class="hidden card" style="margin-top: 50px;">
+        <h2>輸入房號</h2>
+        <input type="text" id="target-id" style="width:100%; padding:15px; font-size:24px; text-align:center; border-radius:12px; border:1px solid #DDD;">
+        <button class="btn btn-p" onclick="initStudent()">開始連線</button>
     </div>
 
     <div id="v-student" class="hidden">
         <div class="card">
-            <h2 id="displayTopic">等待老師出題...</h2>
-            <div id="voteOptions">
-                <button class="btn vote-btn" onclick="castVote('A')">A</button>
-                <button class="btn vote-btn" onclick="castVote('B')">B</button>
-                <button class="btn vote-btn" onclick="castVote('C')">C</button>
-                <button class="btn vote-btn" onclick="castVote('D')">D</button>
+            <div style="display:flex; align-items:center; justify-content:center; font-size:12px;">
+                <span id="s-dot" class="status-dot" style="background:gray;"></span>
+                <span id="s-msg">嘗試連線中...</span>
             </div>
-            <p id="statusMsg" style="color: gray;">請點選選項投下一票</p>
+            <h2 id="s-topic" style="margin: 20px 0;">等待老師題目...</h2>
+            <div class="vote-grid">
+                <button class="btn opt-btn" onclick="submitVote('A')">A</button>
+                <button class="btn opt-btn" onclick="submitVote('B')">B</button>
+                <button class="btn opt-btn" onclick="submitVote('C')">C</button>
+                <button class="btn opt-btn" onclick="submitVote('D')">D</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    let peer, conn, myID;
-    let votes = { A: 0, B: 0, C: 0, D: 0 };
-    let voterRecords = new Set(); // 防止重複投票
+    let peer, conn, role, myVote = null;
+    let votes = {A:0, B:0, C:0, D:0};
+    const voters = new Set();
 
     function showView(id) {
-        ['v-start', 'v-teacher', 'v-stu-login', 'v-student'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // --- 老師端邏輯 ---
+    // --- 老師端 ---
     function initTeacher() {
-        myID = "VOTE" + Math.floor(1000 + Math.random() * 9000);
-        peer = new Peer(myID);
+        role = 'teacher';
+        const tid = "V" + Math.floor(1000 + Math.random()*8999);
+        peer = new Peer(tid);
         peer.on('open', id => {
             showView('v-teacher');
-            document.getElementById('roomIDDisp').innerText = "房號: " + id;
-            QRCode.toCanvas(document.getElementById('qrcode'), window.location.href.split('?')[0] + '?room=' + id);
-            
-            // 每秒廣播一次目前的題目，確保 Android 學生進場就能看到
+            document.getElementById('t-id').innerText = "房號: " + id;
+            QRCode.toCanvas(document.getElementById('qrcode'), window.location.href.split('?')[0] + '?r=' + id);
+            renderStats();
+            // 廣播機制：每秒同步題目與心跳
             setInterval(() => {
-                let topic = document.getElementById('voteTopic').value || "請投下你的一票";
-                Object.values(peer.connections).forEach(conns => {
-                    conns.forEach(c => {
-                        if(c.open) c.send({ type: 'sync', topic: topic });
-                    });
-                });
+                const t = document.getElementById('topic').value || "請選擇你的答案";
+                Object.values(peer.connections).forEach(group => group.forEach(c => {
+                    if(c.open) c.send({type:'sync', topic: t});
+                }));
             }, 1000);
         });
-
         peer.on('connection', c => {
             c.on('data', d => {
-                if (d.type === 'vote') {
-                    if (!voterRecords.has(c.peer)) {
-                        votes[d.choice]++;
-                        voterRecords.add(c.peer);
-                        updateCharts();
-                    }
+                if(d.type === 'vote' && !voters.has(c.peer)) {
+                    votes[d.val]++;
+                    voters.add(c.peer);
+                    renderStats();
                 }
             });
-            updateOnlineStatus();
         });
     }
 
-    function updateCharts() {
-        const total = Object.values(votes).reduce((a, b) => a + b, 0);
-        ['A', 'B', 'C', 'D'].forEach(opt => {
-            const count = votes[opt];
-            const percent = total === 0 ? 0 : (count / total * 100);
-            document.getElementById(`bar-${opt}`).style.width = percent + "%";
-            document.getElementById(`count-${opt}`).innerText = count;
+    function renderStats() {
+        const total = Object.values(votes).reduce((a,b)=>a+b, 0);
+        let html = '';
+        ['A','B','C','D'].forEach(o => {
+            const p = total ? (votes[o]/total*100).toFixed(0) : 0;
+            html += `<div>${o}: ${votes[o]} 票 (${p}%)</div><div class="bar"><div class="bar-inner" style="width:${p}%"></div></div>`;
         });
+        document.getElementById('stats').innerHTML = html;
     }
 
-    function resetVotes() {
-        votes = { A: 0, B: 0, C: 0, D: 0 };
-        voterRecords.clear();
-        updateCharts();
-    }
+    function resetVotes() { votes = {A:0,B:0,C:0,D:0}; voters.clear(); renderStats(); }
 
-    function updateOnlineStatus() {
-        document.getElementById('onlineCount').innerText = Object.keys(peer.connections).length;
-    }
-
-    // --- 學生端邏輯 ---
+    // --- 學生端 ---
+    let retryTimer, lastPing = 0;
     function initStudent() {
-        const targetID = document.getElementById('joinID').value.toUpperCase() || new URLSearchParams(window.location.search).get('room');
-        if (!targetID) return alert("請輸入房號");
+        role = 'student';
+        const rid = document.getElementById('target-id').value.toUpperCase() || new URLSearchParams(window.location.search).get('r');
+        if(!rid) return;
+        showView('v-student');
         
+        if(peer) peer.destroy();
         peer = new Peer();
-        peer.on('open', (id) => {
-            conn = peer.connect(targetID);
-            showView('v-student');
-            
-            conn.on('data', d => {
-                if (d.type === 'sync') {
-                    document.getElementById('displayTopic').innerText = d.topic;
-                }
-            });
-            
-            conn.on('open', () => {
-                document.getElementById('statusMsg').innerText = "連線成功，請投票";
-            });
+        
+        peer.on('open', () => tryConnect(rid));
+        
+        // 斷線自動監測（Android 核心修復）
+        setInterval(() => {
+            if(role === 'student' && Date.now() - lastPing > 5000) {
+                updateStuStatus("斷線重連中...", "red");
+                tryConnect(rid);
+            }
+        }, 3000);
+    }
+
+    function tryConnect(rid) {
+        if(conn && conn.open) return;
+        conn = peer.connect(rid);
+        conn.on('open', () => {
+            updateStuStatus("已連線", "var(--s)");
+            if(myVote) conn.send({type:'vote', val: myVote}); // 重連後自動補投
         });
+        conn.on('data', d => {
+            if(d.type === 'sync') {
+                lastPing = Date.now();
+                document.getElementById('s-topic').innerText = d.topic;
+                updateStuStatus("已連線", "var(--s)");
+            }
+        });
+        conn.on('error', () => conn.close());
     }
 
-    function castVote(choice) {
-        if (conn && conn.open) {
-            conn.send({ type: 'vote', choice: choice });
-            document.getElementById('statusMsg').innerText = "已投票給 " + choice + "！";
-            // 投完變色
-            document.querySelectorAll('.vote-btn').forEach(b => b.style.background = "#E5E5EA");
-            event.target.style.background = "#34C759";
+    function updateStuStatus(msg, color) {
+        document.getElementById('s-msg').innerText = msg;
+        document.getElementById('s-dot').style.background = color;
+    }
+
+    function submitVote(val) {
+        myVote = val;
+        document.querySelectorAll('.opt-btn').forEach(b => {
+            b.classList.toggle('active', b.innerText === val);
+        });
+        if(conn && conn.open) {
+            conn.send({type:'vote', val: val});
+            updateStuStatus("已成功投票", "var(--p)");
         } else {
-            alert("連線中斷，請重新整理頁面。");
+            updateStuStatus("等待連線以送出...", "orange");
         }
     }
 
-    // 自動填入房號 (來自 QR Code)
     window.onload = () => {
-        const r = new URLSearchParams(window.location.search).get('room');
-        if(r) {
-            document.getElementById('joinID').value = r;
-            showView('v-stu-login');
-        }
+        const r = new URLSearchParams(window.location.search).get('r');
+        if(r) { document.getElementById('target-id').value = r; showView('v-stu-login'); }
     };
 </script>
 </body>
