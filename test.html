@@ -30,8 +30,8 @@
             --banner-text: #856404;
         }
 
-        /* 深色模式樣式 */
-        [data-theme="dark"] {
+        /* 深色模式變數定義 */
+        .dark-theme {
             --bg: #121212;
             --card: #1e1e1e;
             --text: #e0e0e0;
@@ -48,7 +48,7 @@
             color: var(--text);
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         /* 提醒橫幅 */
@@ -62,36 +62,16 @@
             box-sizing: border-box;
             border-bottom: 1px solid rgba(0,0,0,0.05);
             line-height: 1.5;
+            transition: all 0.4s ease;
         }
 
         /* 頂部標題區 */
         .header {
-            width: 100%; padding: 30px 20px 30px;
+            width: 100%; padding: 50px 20px 30px;
             background: var(--card); box-sizing: border-box;
             border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* 主題切換按鈕 - 手機版改為相對定位防止重疊 */
-        .theme-toggle {
-            margin-bottom: 15px; /* 在標題上方留點空間 */
-            background: var(--bg); /* 使用背景色讓它在卡片上更顯眼 */
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-            color: var(--text);
-            transition: all 0.2s ease;
+            transition: all 0.4s ease;
         }
 
         .header h1 {
@@ -100,6 +80,44 @@
         }
 
         .header p { margin: 8px 0 0; font-size: 0.9rem; color: var(--sub-text); }
+
+        /* 右下角懸浮按鈕 */
+        .theme-fab {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 50px;
+            height: 50px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            transition: transform 0.2s, background-color 0.4s;
+            font-size: 20px;
+        }
+        
+        .theme-fab:active { transform: scale(0.9); }
+        
+        /* 模式名稱小標籤 (選填) */
+        .theme-label {
+            position: fixed;
+            bottom: 38px;
+            right: 85px;
+            background: var(--text);
+            color: var(--card);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .theme-fab:hover + .theme-label { opacity: 0.8; }
 
         /* 列表容器 */
         .menu-list {
@@ -136,237 +154,95 @@
                 box-shadow: 0 12px 20px rgba(0,0,0,0.08);
                 border-color: rgba(0,0,0,0.1);
             }
-            .menu-item:hover .arrow {
-                transform: translateX(5px);
-                color: var(--p);
-            }
         }
-
-        .menu-item:active { transform: scale(0.97); }
 
         .icon-box {
             width: 52px; height: 52px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px; margin-right: 16px; flex-shrink: 0;
-            transition: transform 0.3s ease;
         }
-
-        .menu-item:hover .icon-box { transform: rotate(-5deg) scale(1.1); }
 
         .info { flex-grow: 1; }
         .info h2 { margin: 0; font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
         .info p { margin: 0; font-size: 0.82rem; color: var(--sub-text); line-height: 1.4; }
-        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; transition: all 0.3s ease; }
+        .arrow { color: #ced4da; font-size: 1rem; margin-left: 10px; }
 
-        /* --- 顏色與邊框定義 --- */
+        /* 顏色定義保持不變 */
         .calendar { border-left: 6px solid var(--cal); }
         .calendar .icon-box { background: rgba(88, 86, 214, 0.1); color: var(--cal); }
-
         .timer { border-left: 6px solid var(--t); }
         .timer .icon-box { background: rgba(239, 35, 60, 0.1); color: var(--t); }
-
         .homework { border-left: 6px solid var(--homework); }
         .homework .icon-box { background: rgba(181, 164, 66, 0.1); color: var(--homework); }
-
         .teacher-help { border-left: 6px solid var(--help); }
         .teacher-help .icon-box { background: rgba(255, 117, 140, 0.1); color: var(--help); }
-
         .unknownmail { border-left: 6px solid var(--unknownmail); }
         .unknownmail .icon-box { background: rgba(0, 129, 167, 0.1); color: var(--unknownmail); }
-
         .whisper { border-left: 6px solid var(--whi); }
         .whisper .icon-box { background: rgba(175, 82, 222, 0.1); color: var(--whi); }
-
         .board { border-left: 6px solid var(--m); }
         .board .icon-box { background: rgba(255, 214, 10, 0.1); color: #f59e0b; }
-
         .duty { border-left: 6px solid var(--duty); }
         .duty .icon-box { background: rgba(76, 201, 240, 0.1); color: var(--duty); }
-
         .seat { border-left: 6px solid var(--p); }
         .seat .icon-box { background: rgba(67, 97, 238, 0.1); color: var(--p); }
-        
         .vote { border-left: 6px solid var(--v); }
         .vote .icon-box { background: rgba(56, 176, 0, 0.1); color: var(--v); }
-
         .group { border-left: 6px solid var(--g); }
         .group .icon-box { background: rgba(114, 9, 183, 0.1); color: var(--g); }
-
         .exam { border-left: 6px solid var(--s); }
         .exam .icon-box { background: rgba(46, 196, 182, 0.1); color: var(--s); }
-        
         .final { border-left: 6px solid var(--a); }
         .final .icon-box { background: rgba(255, 159, 28, 0.1); color: var(--a); }
 
-        /* --- 響應式佈局調整 --- */
         @media (min-width: 768px) {
-            .menu-list {
-                max-width: 850px;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                padding: 30px;
-            }
-            .header {
-                padding: 70px 20px 50px;
-                border-bottom-left-radius: 60px;
-                border-bottom-right-radius: 60px;
-                flex-direction: row; /* 電腦版讓標題居中，按鈕移至側邊 */
-                justify-content: center;
-            }
+            .menu-list { max-width: 850px; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; }
+            .header { padding: 70px 20px 50px; border-bottom-left-radius: 60px; border-bottom-right-radius: 60px; }
             .header h1 { font-size: 2.4rem; }
-            .theme-toggle { 
-                position: absolute; 
-                top: 50%; 
-                right: 40px; 
-                transform: translateY(-50%);
-                margin-bottom: 0;
-            }
         }
 
         @media (min-width: 1100px) {
-            .menu-list {
-                max-width: 1200px;
-                grid-template-columns: 1fr 1fr 1fr;
-            }
+            .menu-list { max-width: 1200px; grid-template-columns: 1fr 1fr 1fr; }
         }
 
-        footer {
-            margin: 40px 0 20px; padding: 20px;
-            font-size: 0.75rem; color: var(--sub-text); text-align: center;
-            line-height: 1.6;
-            width: 100%;
-        }
+        footer { margin: 40px 0 20px; padding: 20px; font-size: 0.75rem; color: var(--sub-text); text-align: center; width: 100%; }
     </style>
 </head>
 <body>
 
     <div class="notice-banner">
-        💡 <b>重要提醒：</b>本平台資源有每日配額限制。<b>留言板</b>與<b>許願池</b>功能消耗量較大，請節約使用，以確保其他服務穩定運作。
+        💡 <b>資源管理提醒：</b>為維護服務穩定，<b>留言板</b>與<b>許願池</b>功能消耗額度較高，請節約用量以確保所有服務正常運作。
     </div>
 
+    <button class="theme-fab" id="themeBtn">🌓</button>
+    <div class="theme-label" id="themeLabel">自動模式</div>
+
     <div class="header">
-        <button class="theme-toggle" id="themeBtn">
-            <span id="themeIcon">🌓</span> <span id="themeText">自動模式</span>
-        </button>
-        <div>
-            <h1>班級數位平台</h1>
-            <p>整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
-        </div>
+        <h1>班級數位平台</h1>
+        <p>整合班級常用服務 ｜ 導師教學利器＆學生學習助手</p>
     </div>
 
     <div class="menu-list">
-        
         <div class="category-label">🔔 提醒系列</div>
-        <a href="行事曆/index.html" class="menu-item calendar">
-            <div class="icon-box">📅</div>
-            <div class="info">
-                <h2>班級重要行事曆</h2>
-                <p>考試、活動、補課日程不漏接</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="countdown/index.html" class="menu-item timer">
-            <div class="icon-box">⏳</div>
-            <div class="info">
-                <h2>大考與日程倒數</h2>
-                <p>掌握統測、學測倒數時間</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="homework/index.html" class="menu-item homework">
-            <div class="icon-box">📒</div>
-            <div class="info">
-                <h2>各科作業提醒</h2>
-                <p>小老師發佈作業，同步進度</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
+        <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級重要行事曆</h2><p>考試、活動、補課日程不漏接</p></div><div class="arrow">❯</div></a>
+        <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考與日程倒數</h2><p>掌握統測、學測倒數時間</p></div><div class="arrow">❯</div></a>
+        <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>各科作業提醒</h2><p>小老師發佈作業，同步進度</p></div><div class="arrow">❯</div></a>
 
         <div class="category-label">🤝 互動系列</div>
-        <a href="help/student.html" class="menu-item teacher-help">
-            <div class="icon-box">🌱</div>
-            <div class="info">
-                <h2>導師悄悄話 (心聲箱)</h2>
-                <p>遇到困難了嗎？點這裡私下告訴老師</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="unknownmail/index.html" class="menu-item unknownmail">
-            <div class="icon-box">🤫</div>
-            <div class="info">
-                <h2>匿名信箱</h2>
-                <p>有什麼想告訴誰怕尷尬嗎？可以一次傳送給多位同學</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="匿名/index.html" class="menu-item whisper">
-            <div class="icon-box">🤫</div>
-            <div class="info">
-                <h2>班級匿名許願池</h2>
-                <p>有什麼想說的？悄悄告訴大家</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="board/index.html" class="menu-item board">
-            <div class="icon-box">💬</div>
-            <div class="info">
-                <h2>班級互動留言板</h2>
-                <p>班級事務公開討論區</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
+        <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>導師悄悄話 (心聲箱)</h2><p>遇到困難了嗎？點這裡私下告訴老師</p></div><div class="arrow">❯</div></a>
+        <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">🤫</div><div class="info"><h2>匿名信箱</h2><p>想說的話可以一次傳送給多位同學</p></div><div class="arrow">❯</div></a>
+        <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">🤫</div><div class="info"><h2>班級匿名許願池</h2><p>有什麼想說的？悄悄告訴大家</p></div><div class="arrow">❯</div></a>
+        <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>班級互動留言板</h2><p>班級事務公開討論區</p></div><div class="arrow">❯</div></a>
 
         <div class="category-label">⚙️ 班務處理</div>
-        <a href="cleaning/index.html" class="menu-item duty">
-            <div class="icon-box">🧹</div>
-            <div class="info">
-                <h2>班級勤務管理系統</h2>
-                <p>內外衛生檢查與記點獎懲統計</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="seating/index.html" class="menu-item seat">
-            <div class="icon-box">🪑</div>
-            <div class="info">
-                <h2>數位教室選位系統</h2>
-                <p>現場超刺激抽籤選位</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="vote/index.html" class="menu-item vote">
-            <div class="icon-box">🗳️</div>
-            <div class="info">
-                <h2>線上投票決策系統</h2>
-                <p>重要班級事務一鍵表決</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="grouping/index.html" class="menu-item group">
-            <div class="icon-box">🎲</div>
-            <div class="info">
-                <h2>隨機分組小幫手</h2>
-                <p>輸入名單自動公平分組</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
+        <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>班級勤務管理系統</h2><p>內外衛生檢查與記點獎懲統計</p></div><div class="arrow">❯</div></a>
+        <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位教室選位系統</h2><p>現場超刺激抽籤選位</p></div><div class="arrow">❯</div></a>
+        <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>線上投票決策系統</h2><p>重要班級事務一鍵表決</p></div><div class="arrow">❯</div></a>
+        <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組小幫手</h2><p>輸入名單自動公平分組</p></div><div class="arrow">❯</div></a>
 
         <div class="category-label">📊 成績系列</div>
-        <a href="exam_calc/index.html" class="menu-item exam">
-            <div class="icon-box">📝</div>
-            <div class="info">
-                <h2>段考成績加權計算</h2>
-                <p>計算段考加權平均分數</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
-        <a href="final_calc/index.html" class="menu-item final">
-            <div class="icon-box">📈</div>
-            <div class="info">
-                <h2>科目學期總成績</h2>
-                <p>計算平時、段考與期末加權</p>
-            </div>
-            <div class="arrow">❯</div>
-        </a>
+        <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考成績加權計算</h2><p>計算段考加權平均分數</p></div><div class="arrow">❯</div></a>
+        <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>科目學期總成績</h2><p>計算平時、段考與期末加權</p></div><div class="arrow">❯</div></a>
     </div>
 
     <footer>
@@ -375,46 +251,43 @@
     </footer>
 
     <script>
-        // 主題切換邏輯
         const themeBtn = document.getElementById('themeBtn');
-        const themeIcon = document.getElementById('themeIcon');
-        const themeText = document.getElementById('themeText');
+        const themeLabel = document.getElementById('themeLabel');
         const themes = ['auto', 'light', 'dark'];
-        let currentThemeIndex = 0;
+        const icons = {'auto': '🌓', 'light': '☀️', 'dark': '🌙'};
+        const labels = {'auto': '自動模式', 'light': '淺色模式', 'dark': '深色模式'};
+        
+        let currentTheme = localStorage.getItem('theme') || 'auto';
 
-        const savedTheme = localStorage.getItem('theme') || 'auto';
-        currentThemeIndex = themes.indexOf(savedTheme);
-        applyTheme(savedTheme);
-
-        themeBtn.addEventListener('click', () => {
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            const newTheme = themes[currentThemeIndex];
-            localStorage.setItem('theme', newTheme);
-            applyTheme(newTheme);
-        });
-
-        function applyTheme(theme) {
-            const root = document.documentElement;
-            if (theme === 'auto') {
-                root.removeAttribute('data-theme');
-                themeIcon.textContent = '🌓';
-                themeText.textContent = '自動模式';
-            } else if (theme === 'dark') {
-                root.setAttribute('data-theme', 'dark');
-                themeIcon.textContent = '🌙';
-                themeText.textContent = '深色模式';
-            } else {
-                root.setAttribute('data-theme', 'light');
-                themeIcon.textContent = '☀️';
-                themeText.textContent = '淺色模式';
+        function applyTheme() {
+            const body = document.body;
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            // 移除舊狀態
+            body.classList.remove('dark-theme');
+            
+            if (currentTheme === 'dark' || (currentTheme === 'auto' && systemDark)) {
+                body.classList.add('dark-theme');
             }
+
+            themeBtn.textContent = icons[currentTheme];
+            themeLabel.textContent = labels[currentTheme];
+            localStorage.setItem('theme', currentTheme);
         }
 
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            if (localStorage.getItem('theme') === 'auto') {
-                applyTheme('auto');
-            }
+        themeBtn.addEventListener('click', () => {
+            const idx = themes.indexOf(currentTheme);
+            currentTheme = themes[(idx + 1) % themes.length];
+            applyTheme();
         });
+
+        // 監聽系統設定變化，如果是在自動模式下則立即反應
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (currentTheme === 'auto') applyTheme();
+        });
+
+        // 初始化
+        applyTheme();
     </script>
 </body>
 </html>
