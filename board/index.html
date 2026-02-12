@@ -3,62 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆-終極修正版</title>
+    <title>班級動態牆-視覺化管理版</title>
     <style>
-        :root { --primary: #4361ee; --bg: #f8f9fa; --card: #ffffff; }
+        :root { --primary: #4361ee; --bg: #f4f7fe; --card: #ffffff; --teacher: #8e44ad; --danger: #ef233c; --success: #2ec4b6; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; padding-bottom: 100px; }
+        .container { width: 100%; max-width: 600px; padding-bottom: 150px; }
         
-        h1 { color: #333; text-align: center; cursor: pointer; user-select: none; }
+        /* 登入區塊 */
+        .auth-box { background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; margin-top: 50px; }
+        
+        /* 主介面區塊 */
+        #mainContent { display: none; }
+        h1 { color: #333; text-align: center; }
         .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { filter: brightness(1.1); }
         
         #messageList { display: flex; flex-direction: column; gap: 12px; }
         .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 5px solid #ddd; }
         .msg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
         .msg-author { font-weight: bold; color: var(--primary); }
-        .admin-id { color: #aaa; font-weight: normal; font-size: 0.7rem; }
-        .btn-delete { display: none; color: #ff4d4f; cursor: pointer; border: 1px solid #ff4d4f; padding: 2px 5px; border-radius: 4px; margin-left: 10px; }
+        .is-teacher { border-left-color: var(--teacher); }
+        .is-teacher .msg-author { color: var(--teacher); }
         
-        /* 🛡️ 管理面板樣式 */
-        #adminPanel { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; text-align: center; z-index: 999; box-sizing: border-box; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); }
-        #adminPanel button { background: #444; margin: 5px; font-size: 0.8rem; padding: 8px 12px; border: 1px solid #666; }
-        #secretZone { position: fixed; bottom: 0; right: 0; width: 50px; height: 50px; background: transparent; z-index: 998; }
+        /* 🛡️ 老師管理面板 */
+        #adminTools { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; z-index: 999; box-sizing: border-box; max-height: 80vh; overflow-y: auto; }
+        .mute-panel { display: flex; flex-wrap: wrap; gap: 10px; background: #333; padding: 15px; border-radius: 12px; margin-bottom: 10px; align-items: center; justify-content: center; }
+        .mute-list-card { background: #444; padding: 10px; border-radius: 8px; margin: 5px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 300px; }
+        
+        .btn-sm { padding: 5px 10px; font-size: 0.7rem; margin-left: 5px; }
+        .status-tag { font-size: 0.75rem; color: var(--danger); font-weight: bold; margin-top: 5px; display: block; }
+        .user-info { font-size: 0.8rem; color: #666; margin-top: 10px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 id="titleSwitch">💬 班級留言板</h1>
-
-    <div class="input-box">
-        <div class="grid">
-            <input type="text" id="msgContent" placeholder="在此輸入訊息...">
-            <button onclick="sendComment()">發佈</button>
-        </div>
-        <div id="whoAmI" style="font-size: 0.75rem; color: #999; margin-top: 10px;">身分識別中...</div>
+    <div id="authBox" class="auth-box">
+        <h2>🔑 班級成員登入</h2>
+        <input type="number" id="loginId" placeholder="座號 (例如 05)" style="margin-bottom: 10px; width: 80%;">
+        <input type="password" id="loginPw" placeholder="密碼" style="margin-bottom: 20px; width: 80%;">
+        <button onclick="doLogin()" style="width: 80%; padding: 15px;">登入系統</button>
     </div>
 
-    <div id="messageList"></div>
+    <div id="mainContent">
+        <h1>💬 班級動態牆</h1>
+        <div class="input-box">
+            <div class="grid">
+                <input type="text" id="msgContent" placeholder="在此輸入訊息...">
+                <button onclick="sendComment()">發佈</button>
+            </div>
+            <div id="muteStatus" class="status-tag" style="display:none;">⚠️ 您目前被禁言中，暫時無法發文</div>
+            <div class="user-info">
+                <span id="whoAmI">載入中...</span>
+                <span onclick="location.reload()" style="cursor:pointer; color:var(--primary)">登出</span>
+            </div>
+        </div>
+        <div id="messageList"></div>
+    </div>
 </div>
 
-<div id="adminPanel">
-    <div style="margin-bottom:10px; color:#ffd700; font-size: 0.9rem; font-weight: bold;">🛡️ 老師管理模式</div>
-    <button onclick="remoteRename()" style="background:#8e44ad;">強制遠端改名</button>
-    <button onclick="clearAllMessages()" style="background:#d9534f;">一鍵清空全班</button>
-    <button onclick="exitAdmin()">登出管理</button>
-    <div style="font-size:10px; color:#777; margin-top:5px;">密令提示：於學生手機輸入 reset:name</div>
-</div>
+<div id="adminTools">
+    <div style="text-align:center; color:#ffd700; font-weight:bold; margin-bottom:10px;">🛡️ 視覺化禁言管理系統</div>
+    
+    <div class="mute-panel">
+        <select id="muteTargetSelect"><option value="">選擇學生...</option></select>
+        <select id="muteDaysSelect">
+            <option value="0.0416">禁言 1 小時</option>
+            <option value="0.5">禁言 12 小時</option>
+            <option value="1" selected>禁言 1 天</option>
+            <option value="3">禁言 3 天</option>
+            <option value="7">禁言 7 天</option>
+            <option value="999">永久禁言</option>
+        </select>
+        <button onclick="setMute()" style="background:var(--danger);">執行禁言</button>
+    </div>
 
-<div id="secretZone" onclick="triggerStep2()"></div>
+    <div id="activeMuteList" style="display:flex; flex-direction:column; align-items:center;">
+        <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">📋 當前禁言中名單</div>
+        </div>
+    
+    <div style="text-align:center; margin-top:15px; border-top: 1px solid #444; padding-top:10px;">
+        <button onclick="clearAllMessages()" style="background:var(--danger);">清空所有留言</button>
+        <button onclick="location.reload()" style="background:#555;">關閉管理面板</button>
+    </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
 <script>
-    // --- 1. 設定區 ---
     const firebaseConfig = {
         apiKey: "AIzaSyAS2CLfgTw9RQgVmZroj0O__N7h3M7XoP0",
         authDomain: "school-tools-6668.firebaseapp.com",
@@ -67,150 +103,163 @@
         messagingSenderId: "436587749038",
         appId: "1:436587749038:web:7153f0699078966530d73f"
     };
-    const ADMIN_PASSWORD = "6668"; 
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- 2. 身分識別邏輯 ---
-    let myId = localStorage.getItem('chat_device_id');
-    if (!myId) {
-        myId = Math.random().toString(36).substr(2, 4).toUpperCase();
-        localStorage.setItem('chat_device_id', myId);
-    }
+    let currentUser = null;
+    let allStudents = [];
 
-    let myName = localStorage.getItem('chat_name');
-    function initUser() {
-        if (!myName) {
-            let n = prompt("請輸入您的姓名（設定後無法自行更改）：");
-            if (n && n.trim()) {
-                myName = n.trim();
-                localStorage.setItem('chat_name', myName);
-                location.reload();
-            } else { initUser(); }
-        }
-        document.getElementById('whoAmI').innerText = `我的身分：${myName} (#${myId})`;
-    }
-    initUser();
-
-    // --- 3. 老師權限控制 ---
-    let clickCount = 0;
-    let step1Cleared = false;
-    let isAdminMode = false;
-
-    document.getElementById('titleSwitch').onclick = () => {
-        clickCount++;
-        if (clickCount >= 5) { 
-            step1Cleared = true; 
-            clickCount = 0; 
-            console.log("Stage 1 OK");
-        }
-    };
-
-    function triggerStep2() {
-        if (step1Cleared) {
-            const pw = prompt("請輸入老師管理密碼：");
-            if (pw === ADMIN_PASSWORD) {
-                isAdminMode = true;
-                document.getElementById('adminPanel').style.display = 'block';
-                renderAdminUI();
-                step1Cleared = false;
-            }
-        }
-    }
-
-    function renderAdminUI() {
-        document.querySelectorAll('.btn-delete').forEach(b => b.style.display = 'inline');
-        document.querySelectorAll('.admin-id').forEach(s => s.style.display = 'inline');
-    }
-
-    function exitAdmin() { isAdminMode = false; location.reload(); }
-
-    // --- 4. 遠端指令監聽 (防止無限重複修正版) ---
-    let lastResetTime = localStorage.getItem('last_reset_time') || 0;
-
-    db.collection("system_cmds").doc("rename_tasks").onSnapshot(doc => {
-        if (doc.exists) {
+    async function doLogin() {
+        const id = document.getElementById('loginId').value.padStart(2, '0');
+        const pw = document.getElementById('loginPw').value;
+        const doc = await db.collection("students").doc(id).get();
+        if (doc.exists && doc.data().password === pw) {
             const data = doc.data();
-            const cmdTime = data.ts ? data.ts.seconds : 0;
-            
-            // 只有當 ID 相符，且該指令是「新的」(時間晚於上次重設) 才會執行
-            if (data.targetId === myId && cmdTime > lastResetTime) {
-                localStorage.setItem('last_reset_time', cmdTime);
-                alert("老師已重設您的姓名權限，請重新輸入。");
-                localStorage.removeItem('chat_name');
-                location.reload();
+            if (data.role !== 'teacher' && data.role !== 'admin' && data.status !== 'active') {
+                return alert("帳號審核中，請聯繫老師。");
             }
-        }
-    });
-
-    async function remoteRename() {
-        const tid = prompt("請輸入該學生的 ID (如: A7B2):");
-        if (tid) {
-            await db.collection("system_cmds").doc("rename_tasks").set({
-                targetId: tid.toUpperCase(),
-                ts: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            alert("改名指令已發送！");
-        }
+            currentUser = { id, ...data };
+            initApp();
+        } else { alert("驗證失敗"); }
     }
 
-    // --- 5. 訊息收發功能 ---
-    function sendComment() {
+    function initApp() {
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        const isStaff = (currentUser.role === 'teacher' || currentUser.role === 'admin');
+        document.getElementById('whoAmI').innerText = `使用者：${currentUser.name} (#${currentUser.id})`;
+        
+        if (isStaff) {
+            document.getElementById('adminTools').style.display = 'block';
+            loadStudentList();
+        }
+        
+        // 學生端檢查禁言狀態顯示
+        checkSelfMute();
+        listenMessages(isStaff);
+    }
+
+    function checkSelfMute() {
+        // 定時檢查自己的禁言狀態
+        setInterval(async () => {
+            const doc = await db.collection("students").doc(currentUser.id).get();
+            const muteUntil = doc.data().muteUntil || 0;
+            const statusEl = document.getElementById('muteStatus');
+            if (Date.now() < muteUntil) {
+                statusEl.style.display = 'block';
+                statusEl.innerText = `⚠️ 禁言中，預計解禁：${new Date(muteUntil).toLocaleString()}`;
+            } else { statusEl.style.display = 'none'; }
+        }, 5000);
+    }
+
+    async function loadStudentList() {
+        const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
+        const select = document.getElementById('muteTargetSelect');
+        const muteListArea = document.getElementById('activeMuteList');
+        
+        select.innerHTML = '<option value="">選擇學生...</option>';
+        muteListArea.innerHTML = '<div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">📋 當前禁言中名單</div>';
+        
+        snap.forEach(doc => {
+            const s = doc.data();
+            const sid = doc.id;
+            // 填充下拉選單
+            if (s.role !== 'teacher') {
+                const opt = document.createElement('option');
+                opt.value = sid;
+                opt.innerText = `${sid} ${s.name}`;
+                select.appendChild(opt);
+            }
+            
+            // 填充禁言名單
+            if (s.muteUntil && s.muteUntil > Date.now()) {
+                const card = document.createElement('div');
+                card.className = 'mute-list-card';
+                card.innerHTML = `
+                    <span>${sid} ${s.name} <br><small>${new Date(s.muteUntil).toLocaleString()}</small></span>
+                    <div>
+                        <button class="btn-sm" style="background:var(--danger)" onclick="adjustMute('${sid}', 1)">+1天</button>
+                        <button class="btn-sm" style="background:var(--success)" onclick="adminActionUnmute('${sid}')">解禁</button>
+                    </div>
+                `;
+                muteListArea.appendChild(card);
+            }
+        });
+    }
+
+    async function setMute() {
+        const id = document.getElementById('muteTargetSelect').value;
+        const days = parseFloat(document.getElementById('muteDaysSelect').value);
+        if (!id) return alert("請先選擇學生");
+        const time = Date.now() + (days * 24 * 60 * 60 * 1000);
+        await db.collection("students").doc(id).update({ muteUntil: time });
+        alert("禁言設定成功");
+        loadStudentList();
+    }
+
+    async function adjustMute(id, extraDays) {
+        const doc = await db.collection("students").doc(id).get();
+        const currentMute = doc.data().muteUntil || Date.now();
+        const newMute = currentMute + (extraDays * 24 * 60 * 60 * 1000);
+        await db.collection("students").doc(id).update({ muteUntil: newMute });
+        loadStudentList();
+    }
+
+    async function adminActionUnmute(id) {
+        await db.collection("students").doc(id).update({ muteUntil: 0 });
+        loadStudentList();
+    }
+
+    async function sendComment() {
         const content = document.getElementById('msgContent').value.trim();
         if (!content) return;
-
-        // 密令：老師親自操作時可用
-        if (content === "reset:name") {
-            localStorage.removeItem('chat_name');
-            location.reload();
-            return;
+        const userDoc = await db.collection("students").doc(currentUser.id).get();
+        if (Date.now() < (userDoc.data().muteUntil || 0)) {
+            return alert("您目前處於禁言狀態，無法發文。");
         }
-
         db.collection("messages").add({
-            author: myName,
+            author: currentUser.name,
+            authorId: currentUser.id,
             content: content,
-            deviceId: myId,
+            role: currentUser.role || 'student',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => { document.getElementById('msgContent').value = ""; });
     }
 
     function deleteMsg(id) {
-        if(confirm("確定刪除此留言？")) db.collection("messages").doc(id).delete();
+        if(confirm("刪除這條留言？")) db.collection("messages").doc(id).delete();
     }
 
     async function clearAllMessages() {
-        if(confirm("⚠️ 確定要清空全班留言嗎？此操作無法恢復。")) {
+        if(confirm("⚠️ 確定要清空所有留言？")) {
             const snap = await db.collection("messages").get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            alert("已清空所有留言。");
         }
     }
 
-    // --- 6. 監聽動態牆 ---
-    db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snap => {
-        const list = document.getElementById('messageList');
-        list.innerHTML = "";
-        snap.forEach(doc => {
-            const d = doc.data();
-            const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
-            const div = document.createElement('div');
-            div.className = 'msg-card';
-            div.innerHTML = `
-                <div class="msg-header">
-                    <span>
-                        <span class="msg-author">${d.author}</span> 
-                        <span class="admin-id" style="display:${isAdminMode?'inline':'none'}">(#${d.deviceId})</span>
-                    </span>
-                    <span>${time} <span class="btn-delete" onclick="deleteMsg('${doc.id}')" style="display:${isAdminMode?'inline':'none'}">🗑️</span></span>
-                </div>
-                <div class="msg-content">${d.content}</div>
-            `;
-            list.appendChild(div);
+    function listenMessages(isStaff) {
+        db.collection("messages").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const list = document.getElementById('messageList');
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
+                const isTeacher = (d.role === 'teacher' || d.role === 'admin');
+                const div = document.createElement('div');
+                div.className = `msg-card ${isTeacher ? 'is-teacher' : ''}`;
+                div.innerHTML = `
+                    <div class="msg-header">
+                        <span><span class="msg-author">${d.author}</span> <small>(#${d.authorId})</small></span>
+                        <span>${time} ${isStaff ? `<button class="btn-sm" style="background:none; color:var(--danger); border:1px solid var(--danger);" onclick="deleteMsg('${doc.id}')">🗑️</button>` : ''}</span>
+                    </div>
+                    <div class="msg-content">${d.content}</div>
+                `;
+                list.appendChild(div);
+            });
         });
-    });
+    }
 </script>
 </body>
 </html>
