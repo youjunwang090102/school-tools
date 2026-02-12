@@ -10,14 +10,12 @@
             --g: #7209b7; --m: #ffd60a; --v: #38b000; --cal: #5856D6;
             --whi: #AF52DE; --help: #ff758c; --duty: #4cc9f0;
             --homework: #b5a442; --unknownmail: #0081a7;
-
-            /* 淺色模式 - 提高透明度以加強毛玻璃感 */
             --bg: #f8fafc;
             --card: rgba(255, 255, 255, 0.85);
             --text: #1e293b;
             --sub-text: #64748b;
             --border: rgba(0,0,0,0.06);
-            --glass-bg: rgba(248, 250, 252, 0.6);
+            --glass-bg: rgba(248, 250, 252, 0.65);
             --banner-bg: #fff9db;
             --banner-text: #856404;
         }
@@ -28,89 +26,74 @@
             --text: #f1f5f9;
             --sub-text: #94a3b8;
             --border: rgba(255,255,255,0.1);
-            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-bg: rgba(15, 23, 42, 0.7);
             --banner-bg: rgba(45, 38, 0, 0.8);
             --banner-text: #ffd43b;
         }
 
         body {
             margin: 0; padding: 0;
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex; flex-direction: column;
             height: 100dvh; width: 100vw;
             overflow: hidden;
-            transition: background-color 0.3s ease;
         }
 
-        /* --- 真・毛玻璃頂部 --- */
+        /* --- 緊湊型毛玻璃頂部 --- */
         .fixed-top {
             flex-shrink: 0;
             z-index: 1000;
             background: var(--glass-bg);
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
             border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
         }
 
         .notice-banner {
             background-color: var(--banner-bg);
             color: var(--banner-text);
-            margin: 10px 15px 5px;
-            padding: 10px 16px;
-            font-size: 0.8rem;
+            padding: 6px 15px;
+            font-size: 0.75rem;
             text-align: center;
-            border-radius: 12px;
             line-height: 1.4;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         }
 
         .header {
-            padding: 15px 20px;
-            display: flex; flex-direction: column; align-items: center;
-            position: relative;
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* 大標題文字特效 */
-        .header h1 { 
-            margin: 0; font-size: 1.75rem; font-weight: 850; 
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--p), var(--g));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header p { 
-            margin: 8px 0 15px; font-size: 0.8rem; 
-            color: var(--sub-text); text-align: center; font-weight: 500;
-            opacity: 0.9;
-        }
+        .header-titles { flex: 1; }
+        .header h1 { margin: 0; font-size: 1.3rem; font-weight: 850; letter-spacing: -0.5px; }
+        .header p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); font-weight: 500; }
 
-        .controls {
-            display: flex; align-items: center; gap: 12px;
-        }
+        .controls { display: flex; align-items: center; gap: 8px; }
 
-        /* 圖示切換器 */
         .layout-switcher {
-            display: flex; background: rgba(0,0,0,0.06); padding: 4px; border-radius: 12px;
+            display: flex; background: rgba(0,0,0,0.06); padding: 3px; border-radius: 10px;
         }
         body.dark-mode .layout-switcher { background: rgba(255,255,255,0.08); }
 
         .layout-btn {
-            background: none; border: none; padding: 6px 10px; border-radius: 8px;
-            cursor: pointer; display: flex; align-items: center; opacity: 0.4; transition: 0.3s;
+            background: none; border: none; padding: 5px 8px; border-radius: 7px;
+            cursor: pointer; display: flex; align-items: center; opacity: 0.4; transition: 0.2s;
         }
-        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
         body.dark-mode .layout-btn.active { background: #334155; }
-
-        .layout-btn svg { width: 18px; height: 18px; fill: var(--text); }
+        .layout-btn svg { width: 16px; height: 16px; fill: var(--text); }
 
         .theme-btn {
             background: var(--card); border: 1px solid var(--border);
-            color: var(--text); padding: 6px 14px; border-radius: 50px;
-            font-size: 0.7rem; font-weight: 600; cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            color: var(--text); padding: 6px; border-radius: 10px;
+            font-size: 0.9rem; cursor: pointer; display: flex; align-items: center;
         }
 
         /* --- 捲動區 --- */
@@ -119,74 +102,66 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             z-index: 1;
-            padding-bottom: 80px;
         }
 
         .menu-list {
-            width: 100%; max-width: 1000px; padding: 20px; margin: 0 auto;
-            box-sizing: border-box; display: grid; gap: 16px;
+            width: 100%; max-width: 1000px; padding: 15px; margin: 0 auto;
+            box-sizing: border-box; display: grid; gap: 12px;
         }
 
+        /* 模式切換樣式 */
         .menu-list.list-mode { grid-template-columns: 1fr; }
-        .menu-list.grid-mode { grid-template-columns: repeat(2, 1fr); }
+        
+        /* 手機版方塊模式：精準正方形且一排三個 */
+        .menu-list.grid-mode { 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px;
+        }
 
         @media (min-width: 768px) {
-            .menu-list.grid-mode { grid-template-columns: repeat(3, 1fr); }
+            .menu-list.grid-mode { grid-template-columns: repeat(4, 1fr); gap: 15px; }
             .menu-list.list-mode { grid-template-columns: repeat(2, 1fr); }
+            .header h1 { font-size: 1.6rem; }
+            .header p { font-size: 0.8rem; }
         }
 
         .category-label {
-            grid-column: 1 / -1; margin: 25px 0 8px 10px;
-            font-size: 0.75rem; color: var(--sub-text); font-weight: 800;
-            text-transform: uppercase; letter-spacing: 1.2px;
-            display: flex; align-items: center; gap: 10px;
+            grid-column: 1 / -1; margin: 15px 0 2px 5px;
+            font-size: 0.7rem; color: var(--sub-text); font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px;
         }
-        .category-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
         .menu-item {
-            background: var(--card); border-radius: 22px; border: 1px solid var(--border);
-            text-decoration: none; color: inherit; display: flex; transition: all 0.3s ease;
+            background: var(--card); border-radius: 15px; border: 1px solid var(--border);
+            text-decoration: none; color: inherit; display: flex; transition: transform 0.2s;
             position: relative; overflow: hidden;
         }
 
-        .menu-item:hover {
-            transform: translateY(-4px);
-            background: white;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.06);
-            border-color: var(--p);
-        }
-        body.dark-mode .menu-item:hover { background: #1e293b; }
-
-        /* 清單模式 */
-        .list-mode .menu-item { padding: 18px 20px; align-items: center; }
-        .list-mode .icon-box { width: 52px; height: 52px; margin-right: 18px; font-size: 24px; }
+        /* 清單模式：長條狀 */
+        .list-mode .menu-item { padding: 15px; align-items: center; }
+        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 12px; font-size: 20px; }
         
-        /* 方塊模式 */
-        .grid-mode .menu-item { flex-direction: column; padding: 22px 15px; text-align: center; align-items: center; }
-        .grid-mode .icon-box { width: 56px; height: 56px; margin-bottom: 12px; font-size: 28px; }
-        .grid-mode .info h2 { font-size: 0.95rem; }
+        /* 方塊模式：正方形 */
+        .grid-mode .menu-item { 
+            flex-direction: column; padding: 10px 5px; text-align: center; 
+            justify-content: center; align-items: center;
+            aspect-ratio: 1 / 1; /* 強制正方形 */
+        }
+        .grid-mode .icon-box { width: 38px; height: 38px; margin-bottom: 6px; font-size: 20px; }
+        .grid-mode .info h2 { font-size: 0.75rem; line-height: 1.2; }
         .grid-mode .info p { display: none; }
 
         .icon-box {
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            background: var(--bg); flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.03); flex-shrink: 0;
         }
 
-        .info h2 { margin: 0; font-size: 1.05rem; font-weight: 750; }
-        .info p { margin: 5px 0 0; font-size: 0.82rem; color: var(--sub-text); line-height: 1.4; }
+        .info h2 { margin: 0; font-size: 1rem; font-weight: 750; }
+        .info p { margin: 3px 0 0; font-size: 0.75rem; color: var(--sub-text); line-height: 1.3; }
 
-        .back-to-top {
-            position: fixed; bottom: 30px; right: 25px; width: 48px; height: 48px;
-            background: var(--text); color: var(--bg); border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15); cursor: pointer; border: none;
-            opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1001;
-        }
-        .back-to-top.show { opacity: 1; visibility: visible; }
-
-        /* 顏色左側裝飾線 */
-        .menu-item::before { content: ""; position: absolute; left: 0; top: 25%; width: 4px; height: 50%; background: currentColor; border-radius: 0 4px 4px 0; opacity: 0.7; }
-        .grid-mode .menu-item::before { left: 35%; top: auto; bottom: 0; width: 30%; height: 3px; border-radius: 4px 4px 0 0; }
+        /* 左側類別裝飾線 - 方塊模式下更精簡 */
+        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 3px; height: 100%; background: currentColor; opacity: 0.6; }
+        .grid-mode .menu-item::before { width: 100%; height: 3px; top: 0; left: 0; }
 
         .calendar { color: var(--cal); } .timer { color: var(--t); }
         .homework { color: var(--homework); } .teacher-help { color: var(--help); }
@@ -196,18 +171,20 @@
         .group { color: var(--g); } .exam { color: var(--s); }
         .final { color: var(--a); }
 
-        footer { padding: 50px 20px; text-align: center; font-size: 0.75rem; color: var(--sub-text); width: 100%; box-sizing: border-box; }
+        footer { padding: 40px 20px; text-align: center; font-size: 0.7rem; color: var(--sub-text); opacity: 0.8; }
     </style>
 </head>
 <body>
 
     <div class="fixed-top">
         <div class="notice-banner">
-            💡 <b>資源管理提醒：</b>留言板與許願池額度消耗較高，請節約使用以確保服務穩定。
+            💡 留言板與許願池消耗量高，請節約使用確保服務穩定。
         </div>
         <div class="header">
-            <h1>班級數位平台</h1>
-            <p>整合班級常用服務 ｜ 導師教學利器 ＆ 學生學習助手</p>
+            <div class="header-titles">
+                <h1>班級數位平台</h1>
+                <p>導師教學利器 ＆ 學生學習助手</p>
+            </div>
             
             <div class="controls">
                 <div class="layout-switcher">
@@ -218,7 +195,7 @@
                         <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
                     </button>
                 </div>
-                <button class="theme-btn" id="themeBtn">深色模式</button>
+                <button class="theme-btn" id="themeBtn">🌓</button>
             </div>
         </div>
     </div>
@@ -229,42 +206,37 @@
             <div class="category-label">🔔 提醒系列</div>
             <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合學期重要時程，同步校內最新動態</p></div></a>
             <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>大考倒數管理</h2><p>精確計算考點剩餘時間，建立學習緊迫感</p></div></a>
-            <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新各科作業與測驗進度，杜絕遺漏</p></div></a>
+            <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新各科作業與測驗進度</p></div></a>
 
             <div class="category-label">🤝 互動系列</div>
             <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>建立導師與學生間的深度溝通渠道</p></div></a>
-            <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">🤫</div><div class="info"><h2>加密匿名信箱</h2><p>安全的多元訊息傳遞工具，保護隱私交流</p></div></a>
-            <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">🤫</div><div class="info"><h2>班級匿名許願池</h2><p>群體心聲即時呈現，活絡班級互動氛圍</p></div></a>
+            <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">🤫</div><div class="info"><h2>加密匿名信箱</h2><p>安全的多元訊息傳遞工具</p></div></a>
+            <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">🤫</div><div class="info"><h2>班級匿名許願池</h2><p>群體心聲即時呈現，活絡班級氛圍</p></div></a>
             <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公共事務討論區</h2><p>班級決策的開放式數位論壇</p></div></a>
 
             <div class="category-label">⚙️ 班務處理</div>
-            <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>環境勤務追蹤</h2><p>數位化內外環境檢查與動態記點評核</p></div></a>
-            <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機化公平排序，提升班務執行透明度</p></div></a>
-            <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>基於民主機制的即時表決與數據統計</p></div></a>
-            <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>多維度公平算法，一鍵生成專案分組</p></div></a>
+            <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>環境勤務追蹤</h2><p>數位化檢查與動態記點評核</p></div></a>
+            <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機化公平排序，提升透明度</p></div></a>
+            <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>基於民主機制的即時表決</p></div></a>
+            <a href="grouping/index.html" class="menu-item group"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組模組</h2><p>多維度公平算法，一鍵分組</p></div></a>
 
             <div class="category-label">📊 成績系列</div>
-            <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算，掌握學期表現趨勢</p></div></a>
-            <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>全方位整合平時與期末數據之綜合計算</p></div></a>
+            <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>加權平均快速核算，掌握表現趨勢</p></div></a>
+            <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>全方位整合數據之綜合計算</p></div></a>
         </div>
         
         <footer>
-            © 2026 班級數位服務系統<br>
-            <span style="opacity: 0.6; letter-spacing: 1px;">Designed by 王宥鈞</span>
+            © 2026 班級數位服務系統｜Designed by 王宥鈞
         </footer>
     </div>
 
-    <button class="back-to-top" id="backToTop">▲</button>
-
     <script>
         const scrollArea = document.getElementById('scrollArea');
-        const backToTopBtn = document.getElementById('backToTop');
         const themeBtn = document.getElementById('themeBtn');
         const listBtn = document.getElementById('listBtn');
         const gridBtn = document.getElementById('gridBtn');
         const menuList = document.getElementById('menuList');
 
-        // 佈局切換
         listBtn.addEventListener('click', () => {
             menuList.classList.replace('grid-mode', 'list-mode');
             listBtn.classList.add('active');
@@ -277,22 +249,12 @@
             listBtn.classList.remove('active');
         });
 
-        // 主題切換
         let isDarkMode = localStorage.getItem('theme') === 'dark';
         function updateTheme() {
             document.body.classList.toggle('dark-mode', isDarkMode);
-            themeBtn.textContent = isDarkMode ? '淺色模式' : '深色模式';
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         }
         themeBtn.addEventListener('click', () => { isDarkMode = !isDarkMode; updateTheme(); });
-
-        scrollArea.addEventListener('scroll', () => {
-            backToTopBtn.classList.toggle('show', scrollArea.scrollTop > 300);
-        });
-        backToTopBtn.addEventListener('click', () => {
-            scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
         updateTheme();
     </script>
 </body>
