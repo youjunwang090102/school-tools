@@ -6,16 +6,13 @@
     <title>班級數位平台</title>
 
     <script>
-        // 1. 頂部橫幅文字
         const CONFIG_BANNER_TEXT = "💡 班級公物請愛惜使用，若有損壞請立即通報總務股長。";
-
-        // 2. 更新日誌內容 (支援 HTML 標籤)
         const CONFIG_LOG_CONTENT = `
             <strong>優化時間：2026/02/12</strong><br><br>
-            • <b>高密度佈局</b>：手機版方塊模式現在一排顯示 3 個項目，大幅節省空間。<br>
-            • <b>極簡選單</b>：底部選單透明度降至極低，並加上精緻的光澤邊框。<br>
-            • <b>穿透修正</b>：關閉彈窗後不再誤觸下層卡片變色。<br>
-            • <b>桌面端相容</b>：電腦版方塊模式保持固定寬度，美觀不變形。
+            • <b>去冗餘設計</b>：移除所有類別標題文字，畫面更純淨。<br>
+            • <b>飽滿方塊</b>：調整手機版三欄比例，填補空白區域，縮減無效間距。<br>
+            • <b>極致透明</b>：底部導覽列透明度優化，保留光澤邊框辨識度。<br>
+            • <b>邏輯修正</b>：全數 Coming Soon 項目已對齊彈窗機制。
         `;
     </script>
     <style>
@@ -28,7 +25,7 @@
             --card: rgba(255, 255, 255, 0.4); 
             --text: #1e293b;
             --sub-text: #64748b;
-            --border: rgba(0,0,0,0.1);
+            --border: rgba(0,0,0,0.08);
             --glass-bg: rgba(248, 250, 252, 0.3); 
             --banner-bg: #fff9db;
             --banner-text: #856404;
@@ -39,7 +36,7 @@
             --card: rgba(15, 23, 42, 0.3);
             --text: #f1f5f9;
             --sub-text: #94a3b8;
-            --border: rgba(255,255,255,0.08);
+            --border: rgba(255,255,255,0.06);
             --glass-bg: rgba(2, 6, 23, 0.1);
             --banner-bg: #2d2a15;
             --banner-text: #ffec99;
@@ -50,88 +47,87 @@
         .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-bottom: 1px solid var(--border); }
         .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 10px 15px; font-size: 0.75rem; text-align: center; font-weight: 800; }
 
-        .header { padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-        .header-titles h1 { margin: 0; font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; }
-        .header-titles p { margin: 4px 0 0; font-size: 0.75rem; color: var(--sub-text); font-weight: 500; }
+        .header { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .header-titles h1 { margin: 0; font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; }
+        .header-titles p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); font-weight: 600; opacity: 0.8; }
 
-        .header-right { display: flex; flex-direction: column; gap: 8px; width: 120px; } 
-        .controls-row { display: flex; gap: 8px; width: 100%; height: 34px; }
-        .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 10px; border: 1px solid var(--border); }
-        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 7px; cursor: pointer; opacity: 0.4; display: flex; align-items: center; justify-content: center; }
-        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        /* 右側對齊控制區 */
+        .header-right { display: flex; flex-direction: column; gap: 6px; width: 110px; } 
+        .controls-row { display: flex; gap: 6px; width: 100%; height: 32px; }
+        .layout-switcher { display: flex; flex: 1; background: rgba(0,0,0,0.05); padding: 2px; border-radius: 8px; border: 1px solid var(--border); }
+        .layout-btn { flex: 1; height: 100%; background: none; border: none; border-radius: 6px; cursor: pointer; opacity: 0.3; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .layout-btn.active { background: white; opacity: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         body.dark-mode .layout-btn.active { background: #334155; }
-        .layout-btn svg { width: 14px; height: 14px; fill: var(--text); }
-        .square-btn { width: 34px; height: 34px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .square-btn svg { width: 16px; height: 16px; fill: var(--text); }
-        .author-box-row { display: flex; gap: 8px; width: 100%; }
-        .header-author { flex: 1; font-size: 0.55rem; color: var(--sub-text); font-weight: 700; background: rgba(0,0,0,0.03); border-radius: 8px; text-align: center; border: 1px solid var(--border); height: 34px; line-height: 34px; }
+        .layout-btn svg { width: 13px; height: 13px; fill: var(--text); }
+        .square-btn { width: 32px; height: 32px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .square-btn svg { width: 15px; height: 15px; fill: var(--text); }
+        .author-box-row { display: flex; gap: 6px; width: 100%; }
+        .header-author { flex: 1; font-size: 0.5rem; color: var(--sub-text); font-weight: 800; background: rgba(0,0,0,0.03); border-radius: 6px; text-align: center; border: 1px solid var(--border); height: 32px; line-height: 32px; letter-spacing: 0.5px; }
 
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding-bottom: 140px; }
-        .menu-list { width: 100%; max-width: 1200px; padding: 10px 20px; margin: 0 auto; box-sizing: border-box; display: grid; gap: 15px; }
+        /* 內容捲動區 - 移除 category-label */
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding-top: 15px; padding-bottom: 120px; }
+        .menu-list { width: 100%; max-width: 1200px; padding: 0 15px; margin: 0 auto; box-sizing: border-box; display: grid; }
 
         .category-group { display: none; }
         .category-group.active { display: contents; }
 
-        .category-label { grid-column: 1 / -1; margin: 25px 0 10px 0; font-size: 0.95rem; color: var(--text); font-weight: 900; display: flex; align-items: center; gap: 12px; }
-        .category-label::after { content: ""; flex: 1; height: 1px; background: linear-gradient(to right, var(--border), transparent); }
-
-        /* 列表模式 */
-        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+        /* 列表模式：增加飽滿感 */
+        .menu-list.list-mode { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
         
-        /* --- 方塊模式核心修改：手機一排三個 --- */
+        /* 方塊模式：手機 3 欄，極致空間利用 */
         .menu-list.grid-mode { 
             grid-template-columns: repeat(3, 1fr); 
-            gap: 8px;
-            padding: 10px 10px;
+            gap: 10px;
         }
 
-        /* 電腦版則維持合理的寬度 */
         @media (min-width: 768px) {
-            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 160px); justify-content: center; gap: 15px; }
+            .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, 150px); justify-content: center; gap: 20px; }
         }
 
-        .menu-item { background: var(--card); border-radius: 22px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.3s; position: relative; overflow: hidden; }
-        .menu-item:hover { transform: translateY(-3px); border-color: var(--p); background: white; }
+        .menu-item { background: var(--card); border-radius: 20px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.2s cubic-bezier(0.2, 0, 0.2, 1); position: relative; overflow: hidden; }
+        .menu-item:hover { transform: translateY(-2px); border-color: var(--p); background: white; }
         body.dark-mode .menu-item:hover { background: #1e293b; }
 
-        .list-mode .menu-item { padding: 18px; align-items: center; }
+        .list-mode .menu-item { padding: 16px; align-items: center; }
         
-        /* 手機方塊精簡化 */
-        .grid-mode .menu-item { flex-direction: column; padding: 15px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; align-items: center; border-radius: 18px; }
+        /* 方塊模式內容調整：減少空白，增加圖示佔比 */
+        .grid-mode .menu-item { flex-direction: column; padding: 18px 6px; text-align: center; justify-content: center; align-items: center; min-height: 105px; }
 
-        .icon-box { border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); flex-shrink: 0; }
-        .list-mode .icon-box { width: 48px; height: 48px; margin-right: 15px; font-size: 24px; }
-        .grid-mode .icon-box { width: 36px; height: 36px; margin-bottom: 6px; font-size: 20px; }
+        .icon-box { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.02); flex-shrink: 0; }
+        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 12px; font-size: 22px; border-radius: 12px; }
+        .grid-mode .icon-box { width: 42px; height: 42px; margin-bottom: 8px; font-size: 26px; border-radius: 50%; } /* 方塊模式圖示圓形化更協調 */
 
         .info { flex: 1; pointer-events: none; }
-        .info h2 { margin: 0; font-size: 0.88rem; font-weight: 800; letter-spacing: -0.5px; }
-        .info p { margin: 4px 0 0; font-size: 0.78rem; color: var(--sub-text); line-height: 1.2; }
+        .info h2 { margin: 0; font-size: 0.85rem; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
+        .info p { margin: 4px 0 0; font-size: 0.7rem; color: var(--sub-text); line-height: 1.2; }
         .grid-mode .info p { display: none; }
 
-        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.8; }
+        /* 左側彩色條裝飾 */
+        .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.7; }
         .grid-mode .menu-item::before { width: 100%; height: 3px; top: 0; left: 0; }
 
-        /* 彈窗 */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal { background: var(--bg); width: 85%; max-width: 400px; border-radius: 28px; padding: 30px; border: 1px solid var(--border); text-align: center; }
-        .close-modal { margin-top: 20px; width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 14px; font-weight: 700; cursor: pointer; }
+        /* 彈窗樣式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal { background: var(--bg); width: 82%; max-width: 360px; border-radius: 24px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; }
+        .close-modal { margin-top: 18px; width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
 
-        /* 底部導覽：極致透明度 + 加強邊框 */
-        .bottom-nav-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 2000; }
+        /* 底部導覽列：極透明 + 纖細邊框 */
+        .bottom-nav-container { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2000; }
         .bottom-nav { 
-            background: rgba(255, 255, 255, 0.08); /* 更透明 */
-            backdrop-filter: blur(35px) saturate(180%); 
-            -webkit-backdrop-filter: blur(35px) saturate(180%);
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(30px) saturate(150%); 
+            -webkit-backdrop-filter: blur(30px) saturate(150%);
             border-radius: 100px; 
             display: flex; 
-            padding: 6px; 
-            border: 1px solid rgba(255,255,255,0.3); /* 亮色細邊框 */
-            box-shadow: 0 10px 40px rgba(0,0,0,0.06); 
+            padding: 5px; 
+            border: 1px solid rgba(255,255,255,0.25); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
         }
-        body.dark-mode .bottom-nav { background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255,255,255,0.1); }
-        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.95rem; font-weight: 800; color: var(--sub-text); cursor: pointer; border-radius: 100px; }
-        .nav-item.active { color: white; background: var(--p); }
+        body.dark-mode .bottom-nav { background: rgba(0, 0, 0, 0.12); border: 1px solid rgba(255,255,255,0.08); }
+        .nav-item { flex: 1; text-align: center; padding: 10px 0; font-size: 0.9rem; font-weight: 800; color: var(--sub-text); cursor: pointer; border-radius: 100px; transition: 0.2s; }
+        .nav-item.active { color: white; background: var(--p); box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3); }
 
+        /* 顏色主題 */
         .calendar { color: var(--cal); } .timer { color: var(--t); } .homework { color: var(--homework); }
         .teacher-help { color: var(--help); } .unknownmail { color: var(--unknownmail); } .whisper { color: var(--whi); } .board { color: var(--m); }
         .duty { color: var(--duty); } .seat { color: var(--p); } .vote { color: var(--v); } .group { color: var(--g); }
@@ -170,7 +166,7 @@
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h3 id="modalTitle">標題</h3>
-            <div id="modalBody" style="text-align: left; font-size: 0.85rem; color: var(--sub-text); line-height: 1.6;">內容</div>
+            <div id="modalBody" style="text-align: left; font-size: 0.82rem; color: var(--sub-text); line-height: 1.6;">內容</div>
             <button class="close-modal" id="modalCloseBtn">關閉</button>
         </div>
     </div>
@@ -179,7 +175,6 @@
         <div class="menu-list" id="menuList">
             
             <div id="cat-notice" class="category-group">
-                <div class="category-label">🔔 提醒系列</div>
                 <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>整合重要時程與同步動態</p></div></a>
                 <a href="countdown/index.html" class="menu-item timer"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>精確計算考點剩餘時間</p></div></a>
                 <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>即時更新測驗與作業進度</p></div></a>
@@ -187,7 +182,6 @@
             </div>
 
             <div id="cat-interact" class="category-group">
-                <div class="category-label">🤝 互動系列</div>
                 <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>導師與學生深度溝通渠道</p></div></a>
                 <a href="unknownmail/index.html" class="menu-item unknownmail"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全且多元的訊息傳遞</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>活絡互動與願望分享</p></div></a>
@@ -196,7 +190,6 @@
             </div>
 
             <div id="cat-task" class="category-group">
-                <div class="category-label">⚙️ 班務處理</div>
                 <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>數位化檢查與動態評核</p></div></a>
                 <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>隨機化公平排序選位</p></div></a>
                 <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票</h2><p>重要事務一鍵即時表決</p></div></a>
@@ -205,11 +198,10 @@
             </div>
 
             <div id="cat-score" class="category-group">
-                <div class="category-label">📊 成績系列</div>
                 <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>加權平均快速核算</p></div></a>
                 <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>全方位學期數據計算</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('排名追蹤', event)"><div class="icon-box">🥇</div><div class="info"><h2>排名追蹤</h2><p>透明化的進度數據反饋</p></div></a>
-                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討報告', event)"><div class="icon-box">🔬</div><div class="info"><h2>檢討分析</h2><p>針對弱點之成長建議</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('排名追蹤', event)"><div class="icon-box">🥇</div><div class="info"><h2>排名追蹤</h2><p>進度數據與目標反饋</p></div></a>
+                <a href="javascript:void(0)" class="menu-item soon" onclick="comingSoon('檢討分析', event)"><div class="icon-box">🔬</div><div class="info"><h2>檢討分析</h2><p>弱點科目成長建議</p></div></a>
             </div>
 
         </div>
@@ -228,7 +220,6 @@
         const bannerElement = document.getElementById('bannerElement');
         const modalOverlay = document.getElementById('modalOverlay');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
-        const themeBtn = document.getElementById('themeBtn');
 
         bannerElement.innerText = CONFIG_BANNER_TEXT;
         let isDarkMode = localStorage.getItem('theme') === 'dark';
@@ -278,7 +269,7 @@
 
         document.getElementById('listBtn').addEventListener('click', () => setLayout('list-mode'));
         document.getElementById('gridBtn').addEventListener('click', () => setLayout('grid-mode'));
-        themeBtn.addEventListener('click', () => { isDarkMode = !isDarkMode; applyTheme(); });
+        document.getElementById('themeBtn').addEventListener('click', () => { isDarkMode = !isDarkMode; applyTheme(); });
 
         setLayout(localStorage.getItem('layout') || 'list-mode');
         switchTab(localStorage.getItem('activeTab') || 'cat-notice');
