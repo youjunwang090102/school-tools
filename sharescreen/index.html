@@ -3,128 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P 教學平台 v2</title>
+    <title>P2P 互動雲端教室</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; height: 100vh; }
-        #video-area { flex: 1; position: relative; display: flex; flex-direction: column; }
-        video { width: 100%; height: 100%; object-fit: contain; background: #111; }
-        #side-panel { width: 300px; background: #1a1a1a; display: flex; flex-direction: column; border-left: 1px solid #333; }
-        .controls { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; z-index: 10; }
-        #chat-window { flex: 1; overflow-y: auto; padding: 15px; font-size: 14px; }
-        .chat-input-area { padding: 15px; background: #222; display: flex; gap: 5px; }
-        input { flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; }
-        button { padding: 8px 12px; border-radius: 4px; border: none; background: #6200ee; color: white; cursor: pointer; }
-        .msg { margin-bottom: 10px; line-height: 1.4; }
-        .msg-system { color: #888; font-style: italic; }
-        .msg-me { color: #03dac6; }
-        .msg-other { color: #ffab40; }
+        :root { --primary: #6200ee; --bg: #121212; --panel: #1e1e1e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 左側影片區 */
+        #main-container { flex: 1; display: flex; flex-direction: column; position: relative; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        
+        /* 上方控制列 */
+        .top-bar { background: rgba(0,0,0,0.8); padding: 15px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #333; }
+        .id-badge { background: #333; padding: 5px 10px; border-radius: 4px; font-family: monospace; color: #03dac6; }
+        
+        /* 右側聊天面板 */
+        #side-panel { width: 320px; background: var(--panel); border-left: 1px solid #333; display: flex; flex-direction: column; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; font-size: 14px; border-bottom: 1px solid #333; }
+        .chat-input-area { padding: 15px; display: flex; gap: 5px; }
+        
+        /* 通用元件 */
+        input { flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2b2b2b; color: white; }
+        button { padding: 10px 15px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; background: var(--primary); color: white; }
+        button:hover { opacity: 0.9; }
+        .btn-host { background: #cf6679; }
+        .btn-join { background: #03dac6; color: #000; }
+        .msg { margin-bottom: 10px; word-break: break-all; }
+        .msg-sys { color: #888; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div id="video-area">
-    <div class="controls">
-        <div>我的 ID: <span id="my-id">連線中...</span></div>
-        <button id="btn-host" style="background: #cf6679; margin-top:5px;">開始直播螢幕</button>
-        <button id="btn-copy" style="display:none;">複製教室連結</button>
+<div id="main-container">
+    <div class="top-bar">
+        <div>我的 ID: <span class="id-badge" id="my-id">連線中...</span></div>
+        
+        <button class="btn-host" id="btn-start-host">啟動分享</button>
+        <button id="btn-copy-link" style="display:none; background:#444;">複製邀請連結</button>
+        
+        <div style="border-left: 1px solid #444; height: 25px; margin: 0 10px;"></div>
+        
+        <input type="text" id="input-host-id" placeholder="輸入主講人 ID" style="width: 150px;">
+        <button class="btn-join" id="btn-manual-join">手動加入</button>
     </div>
-    <video id="remote-video" autoplay playsinline controls></video>
+    
+    <video id="display-video" autoplay playsinline controls></video>
 </div>
 
 <div id="side-panel">
+    <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #333;">💬 即時討論區</div>
     <div id="chat-window">
-        <div class="msg msg-system">系統：歡迎進入教室。</div>
+        <div class="msg msg-sys">系統：已進入教室環境。</div>
     </div>
     <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="輸入訊息...">
+        <input type="text" id="chat-input" placeholder="說點什麼...">
         <button id="btn-send">傳送</button>
     </div>
 </div>
 
 <script>
     const peer = new Peer({ config: {'iceServers': [{ url: 'stun:stun.l.google.com:19302' }]}});
-    let currentConn = null; // 用於聊天的連線
+    let activeConn = null;
     let localStream = null;
 
-    // 1. 初始化
+    // 初始化：顯示 ID 並檢查網址是否有邀請碼
     peer.on('open', id => {
         document.getElementById('my-id').innerText = id;
-        // 如果網址有 Hash (#)，代表是學生點連結進來的
         if(window.location.hash) {
-            const hostId = window.location.hash.substring(1);
-            startJoining(hostId);
+            const inviteId = window.location.hash.substring(1);
+            document.getElementById('input-host-id').value = inviteId;
+            addLog("系統", "偵測到連結邀請，正在自動連線...");
+            startJoining(inviteId);
         }
     });
 
-    // 2. 主講人邏輯：點擊直播
-    document.getElementById('btn-host').addEventListener('click', async () => {
+    // --- 【主講人】邏輯 ---
+    document.getElementById('btn-start-host').addEventListener('click', async () => {
         try {
             localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-            document.getElementById('remote-video').srcObject = localStream;
-            document.getElementById('btn-copy').style.display = 'inline-block';
-            addLog("系統", "螢幕分享已啟動，等待學生加入...");
+            document.getElementById('display-video').srcObject = localStream;
+            document.getElementById('btn-copy-link').style.display = 'inline-block';
+            addLog("系統", "螢幕直播中，學生現在可以加入了。");
 
-            // 監聽聊天的連線 (Data)
+            // 監聽學生連線
             peer.on('connection', conn => {
-                currentConn = conn;
-                setupChatListeners(conn);
+                activeConn = conn;
+                setupChat(conn);
+                addLog("系統", "一名學生已連入聊天室");
             });
 
-            // 監聽視訊的撥打 (Call)
+            // 監聽學生視訊請求
             peer.on('call', call => {
-                call.answer(localStream); // 把螢幕畫面丟給學生
+                call.answer(localStream);
             });
-        } catch (e) { alert("無法分享螢幕: " + e); }
+        } catch (err) {
+            alert("啟動失敗: " + err.message);
+        }
     });
 
-    // 3. 學生邏輯：加入教室
-    function startJoining(hostId) {
-        addLog("系統", "正在連線至主講人...");
+    // --- 【學生】邏輯 ---
+    document.getElementById('btn-manual-join').addEventListener('click', () => {
+        const targetId = document.getElementById('input-host-id').value;
+        if(!targetId) return alert("請輸入主講人 ID");
+        startJoining(targetId);
+    });
+
+    function startJoining(targetId) {
+        addLog("系統", "嘗試與主講人建立連線...");
         
-        // 建立聊天連線
-        const conn = peer.connect(hostId);
-        currentConn = conn;
-        setupChatListeners(conn);
+        // 1. 建立聊天連線
+        const conn = peer.connect(targetId);
+        activeConn = conn;
+        setupChat(conn);
 
-        // 建立視訊連線
-        const call = peer.call(hostId, new MediaStream());
+        // 2. 請求影像串流
+        const call = peer.call(targetId, new MediaStream()); // 學生不傳影像，只接收
         call.on('stream', stream => {
-            document.getElementById('remote-video').srcObject = stream;
-            addLog("系統", "已接收到主講人畫面");
+            document.getElementById('display-video').srcObject = stream;
+            addLog("系統", "影像同步成功！");
         });
+        
+        call.on('error', () => alert("影像連線失敗"));
     }
 
-    // 4. 聊天通訊基礎
-    function setupChatListeners(conn) {
-        conn.on('open', () => addLog("系統", "聊天頻道已建立"));
+    // --- 通訊共用功能 ---
+    function setupChat(conn) {
         conn.on('data', data => addLog("對方", data));
+        conn.on('close', () => addLog("系統", "連線已中斷"));
     }
-
-    document.getElementById('btn-send').addEventListener('click', sendMessage);
-    document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
 
     function sendMessage() {
-        const msg = document.getElementById('chat-input').value;
-        if(!msg || !currentConn) return;
-        currentConn.send(msg);
-        addLog("我", msg);
-        document.getElementById('chat-input').value = "";
+        const input = document.getElementById('chat-input');
+        if(!input.value || !activeConn) return;
+        activeConn.send(input.value);
+        addLog("我", input.value);
+        input.value = "";
     }
 
     function addLog(user, text) {
         const win = document.getElementById('chat-window');
         const div = document.createElement('div');
-        div.className = `msg ${user === '系統' ? 'msg-system' : (user === '我' ? 'msg-me' : 'msg-other')}`;
-        div.innerHTML = `<b>${user}:</b> ${text}`;
+        div.className = "msg";
+        div.innerHTML = `<span style="color:${user==='我'?'#03dac6':'#ffab40'}"><b>${user}:</b></span> ${text}`;
+        if(user === "系統") div.className = "msg msg-sys";
         win.appendChild(div);
         win.scrollTop = win.scrollHeight;
     }
 
-    document.getElementById('btn-copy').addEventListener('click', () => {
+    // 事件監聽
+    document.getElementById('btn-send').addEventListener('click', sendMessage);
+    document.getElementById('chat-input').addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
+    document.getElementById('btn-copy-link').addEventListener('click', () => {
         const url = window.location.origin + window.location.pathname + "#" + peer.id;
         navigator.clipboard.writeText(url);
-        alert("邀請連結已複製，請傳送給學生！");
+        alert("邀請連結已複製！");
     });
 </script>
 </body>
