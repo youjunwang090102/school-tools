@@ -3,181 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina Vote | 強韌連線版</title>
+    <title>Lumina Vote Elite</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        :root { --p: #007AFF; --s: #34C759; --d: #FF3B30; }
-        body { font-family: -apple-system, sans-serif; background: #F2F2F7; margin: 0; text-align: center; color: #1C1C1E; }
-        .container { max-width: 500px; margin: auto; padding: 20px; }
-        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .btn { padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; width: 100%; transition: 0.2s; margin: 5px 0; }
-        .btn-p { background: var(--p); color: white; }
+        :root { --p: #5856D6; --s: #34C759; --d: #FF3B30; --bg: #0A0A0C; --card: #1C1C1E; --txt: #FFFFFF; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'SF Pro Display', -apple-system, sans-serif; background: var(--bg); color: var(--txt); margin: 0; overflow-x: hidden; }
+        
+        /* 玻璃擬態背景 */
+        .mesh-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 50% 50%, #1e1e2f 0%, #0a0a0c 100%); }
+        .mesh-bg::after { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 20% 30%, rgba(88, 86, 214, 0.15) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(52, 199, 89, 0.1) 0%, transparent 40%); animation: drift 20s infinite linear; }
+        @keyframes drift { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .app { max-width: 1000px; margin: auto; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 30px; margin-bottom: 20px; }
+        
+        .btn { padding: 16px 24px; border-radius: 16px; border: none; cursor: pointer; font-weight: 700; font-size: 16px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-p { background: var(--p); color: white; box-shadow: 0 8px 20px rgba(88, 86, 214, 0.3); }
+        .btn-p:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(88, 86, 214, 0.5); }
+        .btn-outline { background: transparent; border: 2px solid rgba(255, 255, 255, 0.2); color: white; }
+
+        input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; color: white; font-size: 18px; width: 100%; margin-bottom: 15px; }
+        
+        /* 老師端圖表 */
+        #chartContainer { position: relative; height: 350px; width: 100%; margin: 20px 0; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; text-align: center; }
+        .stat-val { font-size: 28px; font-weight: 800; color: var(--p); }
+
+        /* 學生端投票鈕 */
+        .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .vote-btn { height: 120px; font-size: 32px; background: rgba(255,255,255,0.05); border: 2px solid transparent; color: white; border-radius: 20px; transition: 0.2s; }
+        .vote-btn:active { transform: scale(0.95); background: var(--p); }
+        .vote-btn.selected { border-color: var(--p); background: rgba(88, 86, 214, 0.2); box-shadow: 0 0 20px rgba(88,86,214,0.4); }
+
+        .status-tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .status-online { background: rgba(52, 199, 89, 0.2); color: var(--s); }
+
         .hidden { display: none !important; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .opt-btn { height: 100px; font-size: 28px; background: #F2F2F7; border: 2px solid transparent; }
-        .opt-btn.active { border-color: var(--p); background: #E5F1FF; color: var(--p); }
-        .bar { height: 12px; background: #E5E5EA; border-radius: 6px; overflow: hidden; margin: 10px 0; }
-        .bar-inner { height: 100%; background: var(--p); width: 0%; transition: 0.6s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        #qrcode canvas { border-radius: 12px; border: 8px solid white; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="v-start">
-        <h1 style="margin: 50px 0;">Lumina Vote</h1>
-        <button class="btn btn-p" onclick="initTeacher()">我是老師 (開啟房號)</button>
-        <button class="btn" style="background:#8E8E93; color:white;" onclick="showView('v-stu-login')">我是學生 (掃碼投票)</button>
-    </div>
+<div class="mesh-bg"></div>
 
-    <div id="v-teacher" class="hidden">
-        <div class="card">
-            <h2 id="t-id">房號: ----</h2>
-            <canvas id="qrcode" style="margin: auto;"></canvas>
-        </div>
-        <div class="card">
-            <input type="text" id="topic" placeholder="在此輸入投票主題..." style="width:100%; border:1px solid #DDD; padding:10px; border-radius:8px;">
-            <div id="stats" style="text-align: left; margin-top: 15px;"></div>
-            <button class="btn" style="background:#EEE;" onclick="resetVotes()">清空統計</button>
-        </div>
-    </div>
+<div class="app">
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
+        <h2 style="margin: 0; letter-spacing: 1px;">LUMINA <span style="color:var(--p)">ELITE</span></h2>
+        <div id="connectionStatus" class="status-tag">離線</div>
+    </header>
 
-    <div id="v-stu-login" class="hidden card" style="margin-top: 50px;">
-        <h2>輸入房號</h2>
-        <input type="text" id="target-id" style="width:100%; padding:15px; font-size:24px; text-align:center; border-radius:12px; border:1px solid #DDD;">
-        <button class="btn btn-p" onclick="initStudent()">開始連線</button>
-    </div>
-
-    <div id="v-student" class="hidden">
-        <div class="card">
-            <div style="display:flex; align-items:center; justify-content:center; font-size:12px;">
-                <span id="s-dot" class="status-dot" style="background:gray;"></span>
-                <span id="s-msg">嘗試連線中...</span>
+    <div id="v-start" class="animate__animated animate__fadeIn">
+        <div class="glass" style="text-align: center; padding: 60px 20px;">
+            <h1 style="font-size: 48px; margin-bottom: 10px;">讓課堂動起來</h1>
+            <p style="color: #8E8E93; margin-bottom: 40px;">極致穩定、專業視覺、即時互動投票系統</p>
+            <div style="display: flex; flex-direction: column; gap: 15px; max-width: 300px; margin: auto;">
+                <button class="btn btn-p" onclick="initTeacher()">👨‍🏫 開啟教學中心</button>
+                <button class="btn btn-outline" onclick="showView('v-stu-login')">📱 學生掃碼加入</button>
             </div>
-            <h2 id="s-topic" style="margin: 20px 0;">等待老師題目...</h2>
-            <div class="vote-grid">
-                <button class="btn opt-btn" onclick="submitVote('A')">A</button>
-                <button class="btn opt-btn" onclick="submitVote('B')">B</button>
-                <button class="btn opt-btn" onclick="submitVote('C')">C</button>
-                <button class="btn opt-btn" onclick="submitVote('D')">D</button>
+        </div>
+    </div>
+
+    <div id="v-teacher" class="hidden animate__animated animate__fadeIn">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px;">
+            <div class="glass">
+                <input type="text" id="topicInput" placeholder="輸入今天的投票主題..." oninput="syncTopic()">
+                <div id="chartContainer">
+                    <canvas id="mainChart"></canvas>
+                </div>
+                <div class="stats-grid" id="teacherStats">
+                    </div>
+            </div>
+            <div class="glass" style="text-align: center;">
+                <h3 id="roomCode" style="font-size: 32px; color: var(--p); margin-top: 0;">----</h3>
+                <div id="qrcode" style="margin-bottom: 20px;"></div>
+                <p style="color: #8E8E93;">請學生掃描或輸入房號加入</p>
+                <div style="display: grid; gap: 10px;">
+                    <button class="btn btn-outline" onclick="resetAll()">🔄 重置所有投票</button>
+                    <button class="btn btn-p" onclick="toggleResult()">📢 結束並顯示總結</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-stu-login" class="hidden animate__animated animate__fadeIn">
+        <div class="glass" style="max-width: 400px; margin: 100px auto auto auto; text-align: center;">
+            <h2>加入投票</h2>
+            <input type="text" id="joinID" placeholder="請輸入 4 位房號" style="text-align: center; font-size: 32px; letter-spacing: 4px;">
+            <button class="btn btn-p" style="width: 100%;" onclick="initStudent()">建立連線</button>
+        </div>
+    </div>
+
+    <div id="v-student" class="hidden animate__animated animate__fadeIn">
+        <div class="glass">
+            <h1 id="s-topic" style="text-align: center; font-size: 28px;">等待老師開始...</h1>
+            <div id="v-options" class="vote-grid">
+                <button class="btn vote-btn" onclick="submitVote('A')">A</button>
+                <button class="btn vote-btn" onclick="submitVote('B')">B</button>
+                <button class="btn vote-btn" onclick="submitVote('C')">C</button>
+                <button class="btn vote-btn" onclick="submitVote('D')">D</button>
+            </div>
+            <div id="v-success" class="hidden animate__animated animate__bounceIn" style="text-align: center; padding: 40px 0;">
+                <div style="font-size: 64px;">✅</div>
+                <h3>投票成功！</h3>
+                <p style="color: #8E8E93;">您可以隨時更改選項</p>
+                <button class="btn btn-outline" onclick="showOptions()">修改答案</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let peer, conn, role, myVote = null;
-    let votes = {A:0, B:0, C:0, D:0};
-    const voters = new Set();
+    let peer, conn, role, myChart;
+    let votes = { A: 0, B: 0, C: 0, D: 0 };
+    let voterMap = new Map(); // 使用 Map 存儲 ID 與 選項，防止重複計算
+    const STUN_CONFIG = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'stun:stun1.l.google.com:19302' }] };
 
     function showView(id) {
-        document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+        document.querySelectorAll('.app > div').forEach(d => { if(d.id.startsWith('v-')) d.classList.add('hidden'); });
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // --- 老師端 ---
+    // --- 教師邏輯 ---
     function initTeacher() {
         role = 'teacher';
-        const tid = "V" + Math.floor(1000 + Math.random()*8999);
-        peer = new Peer(tid);
+        const roomID = Math.floor(1000 + Math.random() * 8999).toString();
+        peer = new Peer('LUMINA-' + roomID, { config: STUN_CONFIG });
+
         peer.on('open', id => {
             showView('v-teacher');
-            document.getElementById('t-id').innerText = "房號: " + id;
-            QRCode.toCanvas(document.getElementById('qrcode'), window.location.href.split('?')[0] + '?r=' + id);
-            renderStats();
-            // 廣播機制：每秒同步題目與心跳
+            const shortID = id.split('-')[1];
+            document.getElementById('roomCode').innerText = "房號：" + shortID;
+            document.getElementById('connectionStatus').innerText = "廣播中";
+            document.getElementById('connectionStatus').classList.add('status-online');
+            QRCode.toCanvas(document.getElementById('qrcode'), window.location.href.split('?')[0] + '?r=' + shortID);
+            initChart();
+            
+            // 核心同步：每秒廣播
             setInterval(() => {
-                const t = document.getElementById('topic').value || "請選擇你的答案";
-                Object.values(peer.connections).forEach(group => group.forEach(c => {
-                    if(c.open) c.send({type:'sync', topic: t});
+                const topic = document.getElementById('topicInput').value || "即時互動投票";
+                Object.values(peer.connections).forEach(conns => conns.forEach(c => {
+                    if(c.open) c.send({ type: 'sync', topic: topic, votes: votes });
                 }));
             }, 1000);
         });
+
         peer.on('connection', c => {
             c.on('data', d => {
-                if(d.type === 'vote' && !voters.has(c.peer)) {
+                if(d.type === 'vote') {
+                    if(voterMap.has(c.peer)) votes[voterMap.get(c.peer)]--; // 扣除舊票
+                    voterMap.set(c.peer, d.val);
                     votes[d.val]++;
-                    voters.add(c.peer);
-                    renderStats();
+                    updateChart();
                 }
             });
         });
     }
 
-    function renderStats() {
-        const total = Object.values(votes).reduce((a,b)=>a+b, 0);
-        let html = '';
-        ['A','B','C','D'].forEach(o => {
-            const p = total ? (votes[o]/total*100).toFixed(0) : 0;
-            html += `<div>${o}: ${votes[o]} 票 (${p}%)</div><div class="bar"><div class="bar-inner" style="width:${p}%"></div></div>`;
+    function initChart() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['A', 'B', 'C', 'D'],
+                datasets: [{
+                    label: '票數',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#5856D6', '#34C759', '#FF9500', '#FF3B30'],
+                    borderRadius: 12,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#8E8E93', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { ticks: { color: '#FFF', font: { size: 16, weight: 'bold' } }, grid: { display: false } }
+                }
+            }
         });
-        document.getElementById('stats').innerHTML = html;
     }
 
-    function resetVotes() { votes = {A:0,B:0,C:0,D:0}; voters.clear(); renderStats(); }
+    function updateChart() {
+        myChart.data.datasets[0].data = [votes.A, votes.B, votes.C, votes.D];
+        myChart.update();
+        const total = Array.from(voterMap.keys()).length;
+        document.getElementById('teacherStats').innerHTML = `
+            <div class="stat-card animate__animated animate__fadeIn">總投票數<br><span class="stat-val">${total}</span></div>
+            <div class="stat-card animate__animated animate__fadeIn">領先選項<br><span class="stat-val">${getLeader()}</span></div>
+        `;
+    }
 
-    // --- 學生端 ---
-    let retryTimer, lastPing = 0;
+    function getLeader() {
+        let max = -1, leader = '--';
+        for(let key in votes) { if(votes[key] > max && votes[key] > 0) { max = votes[key]; leader = key; } }
+        return leader;
+    }
+
+    function resetAll() {
+        votes = { A: 0, B: 0, C: 0, D: 0 };
+        voterMap.clear();
+        updateChart();
+    }
+
+    // --- 學生邏輯 ---
+    let lastActive = Date.now();
     function initStudent() {
         role = 'student';
-        const rid = document.getElementById('target-id').value.toUpperCase() || new URLSearchParams(window.location.search).get('r');
-        if(!rid) return;
+        const rid = document.getElementById('joinID').value || new URLSearchParams(window.location.search).get('r');
+        if(!rid) return alert('請輸入房號');
+        
         showView('v-student');
+        peer = new Peer({ config: STUN_CONFIG });
         
-        if(peer) peer.destroy();
-        peer = new Peer();
-        
-        peer.on('open', () => tryConnect(rid));
-        
-        // 斷線自動監測（Android 核心修復）
-        setInterval(() => {
-            if(role === 'student' && Date.now() - lastPing > 5000) {
-                updateStuStatus("斷線重連中...", "red");
-                tryConnect(rid);
-            }
-        }, 3000);
+        peer.on('open', () => {
+            connectToTeacher(rid);
+            // Android 斷線保活
+            setInterval(() => {
+                if(Date.now() - lastActive > 5000) connectToTeacher(rid);
+            }, 3000);
+        });
     }
 
-    function tryConnect(rid) {
+    function connectToTeacher(rid) {
         if(conn && conn.open) return;
-        conn = peer.connect(rid);
+        conn = peer.connect('LUMINA-' + rid, { reliable: true });
         conn.on('open', () => {
-            updateStuStatus("已連線", "var(--s)");
-            if(myVote) conn.send({type:'vote', val: myVote}); // 重連後自動補投
+            document.getElementById('connectionStatus').innerText = "已連線";
+            document.getElementById('connectionStatus').className = "status-tag status-online";
         });
         conn.on('data', d => {
             if(d.type === 'sync') {
-                lastPing = Date.now();
+                lastActive = Date.now();
                 document.getElementById('s-topic').innerText = d.topic;
-                updateStuStatus("已連線", "var(--s)");
             }
         });
-        conn.on('error', () => conn.close());
-    }
-
-    function updateStuStatus(msg, color) {
-        document.getElementById('s-msg').innerText = msg;
-        document.getElementById('s-dot').style.background = color;
     }
 
     function submitVote(val) {
-        myVote = val;
-        document.querySelectorAll('.opt-btn').forEach(b => {
-            b.classList.toggle('active', b.innerText === val);
-        });
-        if(conn && conn.open) {
-            conn.send({type:'vote', val: val});
-            updateStuStatus("已成功投票", "var(--p)");
-        } else {
-            updateStuStatus("等待連線以送出...", "orange");
-        }
+        if(!conn || !conn.open) return alert('連線不穩定，請稍候...');
+        conn.send({ type: 'vote', val: val });
+        
+        // Android 震動反饋
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
+        
+        document.getElementById('v-options').classList.add('hidden');
+        document.getElementById('v-success').classList.remove('hidden');
+        document.getElementById('v-success').querySelector('h3').innerText = "已投給 " + val;
     }
 
+    function showOptions() {
+        document.getElementById('v-options').classList.remove('hidden');
+        document.getElementById('v-success').classList.add('hidden');
+    }
+
+    // 初始化檢查 URL
     window.onload = () => {
         const r = new URLSearchParams(window.location.search).get('r');
-        if(r) { document.getElementById('target-id').value = r; showView('v-stu-login'); }
-    };
+        if(r) { document.getElementById('joinID').value = r; showView('v-stu-login'); }
+    }
 </script>
 </body>
 </html>
