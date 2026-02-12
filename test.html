@@ -2,260 +2,701 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>macOS Sequoia Pro - Professional Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS VOTE // 核心表決系統</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --m-h: 32px; --d-h: 70px;
-            --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --glass: blur(40px) saturate(180%) contrast(100%);
-            --win-bg: rgba(255, 255, 255, 0.72);
-            --active-blue: #007AFF;
+            --bg-color: #050505;
+            --panel-bg: rgba(20, 20, 30, 0.7);
+            --primary: #00f3ff;
+            --secondary: #7000ff;
+            --alert: #ff0055;
+            --success: #00ff9d;
+            --text-main: #e0e0e0;
+            --font-head: 'Orbitron', sans-serif;
+            --font-code: 'Share Tech Mono', monospace;
+            --border-glow: 0 0 10px var(--primary);
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; cursor: default; }
-        body, html { width: 100vw; height: 100vh; font-family: var(--font); overflow: hidden; background: #000; }
-
-        /* --- 系統底層：桌面 --- */
-        #os-container { 
-            width: 100%; height: 100%; 
-            background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover;
-            display: none; opacity: 0; transition: opacity 1s ease-in;
-        }
-
-        /* --- 1. Menu Bar --- */
-        .menu-bar {
-            height: var(--m-h); background: rgba(255, 255, 255, 0.15); backdrop-filter: var(--glass);
-            position: fixed; top: 0; width: 100%; z-index: 10000; display: flex; align-items: center;
-            padding: 0 15px; color: #fff; font-size: 13px; font-weight: 500;
-        }
-        .menu-left, .menu-right { display: flex; gap: 16px; align-items: center; }
-        .menu-right { flex: 1; justify-content: flex-end; }
-        .menu-item:hover { background: rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 8px; margin: 0 -8px; }
-
-        /* --- 2. Window Manager --- */
-        .window {
-            position: absolute; min-width: 400px; min-height: 280px; background: var(--win-bg);
-            backdrop-filter: var(--glass); border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; border: 0.5px solid rgba(255,255,255,0.4);
-            z-index: 100; transform-origin: center bottom; transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.2s;
-        }
-        .win-header { height: 42px; display: flex; align-items: center; padding: 0 15px; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
-        .traffic-lights { display: flex; gap: 8px; width: 60px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; }
-        .d-close { background: #FF5F57; color: #4c0000; } .d-min { background: #FEBC2E; color: #5d3e00; } .d-max { background: #28C840; color: #004200; }
-        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #333; opacity: 0.7; }
-        .win-body { flex: 1; background: #fff; position: relative; overflow: hidden; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
-
-        /* --- 3. 8-Way Resizers --- */
-        .rsz { position: absolute; z-index: 10; }
-        .rsz-r { right: -2px; top: 0; bottom: 0; width: 6px; cursor: ew-resize; }
-        .rsz-b { bottom: -2px; left: 0; right: 0; height: 6px; cursor: ns-resize; }
-        .rsz-rb { bottom: -4px; right: -4px; width: 12px; height: 12px; cursor: nwse-resize; }
-        /* 增加其他方位... */
-
-        /* --- 4. Dock (Fisheye Logic) --- */
-        .dock-container {
-            position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.25); backdrop-filter: var(--glass);
-            border-radius: 22px; padding: 6px 10px; display: flex; align-items: flex-end;
-            gap: 10px; border: 0.5px solid rgba(255,255,255,0.3); z-index: 10001;
-        }
-        .dock-app {
-            width: 54px; height: 54px; position: relative; display: flex; justify-content: center;
-            transition: width 0.1s ease, height 0.1s ease;
-        }
-        .dock-app svg { width: 100%; height: 100%; border-radius: 12px; pointer-events: none; }
-        .indicator { position: absolute; bottom: -10px; width: 4px; height: 4px; background: #fff; border-radius: 50%; opacity: 0; }
-        .indicator.active { opacity: 1; }
-
-        /* --- 5. Apps & Modules --- */
-        .finder-sidebar { width: 160px; background: rgba(0,0,0,0.03); padding: 20px 10px; height: 100%; }
-        .f-item { padding: 6px 12px; font-size: 13px; border-radius: 6px; margin-bottom: 2px; }
-        .f-item:hover { background: rgba(0,0,0,0.05); }
-        .f-active { background: rgba(0,122,255,0.1); color: var(--active-blue); font-weight: 600; }
+        * { box-sizing: border-box; user-select: none; }
         
-        .safari-ui { height: 44px; background: #f0f0f0; border-bottom: 1px solid #dcdcdc; display: flex; align-items: center; padding: 0 15px; }
-        .url-bar { flex: 1; height: 28px; background: #fff; border-radius: 6px; margin: 0 20px; text-align: center; line-height: 28px; font-size: 12px; color: #666; border: 1px solid #e0e0e0; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-main);
+            font-family: var(--font-code);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
 
-        /* --- 6. Boot & Login --- */
-        #boot-loader { position: fixed; inset: 0; background: #000; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
-        .boot-progress { width: 200px; height: 4px; background: #333; border-radius: 2px; margin-top: 50px; overflow: hidden; }
-        #boot-bar { width: 0%; height: 100%; background: #fff; transition: width 2.5s cubic-bezier(0.1, 0, 0.4, 1); }
+        /* Utility & Animations */
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: var(--primary);
+            opacity: 0.3;
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        @keyframes scan { 0% {top: -10%;} 100% {top: 110%;} }
+        
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
 
-        .hidden { display: none !important; }
-        .minimize { transform: translateY(100vh) scale(0.1); opacity: 0; }
+        .glitch-text {
+            text-shadow: 2px 0 var(--alert), -2px 0 var(--primary);
+        }
+
+        /* Layout */
+        #app {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .screen-container {
+            display: grid;
+            gap: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .panel::after { /* Corner accents */
+            content: ''; position: absolute; bottom: -1px; right: -1px; width: 20px; height: 20px;
+            border-bottom: 2px solid var(--primary); border-right: 2px solid var(--primary);
+        }
+
+        /* Buttons & Inputs */
+        input, select, button {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 15px;
+            font-family: var(--font-code);
+            font-size: 1rem;
+            outline: none;
+            transition: 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        button:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary);
+        }
+        button.danger { border-color: var(--alert); color: var(--alert); }
+        button.danger:hover { background: var(--alert); color: #fff; box-shadow: 0 0 15px var(--alert); }
+        
+        button.success { border-color: var(--success); color: var(--success); }
+        button.success:hover { background: var(--success); color: #000; box-shadow: 0 0 15px var(--success); }
+
+        h1, h2, h3 { font-family: var(--font-head); margin-top: 0; color: #fff; text-transform: uppercase; }
+        
+        /* Intro Screen */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            height: 80vh;
+            align-items: center;
+        }
+        .mode-card {
+            text-align: center;
+            padding: 50px;
+            border: 2px solid var(--secondary);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .mode-card:hover { transform: scale(1.05); border-color: var(--primary); box-shadow: 0 0 30px var(--primary); }
+
+        /* Host Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: auto auto 1fr;
+            gap: 15px;
+            height: 90vh;
+        }
+        .header-bar { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--primary); padding-bottom: 10px; }
+        .control-panel { grid-row: 2 / -1; display: flex; flex-direction: column; gap: 10px; }
+        .visual-panel { grid-column: 2 / 3; grid-row: 2 / 3; min-height: 400px; position: relative;}
+        .log-panel { grid-column: 3 / 4; grid-row: 2 / -1; overflow-y: auto; font-size: 0.8rem; }
+        .stats-panel { grid-column: 2 / 3; grid-row: 3 / -1; }
+
+        /* Voter Interface */
+        .voter-container {
+            max-width: 500px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        .voter-card {
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px var(--primary);
+        }
+        .voter-title {
+            font-size: 2rem;
+            color: var(--secondary);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { text-shadow: 0 0 10px #fff; } 50% { text-shadow: 0 0 20px var(--secondary); } 100% { text-shadow: 0 0 10px #fff; } }
+        
+        /* Specialized components */
+        .log-entry { margin-bottom: 5px; color: var(--text-main); }
+        .log-error { color: var(--alert); }
+        .log-success { color: var(--success); }
+        .log-system { color: #888; }
+
+        .vote-option-btn {
+            display: block; width: 100%; text-align: left; padding: 15px;
+            font-size: 1.2rem; margin-bottom: 10px;
+            border-left: 5px solid transparent;
+        }
+        .vote-option-btn:hover {
+            border-left: 5px solid var(--primary);
+            padding-left: 20px;
+        }
+        .vote-option-btn.selected {
+            background: var(--primary); color: #000;
+            border-left: 5px solid #fff;
+        }
+        .vote-option-btn.locked {
+            opacity: 0.5; pointer-events: none;
+        }
+
+        .countdown-display {
+            font-size: 3rem; font-weight: bold; color: var(--alert);
+            text-shadow: 0 0 10px var(--alert);
+        }
+
+        #qr-canvas {
+            display: flex; justify-content: center; margin: 10px;
+            background: #fff; padding: 10px; border-radius: 5px;
+        }
+
+        .chart-wrapper { position: relative; height: 300px; width: 100%; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; grid-template-rows: auto; display: block;}
+            .panel { margin-bottom: 15px; }
+            .intro-grid { display: block; }
+            .mode-card { margin-bottom: 20px; }
+        }
+
     </style>
 </head>
 <body>
+    <div id="app">
+        <div class="scanline"></div>
 
-<div id="boot-loader">
-    <div style="font-size: 70px;"></div>
-    <div class="boot-progress"><div id="boot-bar"></div></div>
-</div>
-
-<div id="os-container">
-    <nav class="menu-bar">
-        <div class="menu-left">
-            <span class="menu-item"></span>
-            <b id="active-app-name">Finder</b>
-            <span class="menu-item">檔案</span><span class="menu-item">編輯</span><span class="menu-item">顯示</span>
-        </div>
-        <div class="menu-right">
-            <span>🔋 100%</span>
-            <span>📶</span>
-            <span id="clock">09:41 AM</span>
-        </div>
-    </nav>
-
-    <div id="win-finder" class="window" style="top: 100px; left: 100px; width: 800px; height: 500px;">
-        <div class="win-header" onmousedown="WindowServer.drag(event, 'win-finder')">
-            <div class="traffic-lights">
-                <div class="dot d-close" onclick="WindowServer.close('finder')">×</div>
-                <div class="dot d-min" onclick="WindowServer.minimize('finder')">−</div>
-                <div class="dot d-max">+</div>
+        <div v-if="state.view === 'intro'" class="intro-grid fade-in">
+            <div class="mode-card panel" @click="startHost">
+                <h1>HOST SYSTEM</h1>
+                <p>啟動主控端 (ADMIN)</p>
+                <div style="font-size: 4rem; color: var(--primary)">⬢</div>
+                <p>[ CREATE NEW SESSION ]</p>
             </div>
-            <div class="win-title">Finder</div>
-        </div>
-        <div class="win-body" style="display: flex;">
-            <div class="finder-sidebar">
-                <div class="f-item f-active">🏠 個人級</div>
-                <div class="f-item">📂 文件</div>
-                <div class="f-item">🖼️ 照片</div>
-            </div>
-            <div style="flex:1; padding: 25px; display: grid; grid-template-columns: repeat(auto-fill, 90px); gap: 20px;">
-                <div style="text-align:center;">📄<br><span style="font-size:11px;">Project.doc</span></div>
-                <div style="text-align:center;">📁<br><span style="font-size:11px;">下載項目</span></div>
+            <div class="mode-card panel" @click="startVoter">
+                <h1>CLIENT NODE</h1>
+                <p>啟動投票端 (USER)</p>
+                <div style="font-size: 4rem; color: var(--secondary)">⬡</div>
+                <p>[ JOIN EXISTING SESSION ]</p>
             </div>
         </div>
-        <div class="rsz rsz-r" onmousedown="WindowServer.resize(event, 'win-finder', 'r')"></div>
-        <div class="rsz rsz-b" onmousedown="WindowServer.resize(event, 'win-finder', 'b')"></div>
-        <div class="rsz rsz-rb" onmousedown="WindowServer.resize(event, 'win-finder', 'rb')"></div>
+
+        <div v-if="state.view === 'host'" class="dashboard-grid fade-in">
+            <div class="header-bar panel">
+                <h2>NEXUS // HOST CONSOLE</h2>
+                <div>
+                    <span class="blink" style="color:var(--success)">● LIVE</span>
+                    <span style="margin-left: 20px">ID: <span style="color:var(--primary)">{{ hostId }}</span></span>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel">
+                    <h3>連線狀態</h3>
+                    <p>線上人數: <span style="color:var(--primary); font-size: 1.5rem">{{ connections.length }}</span></p>
+                    <div id="qr-canvas" ref="qrCodeRef"></div>
+                    <p style="font-size: 0.8rem; text-align: center;">分享 ID: {{ hostId }}</p>
+                </div>
+
+                <div class="panel" v-if="pollState === 'setup'">
+                    <h3>投票設定</h3>
+                    <input v-model="pollConfig.question" placeholder="輸入投票主題..." />
+                    <div v-for="(opt, idx) in pollConfig.options" :key="idx" style="display:flex; gap:5px;">
+                        <input v-model="pollConfig.options[idx]" placeholder="選項內容" />
+                        <button @click="removeOption(idx)" class="danger" style="width: auto;">X</button>
+                    </div>
+                    <button @click="addOption" style="border-style: dashed;">+ 增加選項</button>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="number" v-model.number="pollConfig.timer" placeholder="倒數秒數" style="width: 80px;" />
+                        <span style="align-self: center;">秒</span>
+                    </div>
+
+                    <button class="success" @click="launchPoll">啟動投票系統 [LAUNCH]</button>
+                </div>
+
+                <div class="panel" v-if="pollState === 'active'">
+                    <h3>執行控制</h3>
+                    <div class="countdown-display">{{ currentTimer }}</div>
+                    <button class="danger" @click="stopPoll">緊急停止 [ABORT]</button>
+                </div>
+
+                <div class="panel" v-if="pollState === 'ended'">
+                    <h3>數據處理</h3>
+                    <button @click="exportData" class="success">導出 EXCEL 報表 [.CSV]</button>
+                    <button @click="resetPoll" style="margin-top: 10px;">重置系統 [RESET]</button>
+                </div>
+            </div>
+
+            <div class="visual-panel panel">
+                <h3>即時數據可視化 [DATA VIS]</h3>
+                <div class="chart-wrapper">
+                    <canvas id="voteChart"></canvas>
+                </div>
+                <div v-if="pollState === 'setup'" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; opacity: 0.5;">
+                    [ 等待啟動... ]
+                </div>
+            </div>
+
+            <div class="stats-panel panel">
+                <h3>詳細數據分析</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--primary); text-align: left;">
+                            <th>選項</th>
+                            <th>票數</th>
+                            <th>百分比</th>
+                            <th>趨勢</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(count, opt) in voteResults" :key="opt">
+                            <td style="padding: 5px;">{{ opt }}</td>
+                            <td style="color: var(--primary)">{{ count }}</td>
+                            <td>{{ getTotalVotes() > 0 ? ((count / getTotalVotes()) * 100).toFixed(1) : 0 }}%</td>
+                            <td>
+                                <div :style="{width: (getTotalVotes() > 0 ? (count / getTotalVotes()) * 100 : 0) + 'px', height: '5px', background: 'var(--success)'}"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="log-panel panel">
+                <h3>系統日誌 [TERMINAL]</h3>
+                <div v-for="(log, i) in logs" :key="i" :class="'log-entry log-' + log.type">
+                    <span style="opacity:0.5">[{{ log.time }}]</span> {{ log.msg }}
+                </div>
+            </div>
+        </div>
+
+        <div v-if="state.view === 'voter'" class="voter-container fade-in">
+            <div v-if="!isConnected" class="voter-card panel">
+                <h2>CLIENT LOGIN</h2>
+                <p>請輸入主控端 ID 以建立安全連線</p>
+                <input v-model="targetHostId" placeholder="輸入 HOST ID (例如: x9z2...)" style="text-align: center; font-size: 1.5rem;" />
+                <button class="success" @click="joinSession">連線 [CONNECT]</button>
+                <p style="font-size: 0.8rem; opacity: 0.7;">建立 P2P 加密通道中...</p>
+            </div>
+
+            <div v-if="isConnected && pollState === 'setup'" class="voter-card panel">
+                <h2 class="blink" style="color: var(--success)">CONNECTED</h2>
+                <p>已連線至主控端</p>
+                <div style="font-size: 3rem; margin: 20px;">⏳</div>
+                <p>等待主控端發起投票指令...</p>
+            </div>
+
+            <div v-if="isConnected && pollState === 'active'" class="voter-card panel">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--primary);">
+                    <span>時間剩餘</span>
+                    <span style="color: var(--alert); font-weight: bold;">{{ currentTimer }}s</span>
+                </div>
+                <h3 class="voter-title">{{ pollData.question }}</h3>
+                
+                <div v-if="!hasVoted">
+                    <button v-for="opt in pollData.options" 
+                            :key="opt" 
+                            class="vote-option-btn" 
+                            :class="{ selected: selectedOption === opt }"
+                            @click="selectedOption = opt">
+                        {{ opt }}
+                    </button>
+                    <button class="success" 
+                            style="margin-top: 20px; height: 60px; font-size: 1.5rem;"
+                            :disabled="!selectedOption"
+                            @click="submitVote">
+                        確認送出 [SUBMIT]
+                    </button>
+                </div>
+                <div v-else>
+                    <h2 style="color: var(--success)">VOTE ACCEPTED</h2>
+                    <p>您的選擇: <span style="color: var(--primary)">{{ selectedOption }}</span></p>
+                    <p>數據已加密傳輸至主控端。</p>
+                </div>
+            </div>
+
+            <div v-if="isConnected && pollState === 'ended'" class="voter-card panel">
+                <h2>SESSION ENDED</h2>
+                <p>投票結果公佈</p>
+                <div v-for="(count, opt) in voteResults" :key="opt" style="margin: 10px 0; text-align: left;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>{{ opt }}</span>
+                        <span>{{ count }} 票</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); height: 10px; width: 100%;">
+                        <div :style="{width: (getTotalVotes() > 0 ? (count / getTotalVotes()) * 100 : 0) + '%', height: '100%', background: 'var(--primary)'}"></div>
+                    </div>
+                </div>
+                <button @click="state.view = 'intro'; window.location.reload()" style="margin-top:20px;">離開 [EXIT]</button>
+            </div>
+        </div>
+
     </div>
 
-    <div id="win-safari" class="window hidden" style="top: 120px; left: 150px; width: 900px; height: 600px;">
-        <div class="win-header" onmousedown="WindowServer.drag(event, 'win-safari')">
-            <div class="traffic-lights"><div class="dot d-close" onclick="WindowServer.close('safari')">×</div><div class="dot d-min">−</div><div class="dot d-max">+</div></div>
-            <div class="win-title">Safari</div>
-        </div>
-        <div class="win-body">
-            <div class="safari-ui">
-                <span style="font-size: 20px; color:#666;">‹ ›</span>
-                <div class="url-bar">google.com</div>
-            </div>
-            <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:calc(100% - 44px); border:none;"></iframe>
-        </div>
-        <div class="rsz rsz-rb" onmousedown="WindowServer.resize(event, 'win-safari', 'rb')"></div>
-    </div>
+    <script>
+        const { createApp, reactive, ref, onMounted, nextTick } = Vue;
 
-    <div class="dock-container" id="main-dock">
-        <div class="dock-app" data-app="finder" onclick="WindowServer.open('finder')">
-            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><path d="M20,20 Q50,10 80,20 L80,80 Q50,90 20,80 Z" fill="#007AFF" opacity="0.3"/><circle cx="35" cy="40" r="5"/><circle cx="65" cy="40" r="5"/><path d="M30,65 Q50,80 70,65" fill="none" stroke="#000" stroke-width="3"/></svg>
-            <div class="indicator active" id="ind-finder"></div>
-        </div>
-        <div class="dock-app" data-app="safari" onclick="WindowServer.open('safari')">
-            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><circle cx="50" cy="50" r="35" fill="none" stroke="#007AFF" stroke-width="2"/><path d="M50,20 L55,45 L80,50 L55,55 L50,80 L45,55 L20,50 L45,45 Z" fill="#FF5F57"/></svg>
-            <div class="indicator" id="ind-safari"></div>
-        </div>
-        <div class="dock-app" data-app="notes">
-            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#FFBC2E"/><path d="M25,30 H75 M25,50 H75 M25,70 H50" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
-        </div>
-        <div class="dock-app" data-app="settings">
-            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#8e8e93"/><circle cx="50" cy="50" r="15" fill="#555"/><path d="M50,20 L50,30 M50,70 L50,80 M20,50 L30,50 M70,50 L80,50" stroke="#fff" stroke-width="6"/></svg>
-        </div>
-    </div>
-</div>
+        createApp({
+            setup() {
+                // Core State
+                const state = reactive({ view: 'intro' });
+                const hostId = ref('');
+                const targetHostId = ref('');
+                const isConnected = ref(false);
+                const peer = ref(null);
+                const connections = ref([]);
+                
+                // Poll Data
+                const pollState = ref('setup'); // setup, active, ended
+                const pollConfig = reactive({
+                    question: '本年度最佳科技產品是？',
+                    options: ['量子電腦', '腦機接口', '核融合電池', '全息投影'],
+                    timer: 30
+                });
+                const pollData = reactive({}); // Received by voter
+                const currentTimer = ref(0);
+                const timerInterval = ref(null);
+                
+                // Voting Logic
+                const votes = ref([]); // Array of vote objects {id, option, timestamp}
+                const voteResults = ref({});
+                const hasVoted = ref(false);
+                const selectedOption = ref(null);
 
-<script>
-/**
- * macOS Kernel Engine - 權威復刻版
- */
-const WindowServer = {
-    z: 1000,
-    drag(e, id) {
-        const el = document.getElementById(id);
-        this.focus(el);
-        let ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
-        const move = (ev) => {
-            el.style.left = `${ev.clientX - ox}px`;
-            el.style.top = `${ev.clientY - oy}px`;
-        };
-        const stop = () => {
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', stop);
-        };
-        document.addEventListener('mousemove', move);
-        document.addEventListener('mouseup', stop);
-    },
-    resize(e, id, type) {
-        e.stopPropagation();
-        const el = document.getElementById(id);
-        let sw = el.offsetWidth, sh = el.offsetHeight, sx = e.clientX, sy = e.clientY;
-        const move = (ev) => {
-            if(type.includes('r')) el.style.width = `${sw + (ev.clientX - sx)}px`;
-            if(type.includes('b')) el.style.height = `${sh + (ev.clientY - sy)}px`;
-        };
-        const stop = () => {
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', stop);
-        };
-        document.addEventListener('mousemove', move);
-        document.addEventListener('mouseup', stop);
-    },
-    open(name) {
-        const win = document.getElementById(`win-${name}`);
-        win.classList.remove('hidden', 'minimize');
-        this.focus(win);
-        document.getElementById(`ind-${name}`).classList.add('active');
-        document.getElementById('active-app-name').innerText = name.charAt(0).toUpperCase() + name.slice(1);
-    },
-    close(name) {
-        document.getElementById(`win-${name}`).classList.add('hidden');
-        document.getElementById(`ind-${name}`).classList.remove('active');
-    },
-    minimize(name) {
-        document.getElementById(`win-${name}`).classList.add('minimize');
-    },
-    focus(el) { el.style.zIndex = ++this.z; }
-};
+                // UI/Logs
+                const logs = ref([]);
+                const qrCodeRef = ref(null);
+                let chartInstance = null;
 
-// Dock 魚眼動畫核心物理公式
-const dock = document.getElementById('main-dock');
-dock.addEventListener('mousemove', (e) => {
-    const apps = document.querySelectorAll('.dock-app');
-    apps.forEach(app => {
-        const rect = app.getBoundingClientRect();
-        const center = rect.left + rect.width / 2;
-        const dist = Math.abs(e.clientX - center);
-        const scale = Math.max(1, 1.6 - dist / 180);
-        app.style.width = `${54 * scale}px`;
-        app.style.height = `${54 * scale}px`;
-    });
-});
-dock.addEventListener('mouseleave', () => {
-    document.querySelectorAll('.dock-app').forEach(app => {
-        app.style.width = '54px'; app.style.height = '54px';
-    });
-});
+                // --- Helper Functions ---
+                const addLog = (msg, type = 'system') => {
+                    const time = new Date().toLocaleTimeString();
+                    logs.value.unshift({ time, msg, type });
+                };
 
-// Booting Sequence
-window.onload = () => {
-    document.getElementById('boot-bar').style.width = '100%';
-    setTimeout(() => {
-        document.getElementById('boot-loader').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('boot-loader').style.display = 'none';
-            const os = document.getElementById('os-container');
-            os.style.display = 'block';
-            setTimeout(() => os.style.opacity = '1', 50);
-        }, 500);
-    }, 2500);
-};
+                const getTotalVotes = () => {
+                    return Object.values(voteResults.value).reduce((a, b) => a + b, 0);
+                };
 
-// Clock
-setInterval(() => {
-    const d = new Date();
-    document.getElementById('clock').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}, 1000);
-</script>
+                // --- Host Logic ---
+                const startHost = () => {
+                    state.view = 'host';
+                    addLog('初始化主控端系統...', 'system');
+                    
+                    // Create Peer
+                    peer.value = new Peer(null, { debug: 2 });
+
+                    peer.value.on('open', (id) => {
+                        hostId.value = id;
+                        addLog(`P2P ID 已生成: ${id}`, 'success');
+                        generateQR(id);
+                        initChart();
+                    });
+
+                    peer.value.on('connection', (conn) => {
+                        handleHostConnection(conn);
+                    });
+
+                    peer.value.on('error', (err) => {
+                        addLog(`連線錯誤: ${err.type}`, 'error');
+                    });
+                };
+
+                const handleHostConnection = (conn) => {
+                    connections.value.push(conn);
+                    addLog(`新節點加入: ${conn.peer}`, 'success');
+
+                    conn.on('open', () => {
+                        // Send current state if active
+                        if (pollState.value === 'active') {
+                            conn.send({ type: 'START_POLL', data: pollConfig, timer: currentTimer.value });
+                        } else if (pollState.value === 'ended') {
+                            conn.send({ type: 'END_POLL', results: voteResults.value });
+                        }
+                    });
+
+                    conn.on('data', (data) => {
+                        if (data.type === 'VOTE') {
+                            registerVote(conn.peer, data.option);
+                        }
+                    });
+                    
+                    conn.on('close', () => {
+                        connections.value = connections.value.filter(c => c.peer !== conn.peer);
+                        addLog(`節點斷開: ${conn.peer}`, 'error');
+                    });
+                };
+
+                const registerVote = (peerId, option) => {
+                    // Check if already voted (simplified logic)
+                    const existing = votes.value.find(v => v.id === peerId);
+                    if (existing) {
+                        addLog(`收到重複投票請求: ${peerId}`, 'error');
+                        return;
+                    }
+
+                    votes.value.push({ id: peerId, option: option, timestamp: new Date().toISOString() });
+                    if (!voteResults.value[option]) voteResults.value[option] = 0;
+                    voteResults.value[option]++;
+                    
+                    addLog(`收到票數: ${option} (來自 ${peerId.substr(0,4)}...)`, 'success');
+                    updateChart();
+                };
+
+                // --- Voter Logic ---
+                const startVoter = () => {
+                    state.view = 'voter';
+                };
+
+                const joinSession = () => {
+                    if (!targetHostId.value) return alert("請輸入 ID");
+                    
+                    peer.value = new Peer();
+                    peer.value.on('open', (id) => {
+                        const conn = peer.value.connect(targetHostId.value);
+                        
+                        conn.on('open', () => {
+                            isConnected.value = true;
+                            // Keep connection reference
+                            connections.value = [conn]; 
+                        });
+
+                        conn.on('data', (data) => {
+                            handleVoterData(data);
+                        });
+                        
+                        conn.on('error', (err) => alert("連線失敗"));
+                    });
+                };
+
+                const handleVoterData = (payload) => {
+                    if (payload.type === 'START_POLL') {
+                        pollData.question = payload.data.question;
+                        pollData.options = payload.data.options;
+                        currentTimer.value = payload.timer;
+                        pollState.value = 'active';
+                        hasVoted.value = false;
+                        selectedOption.value = null;
+                        startLocalTimer();
+                    } else if (payload.type === 'END_POLL') {
+                        pollState.value = 'ended';
+                        voteResults.value = payload.results;
+                        clearInterval(timerInterval.value);
+                    }
+                };
+
+                const submitVote = () => {
+                    if (!selectedOption.value) return;
+                    const conn = connections.value[0];
+                    if (conn) {
+                        conn.send({ type: 'VOTE', option: selectedOption.value });
+                        hasVoted.value = true;
+                    }
+                };
+
+                // --- Shared Logic ---
+                const launchPoll = () => {
+                    if (connections.value.length === 0) {
+                        if (!confirm("目前無人連線，確定要開始嗎？")) return;
+                    }
+                    
+                    // Reset results
+                    votes.value = [];
+                    voteResults.value = {};
+                    pollConfig.options.forEach(opt => voteResults.value[opt] = 0);
+                    
+                    pollState.value = 'active';
+                    currentTimer.value = pollConfig.timer;
+                    
+                    // Broadcast
+                    broadcast({ type: 'START_POLL', data: pollConfig, timer: currentTimer.value });
+                    
+                    addLog('投票系統啟動', 'system');
+                    updateChart();
+                    startHostTimer();
+                };
+
+                const stopPoll = () => {
+                    pollState.value = 'ended';
+                    clearInterval(timerInterval.value);
+                    broadcast({ type: 'END_POLL', results: voteResults.value });
+                    addLog('投票已強制結束', 'error');
+                };
+
+                const resetPoll = () => {
+                    pollState.value = 'setup';
+                    votes.value = [];
+                    voteResults.value = {};
+                    updateChart();
+                    addLog('系統重置完成', 'system');
+                };
+
+                const broadcast = (data) => {
+                    connections.value.forEach(conn => conn.send(data));
+                };
+
+                // Timers
+                const startHostTimer = () => {
+                    clearInterval(timerInterval.value);
+                    timerInterval.value = setInterval(() => {
+                        currentTimer.value--;
+                        if (currentTimer.value <= 0) {
+                            stopPoll();
+                        }
+                    }, 1000);
+                };
+                
+                const startLocalTimer = () => {
+                    clearInterval(timerInterval.value);
+                    timerInterval.value = setInterval(() => {
+                        if(currentTimer.value > 0) currentTimer.value--;
+                    }, 1000);
+                };
+
+                // Utils
+                const addOption = () => pollConfig.options.push(`選項 ${pollConfig.options.length + 1}`);
+                const removeOption = (idx) => pollConfig.options.splice(idx, 1);
+
+                const generateQR = (text) => {
+                    nextTick(() => {
+                        qrCodeRef.value.innerHTML = '';
+                        new QRCode(qrCodeRef.value, {
+                            text: text,
+                            width: 128,
+                            height: 128,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                    });
+                };
+
+                // Chart.js
+                const initChart = () => {
+                    nextTick(() => {
+                        const ctx = document.getElementById('voteChart');
+                        if (!ctx) return;
+                        
+                        chartInstance = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: [],
+                                datasets: [{
+                                    label: '即時票數',
+                                    data: [],
+                                    backgroundColor: 'rgba(0, 243, 255, 0.5)',
+                                    borderColor: '#00f3ff',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' } },
+                                    x: { grid: { display: false } }
+                                },
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    });
+                };
+
+                const updateChart = () => {
+                    if (!chartInstance) return;
+                    chartInstance.data.labels = Object.keys(voteResults.value);
+                    chartInstance.data.datasets[0].data = Object.values(voteResults.value);
+                    chartInstance.update();
+                };
+
+                // Excel/CSV Export
+                const exportData = () => {
+                    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Add BOM for Excel Chinese support
+                    csvContent += "Timestamp,User ID,Vote Option\n";
+                    
+                    votes.value.forEach(v => {
+                        csvContent += `${v.timestamp},${v.id},${v.option}\n`;
+                    });
+                    
+                    csvContent += "\nSummary\nOption,Count\n";
+                    for (const [key, val] of Object.entries(voteResults.value)) {
+                        csvContent += `${key},${val}\n`;
+                    }
+
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `NEXUS_REPORT_${new Date().toISOString().slice(0,10)}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    addLog('報表導出成功', 'success');
+                };
+
+                return {
+                    state, hostId, targetHostId, isConnected, connections,
+                    pollState, pollConfig, pollData, currentTimer,
+                    voteResults, hasVoted, selectedOption, logs, qrCodeRef,
+                    startHost, startVoter, joinSession, submitVote,
+                    addOption, removeOption, launchPoll, stopPoll, resetPoll, exportData, getTotalVotes
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>
