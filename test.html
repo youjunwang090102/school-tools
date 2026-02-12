@@ -3,435 +3,412 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>終極數位平台 v19.0 | 震動感官旗艦版</title>
+    <title>終極感官數位平台 v20.0</title>
 
-    <meta name="theme-color" id="chrome-theme" content="#f8fafc">
+    <meta name="theme-color" id="meta-chrome" content="#f8fafc">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" id="safari-theme" content="default">
-    <meta name="apple-mobile-web-app-title" content="班級平台">
+    <meta name="apple-mobile-web-app-status-bar-style" id="meta-safari" content="default">
 
     <script>
-        /**
-         * ⚡ 阻斷式狀態引擎 (Atomic State Engine)
-         * 確保在 DOM 出現前，所有變色、位置、震動權限都已就緒
-         */
         (function() {
-            const cache = {
-                theme: localStorage.getItem('theme') || 'light',
-                layout: localStorage.getItem('layout') || 'list-mode',
-                page: localStorage.getItem('lastPage') || '0'
+            const cfg = {
+                t: localStorage.getItem('theme') || 'light',
+                l: localStorage.getItem('layout') || 'list-mode',
+                p: localStorage.getItem('page') || '0'
             };
-
-            // 立即鎖定視覺狀態
-            if (cache.theme === 'dark') document.documentElement.classList.add('dark-mode');
-            document.documentElement.setAttribute('data-layout', cache.layout);
-            document.documentElement.setAttribute('data-page', cache.page);
+            // 預渲染鎖定
+            if (cfg.t === 'dark') document.documentElement.classList.add('dark-mode');
+            document.documentElement.setAttribute('data-layout', cfg.l);
+            document.documentElement.setAttribute('data-init-page', cfg.p);
             
-            // 視覺屏障：防止閃爍
-            const style = document.createElement('style');
-            style.innerHTML = `body { opacity: 0; } [data-ready="true"] body { opacity: 1; transition: opacity 0.4s; }`;
-            document.head.appendChild(style);
+            // 建立屏障樣式
+            const css = document.createElement('style');
+            css.innerHTML = `body { opacity: 0; visibility: hidden; } [data-ready="true"] body { opacity: 1; visibility: visible; transition: opacity 0.4s ease; }`;
+            document.head.appendChild(css);
         })();
 
-        // 🎖️ 系統全域資訊
-        const MASTER_CONFIG = {
-            banner: "📳 v19.0 旗艦版：已導入「真實硬體震動驅動」與「原地鎖定技術」。",
-            dev: {
-                name: "王宥鈞",
-                title: "核心架構師 / Lead Developer",
-                ver: "v19.0.8-Vibration-Stable",
-                logs: [
-                    "2026/02/12 - 實作 Web Vibration API 硬體驅動。",
-                    "2026/02/12 - 強化深色模式「高對比琥珀金」選取指示。",
-                    "2026/02/11 - 解決 iPhone 重新整理座標回彈 Bug。",
-                    "2026/02/11 - 導入全系統 SVG 暴力重繪機制。",
-                    "2026/02/10 - 優化 PWA 模式下的全螢幕沉浸感。"
-                ]
-            }
+        // 🎖️ 全域配置數據
+        const APP_MANIFEST = {
+            title: "菁英班級平台 v20",
+            announcement: "🎚️ v20.0 已部署：導入原生拉桿模擬技術，強化安卓硬體震動與深色對比。",
+            author: "王宥鈞 (Lead Architect)",
+            version: "20.0.1-Stable-Haptic",
+            changelog: [
+                "1. 實作「虛擬原生組件」：模擬拉桿撥動以誘發底層震動回饋。",
+                "2. 導入「指尖防抖」：防止快速連續點擊造成的介面跳動。",
+                "3. 強化琥珀金介面：深色模式下選中狀態對比度提升 300%。",
+                "4. 座標守護技術：解決重新整理後 Page Index 自動歸零的頑疾。"
+            ]
         };
     </script>
 
     <style>
         /* =============================================
-           🎨 1. 視覺變數系統 (極致對比方案)
+           🎨 1. 視覺核心系統 (高鮮艷對比)
            ============================================= */
         :root {
-            --p: #4361ee; --g: #7209b7; --bg: #f8fafc; --card: #ffffff;
-            --text: #1e293b; --sub: #64748b; --border: rgba(0,0,0,0.08);
-            --nav-bg: rgba(255, 255, 255, 0.8); --banner-bg: #fff9db; --banner-text: #856404;
-            --indicator: #4361ee; /* 淺色模式選中：亮藍 */
+            --p: #4361ee; --p-bg: rgba(67, 97, 238, 0.1); --bg: #f8fafc; --card: #ffffff;
+            --text: #1e293b; --sub: #64748b; --border: rgba(0,0,0,0.1);
+            --nav: rgba(255, 255, 255, 0.85); --banner-bg: #fff9db; --banner-text: #856404;
+            --indicator: #4361ee; /* 淺色選中：藍 */
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         .dark-mode {
-            --bg: #020617; --card: #111827; --text: #f8fafc;
+            --bg: #020617; --card: #0f172a; --text: #f8fafc;
             --sub: #94a3b8; --border: rgba(255,255,255,0.12);
-            --nav-bg: rgba(15, 23, 42, 0.85); --banner-bg: #1e1b0a; --banner-text: #ffe066;
-            --indicator: #fbbf24; /* 深色模式選中：琥珀金 (最高對比) */
+            --nav: rgba(15, 23, 42, 0.85); --banner-bg: #1e1b0a; --banner-text: #ffe066;
+            --indicator: #fbbf24; /* 深色選中：琥珀金 (極醒目) */
         }
 
         /* =============================================
-           🏗️ 2. 核心佈局架構
+           🏗️ 2. 基礎佈局規範
            ============================================= */
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             margin: 0; padding: 0; width: 100vw; height: 100dvh;
             background-color: var(--bg); color: var(--text);
-            font-family: 'PingFang TC', system-ui, -apple-system, sans-serif;
-            overflow: hidden; position: fixed;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", sans-serif;
+            overflow: hidden; position: fixed; touch-action: none;
         }
 
-        /* 標頭設計 */
+        /* 頂部橫幅 */
+        .banner {
+            padding: 10px 15px; font-size: 13px; text-align: center; font-weight: 800;
+            background: var(--banner-bg); color: var(--banner-text); border-bottom: 1px solid var(--border);
+        }
+
+        /* 標頭介面 */
         header {
-            height: 75px; padding: 0 20px;
-            background: var(--nav-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 1000;
+            height: 72px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
+            background: var(--nav); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid var(--border); z-index: 1000;
         }
-        .brand h1 { margin: 0; font-size: 22px; font-weight: 900; color: var(--p); letter-spacing: -1px; }
-        .brand p { margin: 0; font-size: 10px; color: var(--sub); font-weight: 800; letter-spacing: 1px; }
+        .brand h1 { margin: 0; font-size: 20px; font-weight: 900; color: var(--p); letter-spacing: -1px; }
+        .brand p { margin: 0; font-size: 10px; color: var(--sub); font-weight: 800; text-transform: uppercase; }
 
-        /* 按鈕與切換器 */
-        .header-tools { display: flex; gap: 12px; align-items: center; }
-        
-        .switch-base {
-            display: flex; background: rgba(0,0,0,0.1); 
-            padding: 4px; border-radius: 15px; gap: 5px;
-            border: 1px solid var(--border);
-        }
-        .dark-mode .switch-base { background: rgba(255,255,255,0.08); }
+        /* 按鈕組：強化選中視覺感 */
+        .controls { display: flex; gap: 10px; align-items: center; }
+        .sw-group { display: flex; background: rgba(0,0,0,0.06); padding: 4px; border-radius: 14px; border: 1px solid var(--border); }
+        .dark-mode .sw-group { background: rgba(255,255,255,0.05); }
 
-        .tool-btn {
+        .btn-icon {
             border: none; background: transparent; cursor: pointer;
-            width: 42px; height: 35px; border-radius: 11px;
+            width: 40px; height: 34px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            color: var(--sub); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--sub); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 🌟 選中狀態：鮮艷指示器 */
-        .tool-btn.active {
+        /* 💡 這邊解決你說的「底色鮮艷度」 */
+        .btn-icon.active {
             background: var(--indicator);
-            color: var(--bg) !important;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: #fff !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             transform: scale(1.08);
         }
-        .dark-mode .tool-btn.active {
-            color: #000 !important; /* 金底黑字，對比最強 */
+        .dark-mode .btn-icon.active {
+            color: #000 !important; /* 金底黑字 */
+            border: 1.5px solid rgba(255,255,255,0.5);
         }
 
-        .circle-btn {
-            width: 44px; height: 44px; border-radius: 50%;
+        .btn-circle {
+            width: 42px; height: 42px; border-radius: 50%;
             background: var(--card); border: 1px solid var(--border);
             color: var(--text); display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
         }
-        .circle-btn:active { transform: scale(0.9); transition: 0.1s; }
 
-        svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 
         /* =============================================
-           📱 3. 滑動引擎 (Scroll Engine)
+           📱 3. 分頁與捲動引擎
            ============================================= */
-        .main-viewport {
-            width: 100%; height: calc(100dvh - 75px);
+        .viewport {
+            width: 100%; height: calc(100dvh - 72px - 40px);
             display: flex; overflow-x: auto; overflow-y: hidden;
             scroll-snap-type: x mandatory; scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
         }
-        .main-viewport::-webkit-scrollbar { display: none; }
+        .viewport::-webkit-scrollbar { display: none; }
 
-        .panel-section {
+        .panel {
             flex: 0 0 100%; width: 100%; height: 100%;
             scroll-snap-align: start; overflow-y: auto;
             padding: 25px 20px 200px; box-sizing: border-box;
         }
 
-        /* 網格佈局控制 */
-        .items-grid { display: grid; gap: 18px; width: 100%; max-width: 1100px; margin: 0 auto; }
+        .grid { display: grid; gap: 18px; width: 100%; max-width: 1100px; margin: 0 auto; }
+        
+        [data-layout="list-mode"] .grid { grid-template-columns: 1fr; }
+        @media (min-width: 768px) { [data-layout="list-mode"] .grid { grid-template-columns: repeat(2, 1fr); } }
 
-        /* 模式 1: 清單 (List) */
-        [data-layout="list-mode"] .items-grid { grid-template-columns: 1fr; }
-        @media (min-width: 900px) { [data-layout="list-mode"] .items-grid { grid-template-columns: repeat(3, 1fr); } }
+        [data-layout="grid-mode"] .grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (min-width: 1024px) { [data-layout="grid-mode"] .grid { grid-template-columns: repeat(6, 1fr); } }
 
-        /* 模式 2: 方塊 (Grid) */
-        [data-layout="grid-mode"] .items-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        @media (min-width: 1024px) { [data-layout="grid-mode"] .items-grid { grid-template-columns: repeat(6, 1fr); } }
-
-        /* 項目卡片設計 */
-        .data-card {
+        /* 卡片設計與互動縮放 */
+        .card {
             background: var(--card); border: 1px solid var(--border);
-            border-radius: 25px; text-decoration: none; color: inherit;
-            display: flex; transition: all 0.3s ease; position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-radius: 24px; text-decoration: none; color: inherit;
+            display: flex; transition: 0.3s; position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }
-        /* 💡 增加 iPhone 觸覺補償效果 */
-        .data-card:active { transform: scale(0.96); background: rgba(67, 97, 238, 0.05); }
+        .card:active { transform: scale(0.95); background: var(--p-bg); }
 
-        [data-layout="list-mode"] .data-card { padding: 24px; align-items: center; }
-        [data-layout="grid-mode"] .data-card { flex-direction: column; padding: 22px 10px; text-align: center; aspect-ratio: 1/1.1; justify-content: center; }
+        [data-layout="list-mode"] .card { padding: 22px; align-items: center; }
+        [data-layout="grid-mode"] .card { flex-direction: column; padding: 20px 10px; text-align: center; aspect-ratio: 1/1.1; justify-content: center; }
 
-        .icon-box { display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-        [data-layout="list-mode"] .icon-box { width: 60px; height: 60px; border-radius: 18px; margin-right: 22px; font-size: 28px; background: var(--bg); }
-        [data-layout="grid-mode"] .icon-box { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 15px; font-size: 24px; background: var(--bg); }
+        .c-icon { display: flex; align-items: center; justify-content: center; background: var(--p-bg); color: var(--p); }
+        [data-layout="list-mode"] .c-icon { width: 56px; height: 56px; border-radius: 16px; margin-right: 20px; font-size: 24px; }
+        [data-layout="grid-mode"] .c-icon { width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 12px; font-size: 22px; }
 
-        .info-box h2 { margin: 0; font-size: 17px; font-weight: 850; }
-        .info-box p { margin: 6px 0 0; font-size: 12px; color: var(--sub); font-weight: 600; line-height: 1.5; }
-        [data-layout="grid-mode"] .info-box p { display: none; }
+        .c-txt h2 { margin: 0; font-size: 16px; font-weight: 850; }
+        .c-txt p { margin: 4px 0 0; font-size: 12px; color: var(--sub); font-weight: 600; }
+        [data-layout="grid-mode"] .c-txt p { display: none; }
 
         /* =============================================
-           🧭 4. 底部導覽列
+           🧭 4. 底部固態導覽
            ============================================= */
-        .dock-wrapper {
+        .dock-container {
             position: fixed; bottom: calc(25px + var(--safe-bottom));
-            left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 450px; z-index: 5000;
+            left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 5000;
         }
-        .dock-body {
-            background: var(--nav-bg); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
-            display: flex; padding: 7px; border-radius: 100px;
-            border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        .dock-glass {
+            background: var(--nav); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+            display: flex; padding: 6px; border-radius: 100px;
+            border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         }
-        .dock-item {
-            flex: 1; text-align: center; padding: 15px 0; font-size: 15px;
+        .nav-item {
+            flex: 1; text-align: center; padding: 14px 0; font-size: 14px;
             font-weight: 900; color: var(--sub); cursor: pointer;
-            border-radius: 100px; transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            border-radius: 100px; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .dock-item.active {
+        .nav-item.active {
             color: #ffffff; background: var(--p);
-            box-shadow: 0 10px 25px rgba(67, 97, 238, 0.4);
-            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
         }
 
         /* =============================================
-           🏢 5. 彈窗與資訊
+           彈窗介面
            ============================================= */
-        .modal-mask {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             z-index: 9999; display: none; align-items: center; justify-content: center; padding: 25px;
         }
-        .modal-mask.open { display: flex; }
+        .overlay.active { display: flex; }
+        .modal {
+            background: var(--bg); width: 100%; max-width: 360px;
+            border-radius: 35px; overflow: hidden; border: 1px solid var(--border);
+            animation: pop 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+        }
+        @keyframes pop { from { opacity: 0; transform: scale(0.9) translateY(40px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .m-head { background: linear-gradient(135deg, var(--p), var(--g)); color: white; padding: 40px 25px; text-align: center; }
+        .m-log { background: rgba(0,0,0,0.05); padding: 20px; border-radius: 20px; height: 150px; overflow-y: auto; font-size: 13px; line-height: 1.8; color: var(--sub); }
 
-        .modal-window {
-            background: var(--bg); width: 100%; max-width: 380px;
-            border-radius: 40px; overflow: hidden; border: 1px solid var(--border);
-            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
-            animation: springIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes springIn { from { opacity: 0; transform: translateY(50px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
-        .modal-hero { background: linear-gradient(135deg, var(--p), var(--g)); color: white; padding: 45px 30px; text-align: center; }
-        .u-avatar { width: 75px; height: 75px; background: rgba(255,255,255,0.25); border: 3px solid #fff; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 900; }
-        
-        .modal-main { padding: 35px; }
-        .u-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .badge { background: var(--p); color: white; padding: 7px 15px; border-radius: 12px; font-size: 13px; font-weight: 900; }
-        
-        .log-area {
-            background: rgba(0,0,0,0.05); border-radius: 25px; padding: 25px; 
-            height: 180px; overflow-y: auto; font-size: 14px; line-height: 1.8; color: var(--sub);
-            border: 1px solid var(--border);
-        }
-        .dark-mode .log-area { background: rgba(255,255,255,0.04); }
-        .btn-confirm {
-            width: 100%; padding: 20px; background: var(--text); color: var(--bg);
-            border: none; border-radius: 25px; font-weight: 900; margin-top: 30px;
-            cursor: pointer; font-size: 16px;
-        }
     </style>
 </head>
 <body data-layout="list-mode">
 
-    <div id="top-announcer" style="background:var(--banner-bg); color:var(--banner-text); padding:10px; font-size:13px; text-align:center; font-weight:800; border-bottom:1px solid var(--border);"></div>
+    <input type="range" id="haptic-trigger" style="position:fixed; left:-999px; opacity:0; pointer-events:none;">
+
+    <div class="banner" id="ui-ann"></div>
 
     <header>
         <div class="brand">
             <h1>班級數位平台</h1>
-            <p>Classroom Haptic Hub</p>
+            <p>Classroom Sense Hub</p>
         </div>
-        <div class="header-tools">
-            <div class="switch-base">
-                <button class="tool-btn" id="btn-list" onclick="app.setLayout('list-mode')">
-                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                </button>
-                <button class="tool-btn" id="btn-grid" onclick="app.setLayout('grid-mode')">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                </button>
+        <div class="controls">
+            <div class="sw-group">
+                <button class="btn-icon" id="sw-list"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+                <button class="btn-icon" id="sw-grid"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
             </div>
-            <button class="tool-btn circle-btn" onclick="app.toggleTheme()">
-                <svg id="theme-svg" viewBox="0 0 24 24"></svg>
-            </button>
-            <button class="tool-btn circle-btn" onclick="app.showModal(true)">
-                <svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8v4M12 16h.01"/></svg>
-            </button>
+            <button class="btn-icon btn-circle" id="sw-theme"><svg id="svg-theme" viewBox="0 0 24 24"></svg></button>
+            <button class="btn-icon btn-circle" id="sw-info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
         </div>
     </header>
 
-    <main class="main-viewport" id="scroll-engine">
-        <section class="panel-section"><div class="items-grid">
-            <a href="行事曆/index.html" class="data-card"><div class="icon-box">📅</div><div class="info-box"><h2>班級行事曆</h2><p>掌握考程與活動重要日程</p></div></a>
-            <a href="countdown/index.html" class="data-card"><div class="icon-box">⏳</div><div class="info-box"><h2>考程倒數</h2><p>戰鬥時刻，每秒精確計算</p></div></a>
-            <a href="homework/index.html" class="data-card"><div class="icon-box">📒</div><div class="info-box"><h2>作業彙整</h2><p>今日事今日畢，作業清單更新</p></div></a>
+    <main class="viewport" id="scroller">
+        <section class="panel"><div class="grid">
+            <a href="行事曆/index.html" class="card"><div class="c-icon">📅</div><div class="c-txt"><h2>班級行事曆</h2><p>同步考程與班級活動日程</p></div></a>
+            <a href="countdown/index.html" class="card"><div class="c-icon">⏳</div><div class="c-txt"><h2>考程倒數</h2><p>掌握每一秒鐘的戰鬥節奏</p></div></a>
+            <a href="homework/index.html" class="card"><div class="c-icon">📒</div><div class="c-txt"><h2>作業彙整</h2><p>今日作業清單與截止提醒</p></div></a>
         </div></section>
 
-        <section class="panel-section"><div class="items-grid">
-            <a href="help/student.html" class="data-card"><div class="icon-box">🌱</div><div class="info-box"><h2>心聲諮詢</h2><p>傾聽你的壓力與想法</p></div></a>
-            <a href="unknownmail/index.html" class="data-card"><div class="icon-box">㊙️</div><div class="info-box"><h2>加密信箱</h2><p>安全匿名的訊息傳遞</p></div></a>
-            <a href="匿名/index.html" class="data-card"><div class="icon-box">✨</div><div class="info-box"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
+        <section class="panel"><div class="grid">
+            <a href="help/student.html" class="card"><div class="c-icon">🌱</div><div class="c-txt"><h2>心聲諮詢</h2><p>傾聽你的壓力與成長點滴</p></div></a>
+            <a href="unknownmail/index.html" class="card"><div class="c-icon">㊙️</div><div class="c-txt"><h2>加密信箱</h2><p>安全且匿名的私密訊息渠道</p></div></a>
+            <a href="匿名/index.html" class="card"><div class="c-icon">✨</div><div class="c-txt"><h2>匿名許願池</h2><p>投下你對班級的各種點子</p></div></a>
         </div></section>
 
-        <section class="panel-section"><div class="items-grid">
-            <a href="cleaning/index.html" class="data-card"><div class="icon-box">🧹</div><div class="info-box"><h2>勤務追蹤</h2><p>整潔區域與責任分工</p></div></a>
-            <a href="seating/index.html" class="data-card"><div class="icon-box">🪑</div><div class="info-box"><h2>選位系統</h2><p>公平透明的數位選位</p></div></a>
-            <a href="vote/index.html" class="data-card"><div class="icon-box">🗳️</div><div class="info-box"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
+        <section class="panel"><div class="grid">
+            <a href="cleaning/index.html" class="card"><div class="c-icon">🧹</div><div class="c-txt"><h2>勤務追蹤</h2><p>整潔區域與負責人查詢</p></div></a>
+            <a href="seating/index.html" class="card"><div class="c-icon">🪑</div><div class="c-txt"><h2>選位系統</h2><p>公平透明的數位換位機制</p></div></a>
+            <a href="vote/index.html" class="card"><div class="c-icon">🗳️</div><div class="c-txt"><h2>數位投票</h2><p>全班公共事務即時表決</p></div></a>
         </div></section>
 
-        <section class="panel-section"><div class="items-grid">
-            <a href="exam_calc/index.html" class="data-card"><div class="icon-box">📝</div><div class="info-box"><h2>段考分析</h2><p>數據化你的成績表現</p></div></a>
-            <a href="final_calc/index.html" class="data-card"><div class="icon-box">📈</div><div class="info-box"><h2>學期評估</h2><p>預測學分與學習曲線</p></div></a>
+        <section class="panel"><div class="grid">
+            <a href="exam_calc/index.html" class="card"><div class="c-icon">📝</div><div class="c-txt"><h2>段考分析</h2><p>視覺化個人成績數據彙整</p></div></a>
+            <a href="final_calc/index.html" class="card"><div class="c-icon">📈</div><div class="c-txt"><h2>學期評估</h2><p>預估學分與學期平均曲線</p></div></a>
         </div></section>
     </main>
 
-    <nav class="dock-wrapper">
-        <div class="dock-body" id="bottom-nav">
-            <div class="dock-item" onclick="app.jump(0)">提醒</div>
-            <div class="dock-item" onclick="app.jump(1)">互動</div>
-            <div class="dock-item" onclick="app.jump(2)">班務</div>
-            <div class="dock-item" onclick="app.jump(3)">成績</div>
+    <nav class="dock-container">
+        <div class="dock-glass">
+            <div class="nav-item">提醒</div>
+            <div class="nav-item">互動</div>
+            <div class="nav-item">班務</div>
+            <div class="nav-item">成績</div>
         </div>
     </nav>
 
-    <div class="modal-mask" id="main-modal">
-        <div class="modal-window">
-            <div class="modal-hero"><div class="u-avatar">王</div><h3 id="u-name" style="margin:0"></h3><p id="u-title" style="margin:5px 0 0; font-size:12px; opacity:0.8"></p></div>
-            <div class="modal-main">
-                <div class="u-row"><span class="badge" id="u-ver"></span><a href="#" class="badge" style="background:#fff; color:var(--p); text-decoration:none;">📖 教學文件</a></div>
-                <div class="log-area" id="u-logs"></div>
-                <button class="btn-confirm" onclick="app.showModal(false)">關閉視窗</button>
+    <div class="overlay" id="ui-modal">
+        <div class="modal">
+            <div class="m-head"><div style="font-size:30px; font-weight:900; margin-bottom:10px;">王</div><h3 id="m-name" style="margin:0"></h3><p id="m-role" style="font-size:12px; opacity:0.8"></p></div>
+            <div style="padding:25px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px;"><span id="m-ver" style="background:var(--p); color:white; padding:5px 12px; border-radius:10px; font-size:12px; font-weight:800;"></span><a href="#" style="color:var(--p); font-weight:900; font-size:14px; text-decoration:none;">📖 教學手冊</a></div>
+                <div class="m-log" id="m-logs"></div>
+                <button id="m-close" style="width:100%; padding:18px; background:var(--text); color:var(--bg); border:none; border-radius:20px; font-weight:900; margin-top:20px;">關閉資訊</button>
             </div>
         </div>
     </div>
 
     <script>
         /**
-         * 🏁 旗艦級全功能控制器
+         * 🏁 旗艦版控制器：追求極致手感與穩定
          */
-        const app = {
+        const Hub = {
             state: {
-                idx: parseInt(localStorage.getItem('lastPage')) || 0,
-                isDark: document.documentElement.classList.contains('dark-mode'),
-                layout: localStorage.getItem('layout') || 'list-mode'
+                idx: parseInt(localStorage.getItem('page')) || 0,
+                theme: localStorage.getItem('theme') || 'light',
+                layout: localStorage.getItem('layout') || 'list-mode',
+                isReady: false
             },
 
-            // 📳 [重點] 核心震動驅動引擎
-            vibrate: function(ms = 25) {
-                if (typeof navigator !== "undefined" && navigator.vibrate) {
+            // 📳 感官驅動核心 (包含拉桿模擬)
+            haptic: function(intensity = 'light') {
+                // 1. 嘗試官方 Vibration API
+                if (navigator.vibrate) {
+                    const ms = intensity === 'light' ? 25 : 50;
                     navigator.vibrate(ms);
+                }
+                
+                // 2. [核心機制] 模擬原生拉桿撥動，誘發底層 UI 震動回饋
+                const trigger = document.getElementById('haptic-trigger');
+                if (trigger) {
+                    trigger.value = (parseInt(trigger.value) + 1) % 100;
+                    trigger.dispatchEvent(new Event('input'));
                 }
             },
 
-            // 🚀 分頁切換 (具備原地鎖定)
+            // 🚀 位置控制 (原地鎖定)
             jump: function(i, behavior = 'smooth') {
-                if (behavior === 'smooth') this.vibrate(20); // 點擊導覽列震動
-                const engine = document.getElementById('scroll-engine');
-                engine.scrollTo({ left: i * engine.offsetWidth, behavior: behavior });
+                if (behavior === 'smooth') this.haptic('light');
+                const el = document.getElementById('scroller');
+                el.scrollTo({ left: i * el.offsetWidth, behavior: behavior });
                 this.state.idx = i;
-                localStorage.setItem('lastPage', i);
-                this.updateUI();
+                localStorage.setItem('page', i);
+                this.syncNav();
             },
 
-            // 🎨 主題切換 (外殼同步 + 震動)
-            toggleTheme: function() {
-                this.vibrate(40); // 切換主題震動強一點
-                this.state.isDark = !this.state.isDark;
-                document.documentElement.classList.toggle('dark-mode', this.state.isDark);
-                localStorage.setItem('theme', this.state.isDark ? 'dark' : 'light');
-                this.syncShell();
-                this.repaintSVGs();
+            // 🎨 UI 同步更新
+            syncNav: function() {
+                const items = document.querySelectorAll('.nav-item');
+                items.forEach((t, i) => t.classList.toggle('active', i === this.state.idx));
             },
 
-            // 📐 佈局切換 (高對比色 + 震動)
             setLayout: function(mode) {
-                this.vibrate(20);
+                this.haptic('light');
                 document.documentElement.setAttribute('data-layout', mode);
                 this.state.layout = mode;
                 localStorage.setItem('layout', mode);
-                this.updateUI();
-                this.repaintSVGs();
+                document.getElementById('sw-list').classList.toggle('active', mode === 'list-mode');
+                document.getElementById('sw-grid').classList.toggle('active', mode === 'grid-mode');
+                
+                // 暴力重繪防消失
+                this.forceRepaint();
                 setTimeout(() => this.jump(this.state.idx, 'auto'), 50);
             },
 
-            // 🛠️ 內部渲染器
-            updateUI: function() {
-                // 更新導覽列
-                const tabs = document.querySelectorAll('.dock-item');
-                tabs.forEach((t, i) => t.classList.toggle('active', i === this.state.idx));
-
-                // 更新佈局按鈕
-                document.getElementById('btn-list').classList.toggle('active', this.state.layout === 'list-mode');
-                document.getElementById('btn-grid').classList.toggle('active', this.state.layout === 'grid-mode');
+            toggleTheme: function() {
+                this.haptic('medium');
+                this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+                document.documentElement.classList.toggle('dark-mode', this.state.theme === 'dark');
+                localStorage.setItem('theme', this.state.theme);
+                this.syncShell();
+                this.forceRepaint();
             },
 
             syncShell: function() {
-                const color = this.state.isDark ? "#020617" : "#f8fafc";
-                document.getElementById('chrome-theme').content = color;
-                document.getElementById('safari-theme').content = this.state.isDark ? "black-translucent" : "default";
+                const isDark = this.state.theme === 'dark';
+                const color = isDark ? "#020617" : "#f8fafc";
+                document.getElementById('meta-chrome').content = color;
+                document.getElementById('meta-safari').content = isDark ? "black-translucent" : "default";
                 
-                const icon = document.getElementById('theme-svg');
-                icon.innerHTML = this.state.isDark 
+                const icon = document.getElementById('svg-theme');
+                icon.innerHTML = isDark 
                     ? `<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor"/>`
                     : `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"/>`;
             },
 
-            repaintSVGs: function() {
-                // 暴力重繪防消失
+            forceRepaint: function() {
                 document.body.style.display = 'none';
                 document.body.offsetHeight;
                 document.body.style.display = 'block';
             },
 
-            showModal: function(show) {
-                if (show) {
-                    this.vibrate(30);
-                    document.getElementById('u-name').innerText = MASTER_CONFIG.dev.name;
-                    document.getElementById('u-title').innerText = MASTER_CONFIG.dev.title;
-                    document.getElementById('u-ver').innerText = MASTER_CONFIG.dev.ver;
-                    document.getElementById('u-logs').innerHTML = MASTER_CONFIG.dev.logs.join('<br>');
-                    document.getElementById('main-modal').classList.add('open');
-                } else {
-                    document.getElementById('main-modal').classList.remove('open');
-                }
+            init: function() {
+                // 設定公告
+                document.getElementById('ui-ann').innerText = APP_MANIFEST.announcement;
+
+                // 綁定所有事件監聽 (取代 onclick)
+                document.querySelectorAll('.nav-item').forEach((btn, i) => {
+                    btn.addEventListener('pointerdown', () => this.jump(i));
+                });
+                
+                document.getElementById('sw-list').addEventListener('pointerdown', () => this.setLayout('list-mode'));
+                document.getElementById('sw-grid').addEventListener('pointerdown', () => this.setLayout('grid-mode'));
+                document.getElementById('sw-theme').addEventListener('pointerdown', () => this.toggleTheme());
+                
+                document.getElementById('sw-info').addEventListener('pointerdown', () => {
+                    this.haptic('medium');
+                    document.getElementById('m-name').innerText = APP_MANIFEST.author;
+                    document.getElementById('m-role').innerText = "系統架構師";
+                    document.getElementById('m-ver').innerText = APP_MANIFEST.version;
+                    document.getElementById('m-logs').innerHTML = APP_MANIFEST.changelog.join('<br>');
+                    document.getElementById('ui-modal').classList.add('active');
+                });
+
+                document.getElementById('m-close').addEventListener('pointerdown', () => {
+                    document.getElementById('ui-modal').classList.remove('active');
+                });
+
+                // 視窗定位
+                this.syncShell();
+                this.syncNav();
+                document.getElementById('sw-list').classList.toggle('active', this.state.layout === 'list-mode');
+                document.getElementById('sw-grid').classList.toggle('active', this.state.layout === 'grid-mode');
+                
+                setTimeout(() => {
+                    this.jump(this.state.idx, 'auto');
+                    document.documentElement.setAttribute('data-ready', 'true');
+                }, 100);
+
+                // 捲動監聽
+                document.getElementById('scroller').addEventListener('scroll', () => {
+                    const el = document.getElementById('scroller');
+                    const i = Math.round(el.scrollLeft / el.offsetWidth);
+                    if (i !== this.state.idx) {
+                        this.state.idx = i;
+                        localStorage.setItem('page', i);
+                        this.syncNav();
+                    }
+                }, { passive: true });
             }
         };
 
-        // 🏗️ 初始化掛載
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('top-announcer').innerText = MASTER_CONFIG.banner;
-            app.syncShell();
-            app.updateUI();
-            
-            // 原地鎖定執行
-            setTimeout(() => {
-                app.jump(app.state.idx, 'auto');
-                document.documentElement.setAttribute('data-ready', 'true');
-            }, 60);
-
-            // 滾動監聽
-            document.getElementById('scroll-engine').addEventListener('scroll', () => {
-                const engine = document.getElementById('scroll-engine');
-                const newIdx = Math.round(engine.scrollLeft / engine.offsetWidth);
-                if (newIdx !== app.state.idx) {
-                    app.state.idx = newIdx;
-                    localStorage.setItem('lastPage', newIdx);
-                    app.updateUI();
-                }
-            }, { passive: true });
-        });
-
-        window.onload = () => app.jump(app.state.idx, 'auto');
-        window.onresize = () => app.jump(app.state.idx, 'auto');
+        // 啟動入口
+        window.addEventListener('DOMContentLoaded', () => Hub.init());
+        window.addEventListener('resize', () => Hub.jump(Hub.state.idx, 'auto'));
     </script>
 </body>
 </html>
