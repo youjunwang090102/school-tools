@@ -16,7 +16,7 @@
             --sub-text: #64748b;
             --border: rgba(0,0,0,0.08);
             --glass-bg: rgba(248, 250, 252, 0.2); 
-            --banner-bg: #fff9db; /* 恢復警告色 */
+            --banner-bg: #fff9db;
             --banner-text: #856404;
         }
 
@@ -33,10 +33,8 @@
 
         body { margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100dvh; width: 100vw; overflow: hidden; }
 
-        /* --- 頂部區塊 --- */
         .fixed-top { flex-shrink: 0; z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(30px) saturate(200%); -webkit-backdrop-filter: blur(30px) saturate(200%); border-bottom: 1px solid var(--border); }
 
-        /* 恢復橫幅警告 */
         .notice-banner { background-color: var(--banner-bg); color: var(--banner-text); padding: 10px 15px; font-size: 0.75rem; text-align: center; font-weight: 800; border-bottom: 1px solid rgba(0,0,0,0.05); }
 
         .header { padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
@@ -44,7 +42,6 @@
         .header-titles h1 { margin: 0; font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
         .header-titles p { margin: 4px 0 0; font-size: 0.8rem; color: var(--sub-text); font-weight: 500; }
 
-        /* 右側控制區塊 */
         .header-right { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
         .controls { display: flex; align-items: center; gap: 8px; }
         .layout-switcher { display: flex; background: rgba(0,0,0,0.05); padding: 3px; border-radius: 12px; border: 1px solid var(--border); }
@@ -54,13 +51,10 @@
         .layout-btn svg { width: 16px; height: 16px; fill: var(--text); }
         .theme-btn { background: var(--card); border: 1px solid var(--border); width: 38px; height: 38px; border-radius: 12px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* 版權與日誌按鈕區域 */
         .author-box { display: flex; align-items: center; gap: 5px; width: 100%; }
         .header-author { flex: 1; font-size: 0.6rem; color: var(--sub-text); font-weight: 700; background: rgba(0,0,0,0.03); padding: 4px 8px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
-        .log-btn { background: var(--p); color: white; border: none; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .log-btn:hover { filter: brightness(1.2); }
+        .log-btn { background: var(--p); color: white; border: none; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
 
-        /* --- 內容區 --- */
         .scroll-content { flex-grow: 1; overflow-y: auto; padding-bottom: 140px; }
         .menu-list { width: 100%; max-width: 1200px; padding: 20px 25px; margin: 0 auto; box-sizing: border-box; display: grid; gap: 15px; }
 
@@ -75,14 +69,12 @@
 
         @media (min-width: 768px) { .menu-list.grid-mode { grid-template-columns: repeat(auto-fill, minmax(160px, 180px)); justify-content: center; gap: 20px; } }
 
-        /* 卡片與 Emoji 居中優化 */
         .menu-item { background: var(--card); border-radius: 22px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: 0.3s; position: relative; overflow: hidden; }
         .menu-item:hover { transform: translateY(-5px); border-color: var(--p); background: white; }
 
         .list-mode .menu-item { padding: 18px; align-items: center; }
         .grid-mode .menu-item { flex-direction: column; padding: 20px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; align-items: center; }
 
-        /* 關鍵：Emoji 容器固定寬高並絕對居中 */
         .icon-box { border-radius: 14px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); flex-shrink: 0; }
         .list-mode .icon-box { width: 46px; height: 46px; margin-right: 15px; font-size: 22px; }
         .grid-mode .icon-box { width: 42px; height: 42px; margin-bottom: 10px; font-size: 24px; }
@@ -95,20 +87,18 @@
         .menu-item::before { content: ""; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: currentColor; opacity: 0.8; }
         .grid-mode .menu-item::before { width: 100%; height: 4px; top: 0; left: 0; }
 
-        /* --- 更新日誌彈窗 --- */
+        /* 更新日誌彈窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal { background: var(--bg); width: 85%; max-width: 400px; border-radius: 24px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
         .modal h3 { margin: 0 0 15px 0; font-size: 1.2rem; }
         .modal-content { font-size: 0.85rem; line-height: 1.6; color: var(--sub-text); max-height: 300px; overflow-y: auto; }
         .close-modal { margin-top: 20px; width: 100%; padding: 10px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        /* --- 底部導覽 --- */
         .bottom-nav-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 2000; }
         .bottom-nav { background: var(--glass-bg); backdrop-filter: blur(40px); border-radius: 100px; display: flex; padding: 6px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.9rem; font-weight: 800; color: var(--sub-text); cursor: pointer; border-radius: 100px; }
         .nav-item.active { color: white; background: var(--p); }
 
-        /* 顏色...（同前） */
         .calendar { color: var(--cal); } .timer { color: var(--t); }
         .homework { color: var(--homework); } .teacher-help { color: var(--help); }
         .unknownmail { color: var(--unknownmail); } .whisper { color: var(--whi); }
@@ -121,7 +111,7 @@
 <body>
 
     <div class="fixed-top">
-        <div class="notice-banner">⚠️ 許願池與事物討論區消耗流量較高，請節約使用，維持其他服務穩定。</div>
+        <div class="notice-banner">⚠️ 系統提示：班級數位平台目前運作正常，更新日誌已上線！</div>
         <div class="header">
             <div class="header-titles">
                 <h1>班級數位平台</h1>
@@ -147,15 +137,14 @@
         <div class="modal">
             <h3>🚀 更新日誌</h3>
             <div class="modal-content">
-                <strong>最後更新：2026/02/12 14:40</strong><br><br>
-                1. 修正方塊模式下 Emoji 居中與高度不對齊問題。<br>
-                2. 恢復原有功能，但因修改遭到刪減的部分。。<br>
-                3. 新增「更新日誌」彈窗功能。<br>
-                4. 優化分類標題間距，徹底解決與卡片黏連問題。<br>
-                5. 底部導覽列透明度大幅調降，提升空氣感。<br>
-                6. 完整實現顯示模式、深淺色與分類之本地記憶功能。
+                <strong>最後更新：2026/02/12 14:50</strong><br><br>
+                1. 修正「班務」與「成績」區塊不見的重大 Bug。<br>
+                2. 確保方塊模式下 Emoji 絕對居中，高度一致。<br>
+                3. 恢復黃色警告訊息橫幅。<br>
+                4. 新增日誌彈窗，詳細記錄優化細節。<br>
+                5. 完整修復分類記憶與顯示模式記憶功能。
             </div>
-            <button class="close-modal" onclick="toggleModal(false)">我知道了</button>
+            <button class="close-modal" onclick="toggleModal(false)">關閉</button>
         </div>
     </div>
 
@@ -163,13 +152,28 @@
         <div class="menu-list" id="menuList">
             <div id="cat-notice" class="category-group">
                 <div class="category-label">🔔 提醒系列</div>
-                <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合重要時程，同步校內最新動態</p></div></a>
-                <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新各科作業與測驗進度</p></div></a>
+                <a href="行事曆/index.html" class="menu-item calendar"><div class="icon-box">📅</div><div class="info"><h2>班級雲端行事曆</h2><p>整合重要時程，同步動態</p></div></a>
+                <a href="homework/index.html" class="menu-item homework"><div class="icon-box">📒</div><div class="info"><h2>課務作業彙整</h2><p>即時更新測驗進度</p></div></a>
             </div>
+
             <div id="cat-interact" class="category-group">
                 <div class="category-label">🤝 互動系列</div>
-                <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>深度溝通渠道</p></div></a>
+                <a href="help/student.html" class="menu-item teacher-help"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢信箱</h2><p>溝通渠道</p></div></a>
                 <a href="匿名/index.html" class="menu-item whisper"><div class="icon-box">🤫</div><div class="info"><h2>班級匿名許願池</h2><p>活絡互動氛圍</p></div></a>
+                <a href="board/index.html" class="menu-item board"><div class="icon-box">💬</div><div class="info"><h2>公共事務討論區</h2><p>開放式論壇</p></div></a>
+            </div>
+
+            <div id="cat-task" class="category-group">
+                <div class="category-label">⚙️ 班務處理</div>
+                <a href="cleaning/index.html" class="menu-item duty"><div class="icon-box">🧹</div><div class="info"><h2>環境勤務追蹤</h2><p>數位化評核</p></div></a>
+                <a href="seating/index.html" class="menu-item seat"><div class="icon-box">🪑</div><div class="info"><h2>數位選位系統</h2><p>隨機公平排序</p></div></a>
+                <a href="vote/index.html" class="menu-item vote"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票決策</h2><p>事務一鍵表決</p></div></a>
+            </div>
+
+            <div id="cat-score" class="category-group">
+                <div class="category-label">📊 成績系列</div>
+                <a href="exam_calc/index.html" class="menu-item exam"><div class="icon-box">📝</div><div class="info"><h2>段考數據分析</h2><p>快速核算平均</p></div></a>
+                <a href="final_calc/index.html" class="menu-item final"><div class="icon-box">📈</div><div class="info"><h2>學期績效評估</h2><p>全方位數據計算</p></div></a>
             </div>
         </div>
     </div>
