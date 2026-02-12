@@ -2,201 +2,206 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>macOS Sequoia Professional Simulator</title>
+    <title>macOS Sequoia Enterprise Edition</title>
     <style>
         :root {
-            --m-h: 30px;
-            --win-shd: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            --font: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
-            --glass: blur(35px) saturate(160%) contrast(110%);
+            --bg-url: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg');
+            --glass: blur(30px) saturate(180%) contrast(90%);
+            --apple-blue: #007AFF;
+            --win-bg: rgba(255, 255, 255, 0.75);
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; user-select: none; }
-        body, html { width: 100vw; height: 100vh; font-family: var(--font); overflow: hidden; background: #000; }
-
-        /* --- 背景與登入 --- */
-        #wallpaper { position: fixed; inset: 0; background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover; z-index: -1; }
+        /* 系統核心樣式 */
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; font-family: var(--font); overflow: hidden; background: #000; }
         
-        #login-overlay {
-            position: fixed; inset: 0; z-index: 99999; backdrop-filter: blur(25px); 
+        #desktop { 
+            width: 100%; height: 100%; background: var(--bg-url) center/cover; 
+            display: none; transition: filter 0.5s; 
+        }
+
+        /* --- 登入介面 --- */
+        #boot-loader {
+            position: fixed; inset: 0; background: #000; z-index: 99999;
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
-            transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .user-icon { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); margin-bottom: 20px; border: 2px solid #fff; }
-        .login-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); padding: 10px 30px; border-radius: 20px; color: #fff; cursor: pointer; transition: 0.3s; }
-        .login-btn:hover { background: rgba(255,255,255,0.4); }
+        .apple-logo { font-size: 80px; margin-bottom: 50px; }
+        .boot-bar { width: 200px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
+        #boot-progress { width: 0%; height: 100%; background: #fff; transition: width 3s linear; }
 
-        /* --- Menu Bar --- */
+        /* --- 選單列 --- */
         .menu-bar {
-            height: var(--m-h); background: rgba(255, 255, 255, 0.15); backdrop-filter: var(--glass);
+            height: 32px; background: rgba(255, 255, 255, 0.12); backdrop-filter: var(--glass);
             position: fixed; top: 0; width: 100%; z-index: 10000; display: flex; align-items: center;
-            padding: 0 15px; color: #fff; font-size: 13px; font-weight: 500;
+            padding: 0 12px; color: #fff; font-size: 13px; font-weight: 500;
         }
-        .menu-left { display: flex; gap: 16px; }
-        .menu-right { flex: 1; display: flex; justify-content: flex-end; gap: 16px; align-items: center; }
+        .menu-left span, .menu-right span { padding: 0 10px; cursor: default; }
+        .menu-left b { padding: 0 10px; font-weight: 700; }
 
-        /* --- Window System --- */
+        /* --- 視窗架構 --- */
         .window {
-            position: absolute; min-width: 400px; min-height: 250px; background: rgba(255,255,255,0.9);
-            border-radius: 12px; box-shadow: var(--win-shd); display: flex; flex-direction: column;
-            overflow: hidden; border: 0.5px solid rgba(255,255,255,0.3); z-index: 100;
+            position: absolute; min-width: 450px; min-height: 300px;
+            background: var(--win-bg); backdrop-filter: var(--glass);
+            border-radius: 12px; box-shadow: 0 50px 100px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; border: 0.5px solid rgba(255,255,255,0.3);
+            z-index: 100; transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.2s;
         }
-        .win-titlebar { height: 42px; background: rgba(235,235,235,0.8); display: flex; align-items: center; padding: 0 15px; cursor: default; }
-        .traffic-lights { display: flex; gap: 8px; width: 60px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: rgba(0,0,0,0.5); font-weight: 800; cursor: pointer; }
-        .d-close { background: #FF5F57; } .d-min { background: #FEBC2E; } .d-max { background: #28C840; }
-        .win-content { flex: 1; display: flex; background: #fff; }
+        .win-header { height: 48px; display: flex; align-items: center; padding: 0 16px; cursor: default; }
+        .controls { display: flex; gap: 8px; width: 70px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; cursor: pointer; }
+        .red { background: #FF5F57; } .yellow { background: #FEBC2E; } .green { background: #28C840; }
+        .win-body { flex: 1; background: #fff; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; position: relative; overflow: hidden; }
 
-        /* Finder UI */
-        .sidebar { width: 160px; background: rgba(240,240,240,0.8); padding: 15px 10px; border-right: 0.5px solid #ddd; }
-        .side-item { padding: 6px 10px; border-radius: 6px; font-size: 13px; margin-bottom: 2px; }
-        .side-item:hover { background: rgba(0,0,0,0.05); }
-        .side-active { background: rgba(0,0,0,0.08); font-weight: 600; color: #007AFF; }
-        .main-view { flex: 1; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, 80px); gap: 20px; }
-        .file-icon { display: flex; flex-direction: column; align-items: center; font-size: 12px; }
-        .file-icon span { margin-top: 5px; text-align: center; }
-
-        /* --- Dock --- */
-        .dock-container {
-            position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(255,255,255,0.3); backdrop-filter: var(--glass);
-            padding: 8px 12px; border-radius: 20px; display: flex; gap: 12px;
-            border: 1px solid rgba(255,255,255,0.2); z-index: 10001; align-items: flex-end;
+        /* --- Dock 魚眼物理 --- */
+        .dock-wrapper {
+            position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: var(--glass);
+            border-radius: 22px; padding: 8px 12px; display: flex; align-items: flex-end;
+            gap: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 10001;
         }
-        .dock-app {
-            width: 54px; height: 54px; position: relative; cursor: pointer;
-            transition: 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+        .app-item {
+            width: 52px; height: 52px; transition: 0.2s cubic-bezier(0.2, 1, 0.2, 1);
+            cursor: pointer; position: relative; display: flex; justify-content: center;
         }
-        .dock-app svg, .dock-app img { width: 100%; height: 100%; border-radius: 12px; }
-        .dock-app:hover { width: 75px; height: 75px; margin: 0 10px; }
-        .active-dot { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #fff; border-radius: 50%; display: none; }
+        .app-item svg { width: 100%; height: 100%; }
+        .app-item:hover { width: 85px; height: 85px; margin: 0 10px; }
+        .dot-indicator { position: absolute; bottom: -8px; width: 4px; height: 4px; background: #fff; border-radius: 50%; opacity: 0; }
+        .dot-indicator.active { opacity: 1; }
 
-        .hidden { display: none !important; }
+        /* --- App 特殊 UI --- */
+        .safari-bar { height: 40px; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; align-items: center; padding: 0 15px; }
+        .url-box { flex: 1; background: #fff; border-radius: 6px; height: 26px; margin: 0 20px; border: 1px solid #ddd; padding: 0 10px; font-size: 12px; line-height: 26px; color: #666; }
+        .finder-side { width: 150px; background: rgba(230,230,230,0.5); padding: 15px; height: 100%; border-right: 1px solid #ddd; }
+        .finder-item { padding: 5px 10px; font-size: 13px; border-radius: 5px; cursor: pointer; }
+        .finder-item.active { background: rgba(0,0,0,0.08); font-weight: 600; color: var(--apple-blue); }
+
+        .hidden { display: none !important; transform: scale(0.8); opacity: 0; }
     </style>
 </head>
 <body>
 
-<div id="wallpaper"></div>
-
-<div id="login-overlay">
-    <div class="user-icon"></div>
-    <h2 style="margin-bottom: 20px;">Lumina Pro</h2>
-    <input type="password" id="pass" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:15px; padding:8px 20px; color:#fff; text-align:center; margin-bottom:20px; outline:none;" placeholder="密碼：隨便打">
-    <button class="login-btn" onclick="OS.login()">進入系統</button>
+<div id="boot-loader">
+    <div class="apple-logo"></div>
+    <div class="boot-bar"><div id="boot-progress"></div></div>
 </div>
 
-<div class="menu-bar">
-    <div class="menu-left">
-        <span style="font-size:18px;"></span>
-        <strong id="current-app-name">Finder</strong>
-        <span>檔案</span><span>編輯</span><span>顯示</span><span>前往</span>
-    </div>
-    <div class="menu-right">
-        <span>🔋 100%</span>
-        <span>📶</span>
-        <span id="time-display">00:00 AM</span>
-    </div>
-</div>
-
-<div id="win-finder" class="window" style="width: 800px; height: 500px; top: 100px; left: 150px;">
-    <div class="win-titlebar" onmousedown="OS.drag(event, 'win-finder')">
-        <div class="traffic-lights">
-            <div class="dot d-close" onclick="OS.toggle('win-finder')"></div>
-            <div class="dot d-min"></div>
-            <div class="dot d-max"></div>
+<div id="desktop">
+    <nav class="menu-bar">
+        <div class="menu-left">
+            <span style="font-size:18px;"></span>
+            <b id="active-app-name">Finder</b>
+            <span>檔案</span><span>編輯</span><span>顯示</span><span>前往</span>
         </div>
-        <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Finder</div>
-    </div>
-    <div class="win-content">
-        <aside class="sidebar">
-            <div class="side-item side-active">🏠 個人級</div>
-            <div class="side-item">📂 文件</div>
-            <div class="side-item">⬇️ 下載項目</div>
-            <div class="side-item">🖼️ 照片</div>
-        </aside>
-        <main class="main-view">
-            <div class="file-icon">📁<span>我的文件</span></div>
-            <div class="file-icon">📁<span>專案代碼</span></div>
-            <div class="file-icon">🖼️<span>背景圖.jpg</span></div>
-        </main>
-    </div>
-</div>
-
-<div id="win-notes" class="window hidden" style="width: 500px; height: 600px; top: 150px; left: 400px;">
-    <div class="win-titlebar" onmousedown="OS.drag(event, 'win-notes')">
-        <div class="traffic-lights">
-            <div class="dot d-close" onclick="OS.toggle('win-notes')"></div>
-            <div class="dot d-min"></div><div class="dot d-max"></div>
+        <div class="menu-right">
+            <span>90% 🔋</span>
+            <span>📶</span>
+            <span>[CC]</span>
+            <span id="clock">00:00</span>
         </div>
-        <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">備忘錄</div>
-    </div>
-    <div class="win-content">
-        <textarea style="width:100%; height:100%; border:none; padding:20px; font-size:16px; outline:none; font-family:inherit;" placeholder="在此開始撰寫筆記..."></textarea>
-    </div>
-</div>
+    </nav>
 
-<div class="dock-container">
-    <div class="dock-app" onclick="OS.toggle('win-finder')">
-        <svg viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#fff"/><path d="M20,20 Q50,10 80,20 L80,80 Q50,90 20,80 Z" fill="#007AFF" opacity="0.3"/><circle cx="35" cy="40" r="5" fill="#000"/><circle cx="65" cy="40" r="5" fill="#000"/><path d="M30,65 Q50,80 70,65" fill="none" stroke="#000" stroke-width="3"/></svg>
-        <div class="active-dot" id="dot-finder" style="display:block"></div>
+    <div id="win-finder" class="window" style="width:700px; height:450px; top:100px; left:150px;">
+        <div class="win-header" onmousedown="OS.drag(event, 'win-finder')">
+            <div class="controls">
+                <div class="dot red" onclick="OS.close('finder')"></div>
+                <div class="dot yellow" onclick="OS.minimize('finder')"></div>
+                <div class="dot green"></div>
+            </div>
+            <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Finder</div>
+        </div>
+        <div class="win-body" style="display:flex;">
+            <div class="finder-side">
+                <div class="finder-item active">🏠 個人</div>
+                <div class="finder-item">📂 文件</div>
+                <div class="finder-item">⬇️ 下載</div>
+                <div class="finder-item">🖼️ 照片</div>
+            </div>
+            <div style="flex:1; padding:20px; display:grid; grid-template-columns: repeat(4, 1fr); gap:20px;">
+                <div style="text-align:center;">📄<br><span style="font-size:12px;">履歷表.pdf</span></div>
+                <div style="text-align:center;">📄<br><span style="font-size:12px;">合約.docx</span></div>
+            </div>
+        </div>
     </div>
-    <div class="dock-app" onclick="alert('正在載入 Safari 內核...')">
-        <svg viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#fff"/><circle cx="50" cy="50" r="35" fill="none" stroke="#007AFF" stroke-width="2"/><path d="M50,20 L55,45 L80,50 L55,55 L50,80 L45,55 L20,50 L45,45 Z" fill="#FF5F57"/></svg>
+
+    <div id="win-safari" class="window hidden" style="width:900px; height:600px; top:80px; left:200px;">
+        <div class="win-header" onmousedown="OS.drag(event, 'win-safari')">
+            <div class="controls">
+                <div class="dot red" onclick="OS.close('safari')"></div>
+                <div class="dot yellow"></div><div class="dot green"></div>
+            </div>
+            <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Safari</div>
+        </div>
+        <div class="win-body">
+            <div class="safari-bar">
+                <span style="font-size:20px;">‹ ›</span>
+                <div class="url-box">google.com</div>
+            </div>
+            <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:calc(100% - 40px); border:none;"></iframe>
+        </div>
     </div>
-    <div class="dock-app" onclick="OS.toggle('win-notes')">
-        <svg viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#FFBC2E"/><path d="M25,30 H75 M25,50 H75 M25,70 H50" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
-        <div class="active-dot" id="dot-notes"></div>
-    </div>
-    <div class="dock-app">
-        <svg viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#fff"/><circle cx="50" cy="40" r="15" fill="#FF5F57"/><circle cx="65" cy="55" r="15" fill="#28C840" opacity="0.7"/><circle cx="35" cy="55" r="15" fill="#007AFF" opacity="0.7"/></svg>
+
+    <div class="dock-wrapper">
+        <div class="app-item" onclick="OS.open('finder')">
+            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><path d="M20,20 Q50,10 80,20 L80,80 Q50,90 20,80 Z" fill="#007AFF" opacity="0.3"/><circle cx="35" cy="40" r="5"/><circle cx="65" cy="40" r="5"/><path d="M30,65 Q50,80 70,65" fill="none" stroke="#000" stroke-width="3"/></svg>
+            <div class="dot-indicator active" id="dot-finder"></div>
+        </div>
+        <div class="app-item" onclick="OS.open('safari')">
+            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><circle cx="50" cy="50" r="35" fill="none" stroke="#007AFF" stroke-width="2"/><path d="M50,20 L55,45 L80,50 L55,55 L50,80 L45,55 L20,50 L45,45 Z" fill="#FF5F57"/></svg>
+            <div class="dot-indicator" id="dot-safari"></div>
+        </div>
+        <div class="app-item">
+            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#FFBC2E"/><path d="M25,30 H75 M25,50 H75 M25,70 H50" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="app-item">
+            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#28C840"/><circle cx="50" cy="50" r="25" fill="#fff" opacity="0.5"/><path d="M40,50 L60,50 M50,40 L50,60" stroke="#fff" stroke-width="5"/></svg>
+        </div>
     </div>
 </div>
 
 <script>
 const OS = {
-    z: 1000,
-    login() {
-        const overlay = document.getElementById('login-overlay');
-        overlay.style.transform = "scale(1.5)";
-        overlay.style.opacity = "0";
-        setTimeout(() => overlay.style.display = 'none', 800);
-    },
+    z: 100,
     drag(e, id) {
         const el = document.getElementById(id);
         this.focus(el);
         let ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
-        const move = (ev) => {
-            el.style.left = (ev.clientX - ox) + 'px';
-            el.style.top = (ev.clientY - oy) + 'px';
-        };
-        const stop = () => {
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', stop);
-        };
+        const move = (ev) => { el.style.left = (ev.clientX-ox)+'px'; el.style.top = (ev.clientY-oy)+'px'; };
+        const stop = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', stop);
     },
-    toggle(id) {
-        const el = document.getElementById(id);
-        const appName = id.split('-')[1];
-        if (el.classList.contains('hidden')) {
-            el.classList.remove('hidden');
-            this.focus(el);
-            document.getElementById('dot-' + appName).style.display = 'block';
-            document.getElementById('current-app-name').innerText = appName.charAt(0).toUpperCase() + appName.slice(1);
-        } else {
-            el.classList.add('hidden');
-            document.getElementById('dot-' + appName).style.display = 'none';
-        }
+    open(name) {
+        const win = document.getElementById('win-' + name);
+        win.classList.remove('hidden');
+        this.focus(win);
+        document.getElementById('dot-'+name).classList.add('active');
+        document.getElementById('active-app-name').innerText = name.toUpperCase();
+    },
+    close(name) {
+        document.getElementById('win-' + name).classList.add('hidden');
+        document.getElementById('dot-'+name).classList.remove('active');
     },
     focus(el) { el.style.zIndex = ++this.z; }
 };
 
-// 更新時間
-setInterval(() => {
-    const d = new Date();
-    document.getElementById('time-display').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}, 1000);
+// 系統啟動序列
+window.onload = () => {
+    const bar = document.getElementById('boot-progress');
+    bar.style.width = '100%';
+    setTimeout(() => {
+        document.getElementById('boot-loader').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('boot-loader').style.display = 'none';
+            document.getElementById('desktop').style.display = 'block';
+        }, 500);
+    }, 3000);
+
+    setInterval(() => {
+        const d = new Date();
+        document.getElementById('clock').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+};
 </script>
 </body>
 </html>
