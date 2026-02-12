@@ -2,206 +2,260 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>macOS Sequoia Enterprise Edition</title>
+    <title>macOS Sequoia Pro - Professional Simulator</title>
     <style>
         :root {
-            --bg-url: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg');
-            --glass: blur(30px) saturate(180%) contrast(90%);
-            --apple-blue: #007AFF;
-            --win-bg: rgba(255, 255, 255, 0.75);
-            --font: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
+            --m-h: 32px; --d-h: 70px;
+            --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --glass: blur(40px) saturate(180%) contrast(100%);
+            --win-bg: rgba(255, 255, 255, 0.72);
+            --active-blue: #007AFF;
         }
 
-        /* 系統核心樣式 */
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
-        body, html { width: 100%; height: 100%; font-family: var(--font); overflow: hidden; background: #000; }
-        
-        #desktop { 
-            width: 100%; height: 100%; background: var(--bg-url) center/cover; 
-            display: none; transition: filter 0.5s; 
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; cursor: default; }
+        body, html { width: 100vw; height: 100vh; font-family: var(--font); overflow: hidden; background: #000; }
+
+        /* --- 系統底層：桌面 --- */
+        #os-container { 
+            width: 100%; height: 100%; 
+            background: url('https://images.apple.com/v/macos/sequoia/a/images/overview/hero/hero_wallpaper__eq8u3n8y7u6u_large.jpg') center/cover;
+            display: none; opacity: 0; transition: opacity 1s ease-in;
         }
 
-        /* --- 登入介面 --- */
-        #boot-loader {
-            position: fixed; inset: 0; background: #000; z-index: 99999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
-        }
-        .apple-logo { font-size: 80px; margin-bottom: 50px; }
-        .boot-bar { width: 200px; height: 4px; background: #333; border-radius: 2px; overflow: hidden; }
-        #boot-progress { width: 0%; height: 100%; background: #fff; transition: width 3s linear; }
-
-        /* --- 選單列 --- */
+        /* --- 1. Menu Bar --- */
         .menu-bar {
-            height: 32px; background: rgba(255, 255, 255, 0.12); backdrop-filter: var(--glass);
+            height: var(--m-h); background: rgba(255, 255, 255, 0.15); backdrop-filter: var(--glass);
             position: fixed; top: 0; width: 100%; z-index: 10000; display: flex; align-items: center;
-            padding: 0 12px; color: #fff; font-size: 13px; font-weight: 500;
+            padding: 0 15px; color: #fff; font-size: 13px; font-weight: 500;
         }
-        .menu-left span, .menu-right span { padding: 0 10px; cursor: default; }
-        .menu-left b { padding: 0 10px; font-weight: 700; }
+        .menu-left, .menu-right { display: flex; gap: 16px; align-items: center; }
+        .menu-right { flex: 1; justify-content: flex-end; }
+        .menu-item:hover { background: rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 8px; margin: 0 -8px; }
 
-        /* --- 視窗架構 --- */
+        /* --- 2. Window Manager --- */
         .window {
-            position: absolute; min-width: 450px; min-height: 300px;
-            background: var(--win-bg); backdrop-filter: var(--glass);
-            border-radius: 12px; box-shadow: 0 50px 100px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; border: 0.5px solid rgba(255,255,255,0.3);
-            z-index: 100; transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.2s;
+            position: absolute; min-width: 400px; min-height: 280px; background: var(--win-bg);
+            backdrop-filter: var(--glass); border-radius: 12px; box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; border: 0.5px solid rgba(255,255,255,0.4);
+            z-index: 100; transform-origin: center bottom; transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.2s;
         }
-        .win-header { height: 48px; display: flex; align-items: center; padding: 0 16px; cursor: default; }
-        .controls { display: flex; gap: 8px; width: 70px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; cursor: pointer; }
-        .red { background: #FF5F57; } .yellow { background: #FEBC2E; } .green { background: #28C840; }
-        .win-body { flex: 1; background: #fff; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; position: relative; overflow: hidden; }
+        .win-header { height: 42px; display: flex; align-items: center; padding: 0 15px; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
+        .traffic-lights { display: flex; gap: 8px; width: 60px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; }
+        .d-close { background: #FF5F57; color: #4c0000; } .d-min { background: #FEBC2E; color: #5d3e00; } .d-max { background: #28C840; color: #004200; }
+        .win-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #333; opacity: 0.7; }
+        .win-body { flex: 1; background: #fff; position: relative; overflow: hidden; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 
-        /* --- Dock 魚眼物理 --- */
-        .dock-wrapper {
+        /* --- 3. 8-Way Resizers --- */
+        .rsz { position: absolute; z-index: 10; }
+        .rsz-r { right: -2px; top: 0; bottom: 0; width: 6px; cursor: ew-resize; }
+        .rsz-b { bottom: -2px; left: 0; right: 0; height: 6px; cursor: ns-resize; }
+        .rsz-rb { bottom: -4px; right: -4px; width: 12px; height: 12px; cursor: nwse-resize; }
+        /* 增加其他方位... */
+
+        /* --- 4. Dock (Fisheye Logic) --- */
+        .dock-container {
             position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.2); backdrop-filter: var(--glass);
-            border-radius: 22px; padding: 8px 12px; display: flex; align-items: flex-end;
-            gap: 12px; border: 1px solid rgba(255,255,255,0.2); z-index: 10001;
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: var(--glass);
+            border-radius: 22px; padding: 6px 10px; display: flex; align-items: flex-end;
+            gap: 10px; border: 0.5px solid rgba(255,255,255,0.3); z-index: 10001;
         }
-        .app-item {
-            width: 52px; height: 52px; transition: 0.2s cubic-bezier(0.2, 1, 0.2, 1);
-            cursor: pointer; position: relative; display: flex; justify-content: center;
+        .dock-app {
+            width: 54px; height: 54px; position: relative; display: flex; justify-content: center;
+            transition: width 0.1s ease, height 0.1s ease;
         }
-        .app-item svg { width: 100%; height: 100%; }
-        .app-item:hover { width: 85px; height: 85px; margin: 0 10px; }
-        .dot-indicator { position: absolute; bottom: -8px; width: 4px; height: 4px; background: #fff; border-radius: 50%; opacity: 0; }
-        .dot-indicator.active { opacity: 1; }
+        .dock-app svg { width: 100%; height: 100%; border-radius: 12px; pointer-events: none; }
+        .indicator { position: absolute; bottom: -10px; width: 4px; height: 4px; background: #fff; border-radius: 50%; opacity: 0; }
+        .indicator.active { opacity: 1; }
 
-        /* --- App 特殊 UI --- */
-        .safari-bar { height: 40px; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; align-items: center; padding: 0 15px; }
-        .url-box { flex: 1; background: #fff; border-radius: 6px; height: 26px; margin: 0 20px; border: 1px solid #ddd; padding: 0 10px; font-size: 12px; line-height: 26px; color: #666; }
-        .finder-side { width: 150px; background: rgba(230,230,230,0.5); padding: 15px; height: 100%; border-right: 1px solid #ddd; }
-        .finder-item { padding: 5px 10px; font-size: 13px; border-radius: 5px; cursor: pointer; }
-        .finder-item.active { background: rgba(0,0,0,0.08); font-weight: 600; color: var(--apple-blue); }
+        /* --- 5. Apps & Modules --- */
+        .finder-sidebar { width: 160px; background: rgba(0,0,0,0.03); padding: 20px 10px; height: 100%; }
+        .f-item { padding: 6px 12px; font-size: 13px; border-radius: 6px; margin-bottom: 2px; }
+        .f-item:hover { background: rgba(0,0,0,0.05); }
+        .f-active { background: rgba(0,122,255,0.1); color: var(--active-blue); font-weight: 600; }
+        
+        .safari-ui { height: 44px; background: #f0f0f0; border-bottom: 1px solid #dcdcdc; display: flex; align-items: center; padding: 0 15px; }
+        .url-bar { flex: 1; height: 28px; background: #fff; border-radius: 6px; margin: 0 20px; text-align: center; line-height: 28px; font-size: 12px; color: #666; border: 1px solid #e0e0e0; }
 
-        .hidden { display: none !important; transform: scale(0.8); opacity: 0; }
+        /* --- 6. Boot & Login --- */
+        #boot-loader { position: fixed; inset: 0; background: #000; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
+        .boot-progress { width: 200px; height: 4px; background: #333; border-radius: 2px; margin-top: 50px; overflow: hidden; }
+        #boot-bar { width: 0%; height: 100%; background: #fff; transition: width 2.5s cubic-bezier(0.1, 0, 0.4, 1); }
+
+        .hidden { display: none !important; }
+        .minimize { transform: translateY(100vh) scale(0.1); opacity: 0; }
     </style>
 </head>
 <body>
 
 <div id="boot-loader">
-    <div class="apple-logo"></div>
-    <div class="boot-bar"><div id="boot-progress"></div></div>
+    <div style="font-size: 70px;"></div>
+    <div class="boot-progress"><div id="boot-bar"></div></div>
 </div>
 
-<div id="desktop">
+<div id="os-container">
     <nav class="menu-bar">
         <div class="menu-left">
-            <span style="font-size:18px;"></span>
+            <span class="menu-item"></span>
             <b id="active-app-name">Finder</b>
-            <span>檔案</span><span>編輯</span><span>顯示</span><span>前往</span>
+            <span class="menu-item">檔案</span><span class="menu-item">編輯</span><span class="menu-item">顯示</span>
         </div>
         <div class="menu-right">
-            <span>90% 🔋</span>
+            <span>🔋 100%</span>
             <span>📶</span>
-            <span>[CC]</span>
-            <span id="clock">00:00</span>
+            <span id="clock">09:41 AM</span>
         </div>
     </nav>
 
-    <div id="win-finder" class="window" style="width:700px; height:450px; top:100px; left:150px;">
-        <div class="win-header" onmousedown="OS.drag(event, 'win-finder')">
-            <div class="controls">
-                <div class="dot red" onclick="OS.close('finder')"></div>
-                <div class="dot yellow" onclick="OS.minimize('finder')"></div>
-                <div class="dot green"></div>
+    <div id="win-finder" class="window" style="top: 100px; left: 100px; width: 800px; height: 500px;">
+        <div class="win-header" onmousedown="WindowServer.drag(event, 'win-finder')">
+            <div class="traffic-lights">
+                <div class="dot d-close" onclick="WindowServer.close('finder')">×</div>
+                <div class="dot d-min" onclick="WindowServer.minimize('finder')">−</div>
+                <div class="dot d-max">+</div>
             </div>
-            <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Finder</div>
+            <div class="win-title">Finder</div>
         </div>
-        <div class="win-body" style="display:flex;">
-            <div class="finder-side">
-                <div class="finder-item active">🏠 個人</div>
-                <div class="finder-item">📂 文件</div>
-                <div class="finder-item">⬇️ 下載</div>
-                <div class="finder-item">🖼️ 照片</div>
+        <div class="win-body" style="display: flex;">
+            <div class="finder-sidebar">
+                <div class="f-item f-active">🏠 個人級</div>
+                <div class="f-item">📂 文件</div>
+                <div class="f-item">🖼️ 照片</div>
             </div>
-            <div style="flex:1; padding:20px; display:grid; grid-template-columns: repeat(4, 1fr); gap:20px;">
-                <div style="text-align:center;">📄<br><span style="font-size:12px;">履歷表.pdf</span></div>
-                <div style="text-align:center;">📄<br><span style="font-size:12px;">合約.docx</span></div>
+            <div style="flex:1; padding: 25px; display: grid; grid-template-columns: repeat(auto-fill, 90px); gap: 20px;">
+                <div style="text-align:center;">📄<br><span style="font-size:11px;">Project.doc</span></div>
+                <div style="text-align:center;">📁<br><span style="font-size:11px;">下載項目</span></div>
             </div>
         </div>
+        <div class="rsz rsz-r" onmousedown="WindowServer.resize(event, 'win-finder', 'r')"></div>
+        <div class="rsz rsz-b" onmousedown="WindowServer.resize(event, 'win-finder', 'b')"></div>
+        <div class="rsz rsz-rb" onmousedown="WindowServer.resize(event, 'win-finder', 'rb')"></div>
     </div>
 
-    <div id="win-safari" class="window hidden" style="width:900px; height:600px; top:80px; left:200px;">
-        <div class="win-header" onmousedown="OS.drag(event, 'win-safari')">
-            <div class="controls">
-                <div class="dot red" onclick="OS.close('safari')"></div>
-                <div class="dot yellow"></div><div class="dot green"></div>
-            </div>
-            <div style="flex:1; text-align:center; font-size:13px; font-weight:600;">Safari</div>
+    <div id="win-safari" class="window hidden" style="top: 120px; left: 150px; width: 900px; height: 600px;">
+        <div class="win-header" onmousedown="WindowServer.drag(event, 'win-safari')">
+            <div class="traffic-lights"><div class="dot d-close" onclick="WindowServer.close('safari')">×</div><div class="dot d-min">−</div><div class="dot d-max">+</div></div>
+            <div class="win-title">Safari</div>
         </div>
         <div class="win-body">
-            <div class="safari-bar">
-                <span style="font-size:20px;">‹ ›</span>
-                <div class="url-box">google.com</div>
+            <div class="safari-ui">
+                <span style="font-size: 20px; color:#666;">‹ ›</span>
+                <div class="url-bar">google.com</div>
             </div>
-            <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:calc(100% - 40px); border:none;"></iframe>
+            <iframe src="https://www.google.com/search?igu=1" style="width:100%; height:calc(100% - 44px); border:none;"></iframe>
         </div>
+        <div class="rsz rsz-rb" onmousedown="WindowServer.resize(event, 'win-safari', 'rb')"></div>
     </div>
 
-    <div class="dock-wrapper">
-        <div class="app-item" onclick="OS.open('finder')">
+    <div class="dock-container" id="main-dock">
+        <div class="dock-app" data-app="finder" onclick="WindowServer.open('finder')">
             <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><path d="M20,20 Q50,10 80,20 L80,80 Q50,90 20,80 Z" fill="#007AFF" opacity="0.3"/><circle cx="35" cy="40" r="5"/><circle cx="65" cy="40" r="5"/><path d="M30,65 Q50,80 70,65" fill="none" stroke="#000" stroke-width="3"/></svg>
-            <div class="dot-indicator active" id="dot-finder"></div>
+            <div class="indicator active" id="ind-finder"></div>
         </div>
-        <div class="app-item" onclick="OS.open('safari')">
+        <div class="dock-app" data-app="safari" onclick="WindowServer.open('safari')">
             <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#fff"/><circle cx="50" cy="50" r="35" fill="none" stroke="#007AFF" stroke-width="2"/><path d="M50,20 L55,45 L80,50 L55,55 L50,80 L45,55 L20,50 L45,45 Z" fill="#FF5F57"/></svg>
-            <div class="dot-indicator" id="dot-safari"></div>
+            <div class="indicator" id="ind-safari"></div>
         </div>
-        <div class="app-item">
+        <div class="dock-app" data-app="notes">
             <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#FFBC2E"/><path d="M25,30 H75 M25,50 H75 M25,70 H50" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>
         </div>
-        <div class="app-item">
-            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#28C840"/><circle cx="50" cy="50" r="25" fill="#fff" opacity="0.5"/><path d="M40,50 L60,50 M50,40 L50,60" stroke="#fff" stroke-width="5"/></svg>
+        <div class="dock-app" data-app="settings">
+            <svg viewBox="0 0 100 100"><rect width="90" height="90" x="5" y="5" rx="20" fill="#8e8e93"/><circle cx="50" cy="50" r="15" fill="#555"/><path d="M50,20 L50,30 M50,70 L50,80 M20,50 L30,50 M70,50 L80,50" stroke="#fff" stroke-width="6"/></svg>
         </div>
     </div>
 </div>
 
 <script>
-const OS = {
-    z: 100,
+/**
+ * macOS Kernel Engine - 權威復刻版
+ */
+const WindowServer = {
+    z: 1000,
     drag(e, id) {
         const el = document.getElementById(id);
         this.focus(el);
         let ox = e.clientX - el.offsetLeft, oy = e.clientY - el.offsetTop;
-        const move = (ev) => { el.style.left = (ev.clientX-ox)+'px'; el.style.top = (ev.clientY-oy)+'px'; };
-        const stop = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
+        const move = (ev) => {
+            el.style.left = `${ev.clientX - ox}px`;
+            el.style.top = `${ev.clientY - oy}px`;
+        };
+        const stop = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', stop);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', stop);
+    },
+    resize(e, id, type) {
+        e.stopPropagation();
+        const el = document.getElementById(id);
+        let sw = el.offsetWidth, sh = el.offsetHeight, sx = e.clientX, sy = e.clientY;
+        const move = (ev) => {
+            if(type.includes('r')) el.style.width = `${sw + (ev.clientX - sx)}px`;
+            if(type.includes('b')) el.style.height = `${sh + (ev.clientY - sy)}px`;
+        };
+        const stop = () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', stop);
+        };
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', stop);
     },
     open(name) {
-        const win = document.getElementById('win-' + name);
-        win.classList.remove('hidden');
+        const win = document.getElementById(`win-${name}`);
+        win.classList.remove('hidden', 'minimize');
         this.focus(win);
-        document.getElementById('dot-'+name).classList.add('active');
-        document.getElementById('active-app-name').innerText = name.toUpperCase();
+        document.getElementById(`ind-${name}`).classList.add('active');
+        document.getElementById('active-app-name').innerText = name.charAt(0).toUpperCase() + name.slice(1);
     },
     close(name) {
-        document.getElementById('win-' + name).classList.add('hidden');
-        document.getElementById('dot-'+name).classList.remove('active');
+        document.getElementById(`win-${name}`).classList.add('hidden');
+        document.getElementById(`ind-${name}`).classList.remove('active');
+    },
+    minimize(name) {
+        document.getElementById(`win-${name}`).classList.add('minimize');
     },
     focus(el) { el.style.zIndex = ++this.z; }
 };
 
-// 系統啟動序列
+// Dock 魚眼動畫核心物理公式
+const dock = document.getElementById('main-dock');
+dock.addEventListener('mousemove', (e) => {
+    const apps = document.querySelectorAll('.dock-app');
+    apps.forEach(app => {
+        const rect = app.getBoundingClientRect();
+        const center = rect.left + rect.width / 2;
+        const dist = Math.abs(e.clientX - center);
+        const scale = Math.max(1, 1.6 - dist / 180);
+        app.style.width = `${54 * scale}px`;
+        app.style.height = `${54 * scale}px`;
+    });
+});
+dock.addEventListener('mouseleave', () => {
+    document.querySelectorAll('.dock-app').forEach(app => {
+        app.style.width = '54px'; app.style.height = '54px';
+    });
+});
+
+// Booting Sequence
 window.onload = () => {
-    const bar = document.getElementById('boot-progress');
-    bar.style.width = '100%';
+    document.getElementById('boot-bar').style.width = '100%';
     setTimeout(() => {
         document.getElementById('boot-loader').style.opacity = '0';
         setTimeout(() => {
             document.getElementById('boot-loader').style.display = 'none';
-            document.getElementById('desktop').style.display = 'block';
+            const os = document.getElementById('os-container');
+            os.style.display = 'block';
+            setTimeout(() => os.style.opacity = '1', 50);
         }, 500);
-    }, 3000);
-
-    setInterval(() => {
-        const d = new Date();
-        document.getElementById('clock').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }, 1000);
+    }, 2500);
 };
+
+// Clock
+setInterval(() => {
+    const d = new Date();
+    document.getElementById('clock').innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}, 1000);
 </script>
 </body>
 </html>
