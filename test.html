@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 5.0</title>
+    <title>班級數位平台 6.0</title>
 
     <script>
         const AUTHOR_INFO = {
             name: "王宥鈞",
-            role: "核心開發者",
-            version: "v5.0.0-Stable",
-            updateTime: "2026/02/12"
+            role: "ClassHub 核心開發者",
+            version: "v6.0.0-Stable",
+            tutorialUrl: "#", // 預留教學連結
+            updateItems: [
+                "整合切換器：將顯示模式合併為分段式控制組。",
+                "作者區塊重塑：資訊視窗改為現代卡片式佈局。",
+                "新增教學路徑：預留『使用教學』按鈕介面。",
+                "電腦版優化：修復大螢幕下方塊模式顯示異常。"
+            ]
         };
-        const CONFIG_LOG_ITEMS = [
-            "修復橫向捲軸：修正手機瀏覽時出現的溢出拉桿問題。",
-            "功能完整恢復：保留所有原始服務項目，不因動畫簡化內容。",
-            "雙模式切換：完美相容『列表』與『方塊』顯示邏輯。",
-            "純 SVG 介面：移除所有 Emoji 符號，提升專業質感。"
-        ];
     </script>
 
     <style>
         :root {
-            --p: #4361ee; --s: #2ec4b6; --a: #ff9f1c; --t: #ef233c;
+            --p: #4361ee; --s: #2ec4b6; --a: #ff9f1c;
             --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
             --sub-text: #64748b; --border: #e2e8f0;
             --glass-bg: rgba(248, 250, 252, 0.95);
@@ -35,77 +35,54 @@
             --glass-bg: rgba(2, 6, 23, 0.95);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* 徹底防止網頁橫向溢出 */
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100dvh; 
-            overflow: hidden; position: fixed; 
-            font-family: 'PingFang TC', -apple-system, sans-serif;
-            background-color: var(--bg); color: var(--text);
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; position: fixed; font-family: 'PingFang TC', system-ui, sans-serif; background-color: var(--bg); color: var(--text); }
 
         /* --- 頂部導覽 --- */
-        .fixed-top { z-index: 1000; background: var(--glass-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-        .header { max-width: 1200px; margin: 0 auto; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-        .header-titles h1 { margin: 0; font-size: 1.15rem; font-weight: 900; color: var(--p); letter-spacing: -0.5px; }
-        .header-titles p { margin: 0; font-size: 0.6rem; color: var(--sub-text); font-weight: 700; }
-        
-        .header-actions { display: flex; gap: 8px; align-items: center; }
+        .header { max-width: 1200px; margin: 0 auto; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--glass-bg); backdrop-filter: blur(12px); z-index: 1000; }
+        .header-titles h1 { margin: 0; font-size: 1.1rem; font-weight: 900; color: var(--p); }
+        .header-titles p { margin: 0; font-size: 0.6rem; color: var(--sub-text); font-weight: 700; letter-spacing: 0.5px; }
 
-        /* SVG 按鈕樣式 */
-        .icon-btn { 
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; 
-            background: var(--border); border: none; border-radius: 10px; cursor: pointer; color: var(--text); transition: 0.2s;
-        }
-        .icon-btn.active { background: var(--p); color: white; }
-        .icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .header-actions { display: flex; gap: 12px; align-items: center; }
+
+        /* 分段切換器 (Segmented Control) */
+        .segmented-control { display: flex; background: var(--border); padding: 3px; border-radius: 12px; position: relative; }
+        .seg-btn { width: 34px; height: 30px; border: none; background: none; border-radius: 10px; cursor: pointer; color: var(--sub-text); position: relative; z-index: 1; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .seg-btn.active { color: var(--p); background: var(--card); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .seg-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+
+        .circle-btn { width: 34px; height: 34px; border: none; border-radius: 50%; background: var(--border); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .circle-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; }
 
         /* --- 物理滑動核心 --- */
-        .main-scroller {
-            display: flex;
-            width: 100vw;
-            height: calc(100dvh - 65px); /* 扣除頂部高度 */
-            overflow-x: auto;
-            overflow-y: hidden;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            scrollbar-width: none; /* Firefox 隱藏捲軸 */
-        }
-        .main-scroller::-webkit-scrollbar { display: none; } /* Chrome 隱藏捲軸 */
+        .main-scroller { display: flex; width: 100vw; height: calc(100dvh - 65px); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .main-scroller::-webkit-scrollbar { display: none; }
+        .page-section { flex: 0 0 100vw; width: 100vw; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px 16px 140px; -webkit-overflow-scrolling: touch; }
 
-        .page-section {
-            flex: 0 0 100vw; /* 確保每一頁精確等於螢幕寬度 */
-            width: 100vw;
-            height: 100%;
-            scroll-snap-align: start;
-            overflow-y: auto;
-            padding: 16px 16px 150px 16px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* --- 模式切換樣式 --- */
+        /* --- 內容佈局修復 --- */
         .menu-list { display: grid; gap: 12px; width: 100%; max-width: 1000px; margin: 0 auto; }
         
-        /* 列表模式 */
+        /* 列表模式：保持單欄或雙欄 */
         .list-mode { grid-template-columns: 1fr; }
-        .list-mode .menu-item { padding: 16px; align-items: center; flex-direction: row; }
-        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 14px; font-size: 20px; }
-        
-        /* 方塊模式 */
+        @media (min-width: 768px) { .list-mode { grid-template-columns: 1fr 1fr; } }
+
+        /* 方塊模式：修復電腦版顯示 */
         .grid-mode { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .grid-mode .menu-item { flex-direction: column; padding: 15px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
-        .grid-mode .icon-box { width: 38px; height: 38px; margin: 0 auto 8px; border-radius: 50%; font-size: 18px; }
+        @media (min-width: 768px) { .grid-mode { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 1024px) { .grid-mode { grid-template-columns: repeat(6, 1fr); } }
+
+        .menu-item { background: var(--card); border-radius: 16px; border: 1px solid var(--border); text-decoration: none; color: inherit; display: flex; transition: transform 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .menu-item:active { transform: scale(0.96); }
+
+        /* 模式內元件尺寸調整 */
+        .list-mode .menu-item { padding: 18px; align-items: center; }
+        .list-mode .icon-box { width: 44px; height: 44px; margin-right: 15px; font-size: 20px; border-radius: 12px; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+        
+        .grid-mode .menu-item { flex-direction: column; padding: 20px 10px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
+        .grid-mode .icon-box { width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 20px; }
         .grid-mode .info p { display: none; }
 
-        .menu-item { 
-            background: var(--card); border-radius: 16px; border: 1px solid var(--border); 
-            text-decoration: none; color: inherit; display: flex; transition: transform 0.1s;
-        }
-        .menu-item:active { transform: scale(0.96); opacity: 0.8; }
-        .icon-box { background: var(--bg); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .info h2 { margin: 0; font-size: 0.85rem; font-weight: 800; }
-        .info p { margin: 2px 0 0; font-size: 0.7rem; color: var(--sub-text); }
+        .info h2 { margin: 0; font-size: 0.9rem; font-weight: 800; }
+        .info p { margin: 3px 0 0; font-size: 0.75rem; color: var(--sub-text); }
 
         /* --- 底部導覽 --- */
         .bottom-nav-container { position: fixed; bottom: calc(15px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 2000; }
@@ -114,81 +91,82 @@
         .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 0.8rem; font-weight: 800; color: #94a3b8; cursor: pointer; border-radius: 100px; transition: 0.3s; }
         .nav-item.active { color: white; background: var(--p); }
 
-        /* --- Modal --- */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        /* --- 資訊 Modal 優化 --- */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.show { display: flex; }
-        .modal { background: var(--bg); width: 85%; max-width: 340px; border-radius: 24px; overflow: hidden; animation: pop 0.3s forwards; }
-        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-header { background: var(--p); color: white; padding: 20px; text-align: center; }
-        .modal-body { padding: 20px; }
-        .version-tag { background: var(--border); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; }
-        .log-list { margin: 15px 0; padding: 0; list-style: none; font-size: 0.8rem; color: var(--sub-text); line-height: 1.6; }
-        .modal-close { width: 100%; padding: 12px; background: var(--text); color: var(--bg); border: none; border-radius: 12px; font-weight: 800; }
+        .modal { background: var(--bg); width: 100%; max-width: 360px; border-radius: 28px; overflow: hidden; animation: pop 0.3s forwards; }
+        
+        /* 作者卡片設計 */
+        .author-card { background: linear-gradient(135deg, var(--p), #7209b7); color: white; padding: 30px 20px; text-align: center; position: relative; }
+        .author-card h3 { margin: 0; font-size: 1.4rem; font-weight: 900; }
+        .author-card p { margin: 5px 0 0; opacity: 0.9; font-size: 0.8rem; font-weight: 500; }
+
+        .modal-content { padding: 24px; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .ver-tag { background: var(--border); padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; color: var(--p); }
+        .guide-link { color: var(--p); font-size: 0.75rem; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+
+        .log-title { font-size: 0.85rem; font-weight: 900; margin-bottom: 10px; color: var(--text); }
+        .log-list { margin: 0; padding: 0; list-style: none; }
+        .log-list li { font-size: 0.8rem; color: var(--sub-text); padding: 6px 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+        .modal-close { width: 100%; margin-top: 20px; padding: 14px; background: var(--text); color: var(--bg); border: none; border-radius: 16px; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="fixed-top">
-        <div class="header">
-            <div class="header-titles">
-                <h1>班級數位平台</h1>
-                <p>CLASSROOM HUB SYSTEM</p>
-            </div>
-            <div class="header-actions">
-                <button class="icon-btn" id="listModeBtn" onclick="setLayout('list-mode')">
+    <div class="header">
+        <div class="header-titles">
+            <h1>班級數位平台</h1>
+            <p>CLASSROOM HUB PRO</p>
+        </div>
+        <div class="header-actions">
+            <div class="segmented-control">
+                <button class="seg-btn" id="listSeg" onclick="setLayout('list-mode')" title="列表顯示">
                     <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </button>
-                <button class="icon-btn" id="gridModeBtn" onclick="setLayout('grid-mode')">
+                <button class="seg-btn" id="gridSeg" onclick="setLayout('grid-mode')" title="方塊顯示">
                     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 </button>
-                <button class="icon-btn" id="themeBtn">
-                    <svg id="sunIcon" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                    <svg id="moonIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
-                <button class="icon-btn" onclick="openInfo()">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                </button>
             </div>
+            <button class="circle-btn" id="themeBtn">
+                <svg id="sunIcon" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><path d="M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <svg id="moonIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <button class="circle-btn" onclick="openInfo()">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
         </div>
     </div>
 
     <div class="main-scroller" id="mainScroller">
-        <section class="page-section">
-            <div class="menu-list" id="group-0">
-                <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>重要時程不漏接</p></div></a>
-                <a href="countdown/index.html" class="menu-item"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>倒數精確時刻</p></div></a>
-                <a href="homework/index.html" class="menu-item"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>每日進度更新</p></div></a>
-            </div>
-        </section>
+        <section class="page-section"><div class="menu-list" id="g0">
+            <a href="行事曆/index.html" class="menu-item"><div class="icon-box">📅</div><div class="info"><h2>班級行事曆</h2><p>重要時程不漏接</p></div></a>
+            <a href="countdown/index.html" class="menu-item"><div class="icon-box">⏳</div><div class="info"><h2>考程倒數</h2><p>倒數精確時刻</p></div></a>
+            <a href="homework/index.html" class="menu-item"><div class="icon-box">📒</div><div class="info"><h2>作業彙整</h2><p>每日進度更新</p></div></a>
+        </div></section>
+        
+        <section class="page-section"><div class="menu-list" id="g1">
+            <a href="help/student.html" class="menu-item"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>學生心理健康支援</p></div></a>
+            <a href="unknownmail/index.html" class="menu-item"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全訊息管道</p></div></a>
+            <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>班級心情交流</p></div></a>
+            <a href="board/index.html" class="menu-item"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>班級事務討論</p></div></a>
+        </div></section>
 
-        <section class="page-section">
-            <div class="menu-list" id="group-1">
-                <a href="help/student.html" class="menu-item"><div class="icon-box">🌱</div><div class="info"><h2>心聲諮詢</h2><p>學生心理健康支援</p></div></a>
-                <a href="unknownmail/index.html" class="menu-item"><div class="icon-box">㊙️</div><div class="info"><h2>加密信箱</h2><p>安全訊息管道</p></div></a>
-                <a href="匿名/index.html" class="menu-item"><div class="icon-box">✨</div><div class="info"><h2>匿名許願池</h2><p>班級心情交流</p></div></a>
-                <a href="board/index.html" class="menu-item"><div class="icon-box">💬</div><div class="info"><h2>公務討論區</h2><p>班級事務討論</p></div></a>
-            </div>
-        </section>
+        <section class="page-section"><div class="menu-list" id="g2">
+            <a href="cleaning/index.html" class="menu-item"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>打掃區域管理</p></div></a>
+            <a href="seating/index.html" class="menu-item"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>公平座位分配</p></div></a>
+            <a href="vote/index.html" class="menu-item"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票</h2><p>民主決策平台</p></div></a>
+            <a href="grouping/index.html" class="menu-item"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組</h2><p>多元分組機制</p></div></a>
+        </div></section>
 
-        <section class="page-section">
-            <div class="menu-list" id="group-2">
-                <a href="cleaning/index.html" class="menu-item"><div class="icon-box">🧹</div><div class="info"><h2>勤務追蹤</h2><p>打掃區域管理</p></div></a>
-                <a href="seating/index.html" class="menu-item"><div class="icon-box">🪑</div><div class="info"><h2>選位系統</h2><p>公平座位分配</p></div></a>
-                <a href="vote/index.html" class="menu-item"><div class="icon-box">🗳️</div><div class="info"><h2>數位投票</h2><p>民主決策平台</p></div></a>
-                <a href="grouping/index.html" class="menu-item"><div class="icon-box">🎲</div><div class="info"><h2>隨機分組</h2><p>多元分組機制</p></div></a>
-            </div>
-        </section>
-
-        <section class="page-section">
-            <div class="menu-list" id="group-3">
-                <a href="exam_calc/index.html" class="menu-item"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>成績落點計算</p></div></a>
-                <a href="final_calc/index.html" class="menu-item"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>學分預估系統</p></div></a>
-            </div>
-        </section>
+        <section class="page-section"><div class="menu-list" id="g3">
+            <a href="exam_calc/index.html" class="menu-item"><div class="icon-box">📝</div><div class="info"><h2>段考分析</h2><p>成績落點計算</p></div></a>
+            <a href="final_calc/index.html" class="menu-item"><div class="icon-box">📈</div><div class="info"><h2>學期評估</h2><p>學分預估系統</p></div></a>
+        </div></section>
     </div>
 
     <div class="bottom-nav-container">
-        <div class="bottom-nav" id="bottomNav">
+        <div class="bottom-nav">
             <div class="nav-item active" onclick="scrollToPage(0)">提醒</div>
             <div class="nav-item" onclick="scrollToPage(1)">互動</div>
             <div class="nav-item" onclick="scrollToPage(2)">班務</div>
@@ -198,14 +176,21 @@
 
     <div class="modal-overlay" id="infoModal">
         <div class="modal">
-            <div class="modal-header">
-                <h3 id="m-name">作者</h3>
+            <div class="author-card">
+                <h3 id="m-name">載入中...</h3>
                 <p id="m-role">Role</p>
             </div>
-            <div class="modal-body">
-                <span class="version-tag" id="m-ver">v.0.0</span>
+            <div class="modal-content">
+                <div class="status-bar">
+                    <span class="ver-tag" id="m-ver">v.0.0</span>
+                    <a href="#" class="guide-link" id="m-guide">
+                        使用教學 
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </a>
+                </div>
+                <div class="log-title">最近更新內容</div>
                 <ul class="log-list" id="m-log"></ul>
-                <button class="modal-close" onclick="closeInfo()">確定</button>
+                <button class="modal-close" onclick="closeInfo()">關閉</button>
             </div>
         </div>
     </div>
@@ -215,7 +200,6 @@
         const navItems = document.querySelectorAll('.nav-item');
         let isDarkMode = localStorage.getItem('theme') === 'dark';
 
-        // 監聽滾動：同步底部導覽列
         scroller.addEventListener('scroll', () => {
             const index = Math.round(scroller.scrollLeft / window.innerWidth);
             navItems.forEach((item, i) => item.classList.toggle('active', i === index));
@@ -225,28 +209,26 @@
             scroller.scrollTo({ left: index * window.innerWidth, behavior: 'smooth' });
         }
 
-        // 佈局切換
         function setLayout(mode) {
             document.querySelectorAll('.menu-list').forEach(el => {
                 el.classList.remove('list-mode', 'grid-mode');
                 el.classList.add(mode);
             });
-            document.getElementById('listModeBtn').classList.toggle('active', mode === 'list-mode');
-            document.getElementById('gridModeBtn').classList.toggle('active', mode === 'grid-mode');
+            document.getElementById('listSeg').classList.toggle('active', mode === 'list-mode');
+            document.getElementById('gridSeg').classList.toggle('active', mode === 'grid-mode');
             localStorage.setItem('layout', mode);
         }
 
-        // 資訊視窗
         function openInfo() {
             document.getElementById('m-name').innerText = AUTHOR_INFO.name;
             document.getElementById('m-role').innerText = AUTHOR_INFO.role;
             document.getElementById('m-ver').innerText = AUTHOR_INFO.version;
-            document.getElementById('m-log').innerHTML = CONFIG_LOG_ITEMS.map(i => `<li>• ${i}</li>`).join('');
+            document.getElementById('m-guide').href = AUTHOR_INFO.tutorialUrl;
+            document.getElementById('m-log').innerHTML = AUTHOR_INFO.updateItems.map(i => `<li>${i}</li>`).join('');
             document.getElementById('infoModal').classList.add('show');
         }
         function closeInfo() { document.getElementById('infoModal').classList.remove('show'); }
 
-        // 主題切換
         function applyTheme() {
             document.body.classList.toggle('dark-mode', isDarkMode);
             document.getElementById('sunIcon').style.display = isDarkMode ? 'block' : 'none';
