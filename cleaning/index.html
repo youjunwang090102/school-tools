@@ -59,6 +59,7 @@
         .warn-btn { background: var(--w); color: white; margin-bottom: 5px; }
         .success-btn { background: #48bb78; color: white; margin-bottom: 5px; }
         .role-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #4a5568; margin-left: 5px; }
+        .del-btn { width: auto; padding: 5px 8px; font-size: 0.8rem; background: #cbd5e0; color: #4a5568; margin: 0; }
     </style>
 </head>
 <body>
@@ -221,17 +222,9 @@
 
     // 4. 登入
     async function doLogin() {
-        // 去除座號前導0，統一轉為數字再比對，或直接比對字串 (此處維持字串ID，但允許使用者輸入不補0)
-        // 為了相容，假設 DB 存的是 "01", "100"。使用者輸入 "1" -> "01", "100" -> "100"
         let rawId = document.getElementById('loginId').value;
         if(!rawId) return;
         
-        // 簡單格式化：如果長度是1且是數字，補0 (支援舊資料)，如果是2位或3位則保留
-        // 但為了 100 號，建議 ID 統一處理。這裡假設註冊時會自動處理 ID 格式
-        // 修正：註冊時我們不做 padStart(2) 了，直接用 parseInt 後的字串當 ID，或者統一不補0？
-        // 為了相容舊版代碼 "01"，我們嘗試兩種可能
-        
-        // 策略：嘗試直接 ID，失敗則補 0
         let id = rawId; 
         if(rawId.length === 1) id = "0" + rawId;
 
@@ -239,7 +232,6 @@
         
         try {
             let doc = await db.collection("students").doc(id).get();
-            // 如果補0後沒找到，試試原始輸入 (針對 100 號)
             if(!doc.exists && rawId.length > 2) {
                 doc = await db.collection("students").doc(rawId).get();
                 if(doc.exists) id = rawId;
@@ -247,13 +239,10 @@
 
             if(doc.exists && doc.data().password === pw) {
                 const data = doc.data();
-                
-                // 檢查是否已審核
                 if(data.status === 'pending') {
                     alert("⏳ 您的帳號正在審核中，請等待導師批准。");
                     return;
                 }
-
                 if (data.forceReset === true) {
                     tempResetId = id;
                     document.getElementById('authTabs').style.display = 'none';
@@ -261,7 +250,6 @@
                     document.getElementById('resetView').classList.add('active');
                     return;
                 }
-
                 me = { id, ...data };
                 document.getElementById('authTabs').style.display = 'none';
                 document.getElementById('loginView').classList.remove('active');
@@ -281,10 +269,9 @@
         alert("密碼更新成功"); location.reload();
     }
 
-    // 5. 註冊 (狀態預設 pending)
+    // 5. 註冊
     async function doRegister() {
         let rawId = document.getElementById('regId').value;
-        // 處理 ID：1 -> 01, 99 -> 99, 100 -> 100
         let id = rawId;
         if(rawId.length === 1) id = "0" + rawId;
         
@@ -303,7 +290,7 @@
             name: name, password: p1, role: "student", 
             duty_zone: "未分配", score: 0, warning: "",
             forceReset: false,
-            status: "pending" // 新增狀態
+            status: "pending"
         });
         alert("申請已送出！請通知導師或管理員審核您的帳號。");
         setTab('login');
@@ -311,7 +298,6 @@
 
     // 6. 主程式
     function startApp() {
-        // 監聽自己
         db.collection("students").doc(me.id).onSnapshot(doc => {
             if(!doc.exists) { location.reload(); return; }
             const d = doc.data();
@@ -330,12 +316,10 @@
             document.getElementById('warnText').innerText = d.warning || "";
         });
 
-        // 監聽歷程
         db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push(l.data()));
             list.sort((a,b) => b.time - a.time).forEach(l => {
-                // 如果是愛班服務，顯示不同樣式
                 if(l.type === 'service') {
                     box.innerHTML += `<div class="log-item" style="border-left-color:#48bb78; background:#f0fff4;"><span>${new Date(l.time).toLocaleString()}</span><b>完成愛班 (-${l.points})</b></div>`;
                 } else {
@@ -344,23 +328,19 @@
             });
         });
 
-        // 管理員/導師/衛生 邏輯
         const isManager = ['admin', 'teacher', 'inner_manager', 'outer_manager'].includes(me.role);
         const canApprove = ['admin', 'teacher'].includes(me.role);
 
         if(isManager) {
             document.getElementById('adminSection').style.display = 'block';
-            
-            // 監聽所有學生 (含 active 與 pending)
             db.collection("students").onSnapshot(snap => {
                 const activeList = [];
                 const pendingList = [];
-                const alertList = []; // 超過閾值名單
+                const alertList = []; 
                 
                 snap.forEach(doc => {
                     const d = doc.data();
                     const stu = { id: doc.id, ...d };
-                    
                     if(d.status === 'pending') pendingList.push(stu);
                     else {
                         activeList.push(stu);
@@ -368,26 +348,20 @@
                     }
                 });
 
-                // 排序邏輯修正：轉數字排序 (解決 100 在 99 前面的問題)
                 activeList.sort((a,b) => parseInt(a.id) - parseInt(b.id));
 
-                // 渲染主列表
                 const grid = document.getElementById('stuGrid'); grid.innerHTML = "";
                 activeList.forEach(s => {
                     let badge = "";
                     if(s.role === 'inner_manager') badge = '<span class="role-badge">內衛</span>';
                     if(s.role === 'outer_manager') badge = '<span class="role-badge">外衛</span>';
-                    
-                    // 如果超過閾值，卡片邊框變紅
                     const warnStyle = s.score >= alertThreshold ? "border:2px solid var(--d);" : "";
-                    
                     grid.innerHTML += `<div class="stu-card" style="${warnStyle}" onclick="openModal('${s.id}', '${s.name}')">
                         <b>${s.id} ${s.name} ${badge}</b>
                         <div>${s.duty_zone} <span class="score-badge">${s.score||0}</span></div>
                     </div>`;
                 });
 
-                // 渲染警告區 (所有人只要有權限都看得到)
                 const abox = document.getElementById('alertSection');
                 const alist = document.getElementById('alertList');
                 if(alertList.length > 0) {
@@ -400,7 +374,6 @@
                     abox.style.display = 'none';
                 }
 
-                // 渲染待審核區 (僅導師/管理員)
                 const pbox = document.getElementById('pendingSection');
                 if(canApprove && pendingList.length > 0) {
                     pbox.style.display = 'block';
@@ -410,7 +383,10 @@
                         plist.innerHTML += `
                         <div class="pending-item">
                             <span>${s.id} ${s.name}</span>
-                            <button onclick="approveStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem;">✅ 批准</button>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="approveStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem; background:var(--s); margin:0;">✅ 批准</button>
+                                <button onclick="rejectStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem; background:var(--d); margin:0;">❌ 拒絕</button>
+                            </div>
                         </div>`;
                     });
                 } else {
@@ -419,8 +395,6 @@
             });
             refreshJobs();
         }
-        
-        // 隱藏設定按鈕 (若非導師/管理員)
         if(!canApprove) document.getElementById('settingBtn').style.display = 'none';
     }
 
@@ -441,46 +415,51 @@
         document.getElementById('newJob').value = "";
         document.getElementById('warnInput').value = d.warning || "";
         
-        // 角色選單
         if(['student','inner_manager','outer_manager'].includes(d.role)) document.getElementById('rolePicker').value = d.role;
         else document.getElementById('rolePicker').value = 'student';
 
-        // 分數監聽
         if(unsubS) unsubS();
         unsubS = db.collection("students").doc(id).onSnapshot(doc => {
             if(doc.exists) {
                 const sc = doc.data().score || 0;
                 document.getElementById('modalScore').innerText = sc;
-                // 愛班服務按鈕判斷
                 const svcDiv = document.getElementById('serviceSection');
                 if(isSuper && sc >= alertThreshold) svcDiv.style.display = 'block';
                 else svcDiv.style.display = 'none';
             }
         });
 
-        // 歷程
         if(unsubL) unsubL();
         unsubL = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
             const box = document.getElementById('modalLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push({lid: l.id, ...l.data()}));
             list.sort((a,b) => b.time - a.time).forEach(l => {
                 if(l.type === 'service') {
-                    box.innerHTML += `<div class="log-item" style="background:#f0fff4; border-left-color:#48bb78;"><span>${new Date(l.time).toLocaleString()}</span><span>愛班服務</span></div>`;
+                    box.innerHTML += `<div class="log-item" style="background:#f0fff4; border-left-color:#48bb78;">
+                        <span>${new Date(l.time).toLocaleString()}<br><small>(愛班服務 -${l.points})</small></span>
+                        <button class="del-btn" onclick="deleteLog('${l.lid}', 'service', ${l.points})">🗑️ 刪除</button>
+                    </div>`;
                 } else {
-                    box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><button class="del-btn" onclick="deleteLog('${l.lid}')">🗑️ 刪除</button></div>`;
+                    box.innerHTML += `<div class="log-item">
+                        <span>${new Date(l.time).toLocaleString()}</span>
+                        <button class="del-btn" onclick="deleteLog('${l.lid}', 'normal', 1)">🗑️ 刪除</button>
+                    </div>`;
                 }
             });
         });
         document.getElementById('modal').style.display = 'flex';
     }
 
-    // 批准學生
     window.approveStudent = async function(sid) {
         if(!confirm(`允許 ${sid} 號入班？`)) return;
         await db.collection("students").doc(sid).update({ status: 'active' });
     }
 
-    // 設定閾值
+    window.rejectStudent = async function(sid) {
+        if(!confirm(`確定要拒絕並刪除 ${sid} 號的申請嗎？`)) return;
+        await db.collection("students").doc(sid).delete();
+    }
+
     window.editThreshold = async function() {
         const n = prompt("請設定「記點達 N 次」顯示警告：", alertThreshold);
         if(n && !isNaN(n)) {
@@ -490,16 +469,12 @@
         }
     }
 
-    // 愛班服務 (銷點)
     window.doService = async function() {
         if(!confirm(`確認 ${selectedId} 已完成愛班服務？\n這將會扣除 ${alertThreshold} 點，並新增一筆服務紀錄。`)) return;
-        
         try {
-            // 1. 扣點
             await db.collection("students").doc(selectedId).update({
                 score: firebase.firestore.FieldValue.increment(-alertThreshold)
             });
-            // 2. 新增服務紀錄 (保留舊紀錄，只加新的一條說明)
             await db.collection("point_logs").add({
                 studentId: selectedId,
                 time: Date.now(),
@@ -510,7 +485,6 @@
         } catch(e) { alert("操作失敗"); }
     }
 
-    // 以下維持原樣
     window.resetToDefaultPw = async function() {
         if(!confirm(`還原密碼？`)) return;
         const defPw = selectedId.repeat(3); 
@@ -520,8 +494,8 @@
     }
 
     window.deleteStudent = async function() {
-        const confirmName = prompt(`輸入座號確認刪除：`);
-        if(confirmName !== selectedId) return;
+        const confirmId = prompt(`輸入座號確認刪除：`);
+        if(confirmId !== selectedId) return;
         await db.collection("students").doc(selectedId).delete();
         closeModal();
     }
@@ -531,10 +505,12 @@
         await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(1) });
     }
 
-    window.deleteLog = async function(lid) {
-        if(!confirm("刪除此紀錄？")) return;
+    window.deleteLog = async function(lid, type, points) {
+        const msg = type === 'service' ? `確定要刪除這筆愛班服務紀錄嗎？點數將會恢復 +${points}。` : "刪除此紀錄？";
+        if(!confirm(msg)) return;
+        const scoreChange = type === 'service' ? points : -1;
         await db.collection("point_logs").doc(lid).delete();
-        await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(-1) });
+        await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(scoreChange) });
     }
 
     window.confirmAssign = async function() {
