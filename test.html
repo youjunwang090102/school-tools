@@ -2,69 +2,97 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>班級 P2P 快閃考試系統</title>
+    <title>專業級 P2P 雲端考試系統</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
-        :root { --p: #007AFF; --bg: #f5f5f7; }
-        body { font-family: system-ui; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 600px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .status { padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; }
-        .online { background: #e1f5fe; color: #01579b; }
-        #timer { font-size: 32px; color: #ff3b30; text-align: center; margin: 10px 0; }
+        :root { --p: #007AFF; --bg: #F2F2F7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
+        .app { width: 100%; max-width: 700px; background: white; min-height: 100vh; padding: 25px; box-sizing: border-box; }
         .hidden { display: none; }
-        .student-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0; }
-        button { width: 100%; padding: 12px; background: var(--p); color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; }
-        .q-card { background: #fafafa; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 10px 0; transition: 0.2s; }
+        .btn-p { background: var(--p); color: white; }
+        .btn-s { background: #34C759; color: white; }
+        .btn-o { background: #FF9500; color: white; }
+        .card { background: #F9F9F9; border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #EEE; }
+        #timer { font-size: 32px; font-weight: bold; color: #FF3B30; text-align: center; }
+        .id-badge { font-family: monospace; font-size: 24px; background: #E5E5EA; padding: 5px 15px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #DDD; padding: 8px; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="app">
     <div id="modeSelect">
-        <h2>選擇模式</h2>
-        <button onclick="initTeacher()">我是老師 (發送考卷)</button>
-        <button style="background:#5856d6" onclick="showStudentLogin()">我是學生 (開始作答)</button>
+        <h1 style="text-align:center">🎓 專業考試系統</h1>
+        <button class="btn btn-p" onclick="initTeacher()">進入老師出題模式</button>
+        <button class="btn btn-s" onclick="showStudentLogin()">進入學生作答模式</button>
     </div>
 
     <div id="teacherArea" class="hidden">
         <h2>👨‍🏫 老師控制台</h2>
-        <div class="status online">房間 ID: <span id="roomId">建立中...</span></div>
-        <textarea id="quizInput" style="width:100%; height:80px;" placeholder="題目,A,B,C,D,Ans (每行一題)"></textarea>
-        <button onclick="broadcastExam()">1. 發送考卷給所有學生</button>
-        <button style="background:#ff9500" onclick="forceSubmit()">2. 強制收卷</button>
-        
-        <h3>📊 學生進度 (<span id="stuCount">0</span>)</h3>
-        <div id="monitor"></div>
-        <button style="background:#34c759" onclick="exportData()">3. 匯出成績 (Excel)</button>
+        <div class="card" style="text-align:center">
+            <div>房間 ID：<span class="id-badge" id="roomId">建立中...</span></div>
+            <canvas id="roomQR" style="margin:10px auto;"></canvas>
+            <p style="font-size:12px; color:gray;">請學生掃描二維碼連線</p>
+        </div>
+
+        <div class="card">
+            <h3>1. 匯入考題 (Excel)</h3>
+            <button class="btn" style="background:#8E8E93" onclick="downloadSample()">下載 Excel 範例檔</button>
+            <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="importExcel(this)">
+            <p id="qStatus" style="color:blue; font-size:13px;"></p>
+        </div>
+
+        <button class="btn btn-p" onclick="broadcastExam()">2. 發送考卷</button>
+        <button class="btn btn-o" onclick="forceSubmit()">3. 全體強制收卷</button>
+
+        <h3>📊 學生實時進度 (<span id="stuCount">0</span>)</h3>
+        <div style="overflow-x:auto">
+            <table id="monitorTable">
+                <thead><tr><th>座號</th><th>進度</th><th>得分</th><th>狀態</th></tr></thead>
+                <tbody id="monitorBody"></tbody>
+            </table>
+        </div>
+        <button class="btn btn-s" onclick="exportFinal()">4. 匯出完整 Excel 成績單</button>
     </div>
 
     <div id="studentArea" class="hidden">
-        <h2 id="stuHeader">等待老師發卷...</h2>
+        <div id="stuStatus" class="card" style="text-align:center">等待老師發卷...</div>
         <div id="timer">--:--</div>
         <div id="quizContent"></div>
-        <button id="manualSubmit" class="hidden" onclick="studentSubmit()">手動繳交</button>
+        <button id="stuSubmitBtn" class="btn btn-p hidden" onclick="studentSubmit()">繳交試卷</button>
     </div>
 </div>
 
 <script>
-    let peer, conn;
-    let connections = {}; // 老師存儲所有學生的連線
-    let studentData = {}; // 老師存儲成績
-    let myExam = [];
+    let peer, conn, myRoomId;
+    let connections = {};
+    let studentData = {};
+    let currentQuiz = [];
 
-    // --- 老師端邏輯 ---
+    // --- 1. 老師功能 ---
     function initTeacher() {
         document.getElementById('modeSelect').classList.add('hidden');
         document.getElementById('teacherArea').classList.remove('hidden');
         
-        peer = new Peer(); // 隨機產生 ID
-        peer.on('open', id => { document.getElementById('roomId').innerText = id; });
+        // 生成簡短 4 位 ID
+        myRoomId = Math.random().toString(36).substring(2, 6).toUpperCase();
+        peer = new Peer(myRoomId);
         
+        peer.on('open', id => {
+            document.getElementById('roomId').innerText = id;
+            // 生成二維碼
+            const joinUrl = window.location.href.split('?')[0] + '?room=' + id;
+            QRCode.toCanvas(document.getElementById('roomQR'), joinUrl, { width: 180 });
+        });
+
         peer.on('connection', c => {
             const stuNo = c.metadata.no;
             connections[stuNo] = c;
-            studentData[stuNo] = { no: stuNo, score: 0, status: "已連線", progress: "0%" };
+            studentData[stuNo] = { no: stuNo, progress: "0%", score: 0, answers: {}, scoresPerQ: {}, status: "已連線" };
             updateMonitor();
 
             c.on('data', data => {
@@ -74,6 +102,8 @@
                 }
                 if (data.type === 'submit') {
                     studentData[stuNo].score = data.score;
+                    studentData[stuNo].answers = data.answers;
+                    studentData[stuNo].scoresPerQ = data.scoresPerQ;
                     studentData[stuNo].status = "已繳交";
                     updateMonitor();
                 }
@@ -81,12 +111,36 @@
         });
     }
 
+    function downloadSample() {
+        const data = [["題目", "選項A", "選項B", "選項C", "選項D", "選項E", "正確答案", "配分"], ["1+1=?", "1", "2", "3", "", "", "B", "50"], ["哪些是水果?", "蘋果", "石頭", "香蕉", "飛機", "", "AC", "50"]];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "範例");
+        XLSX.writeFile(wb, "考試範例檔.xlsx");
+    }
+
+    function importExcel(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet);
+            currentQuiz = json.map(r => ({
+                q: r.題目,
+                opts: { A: r.選項A, B: r.選項B, C: r.選項C, D: r.選項D, E: r.選項E },
+                ans: String(r.正確答案).toUpperCase().split('').sort().join(''), // 格式化為排序後的字母，如 AC
+                point: Number(r.配分)
+            }));
+            document.getElementById('qStatus').innerText = `✅ 已讀取 ${currentQuiz.length} 題`;
+        };
+        reader.readAsArrayBuffer(input.files[0]);
+    }
+
     function broadcastExam() {
-        const input = document.getElementById('quizInput').value;
-        Object.values(connections).forEach(c => {
-            c.send({ type: 'exam', quiz: input });
-        });
-        alert("考卷已發送到所有連線的手機！");
+        if(currentQuiz.length === 0) return alert("請先匯入考題！");
+        Object.values(connections).forEach(c => c.send({ type: 'exam', quiz: currentQuiz }));
+        alert("考卷已發送！");
     }
 
     function forceSubmit() {
@@ -94,80 +148,91 @@
     }
 
     function updateMonitor() {
-        const div = document.getElementById('monitor');
-        const list = Object.values(studentData);
-        document.getElementById('stuCount').innerText = list.length;
-        div.innerHTML = list.map(s => `
-            <div class="student-row">
-                <span>座號 ${s.no}</span>
-                <span>進度: ${s.progress}</span>
-                <span>狀態: ${s.status}</span>
-                <b>${s.score}分</b>
-            </div>
+        const body = document.getElementById('monitorBody');
+        body.innerHTML = Object.values(studentData).map(s => `
+            <tr><td>${s.no}</td><td>${s.progress}</td><td>${s.score}</td><td>${s.status}</td></tr>
         `).join('');
+        document.getElementById('stuCount').innerText = Object.keys(studentData).length;
     }
 
-    // --- 學生端邏輯 ---
+    function exportFinal() {
+        // 重整數據以便匯出 Excel
+        const exportList = Object.values(studentData).map(s => {
+            let row = { "座號": s.no, "總分": s.score };
+            currentQuiz.forEach((q, i) => {
+                row[`第${i+1}題答案`] = s.answers[i] || "";
+                row[`第${i+1}題得分`] = s.scoresPerQ[i] || 0;
+            });
+            return row;
+        });
+        const ws = XLSX.utils.json_to_sheet(exportList);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "班級成績單");
+        XLSX.writeFile(wb, "考試結果匯出.xlsx");
+    }
+
+    // --- 2. 學生功能 ---
     function showStudentLogin() {
-        const id = prompt("請輸入老師的房間 ID:");
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoRoom = urlParams.get('room');
+        const id = autoRoom || prompt("請輸入老師提供的 4 位 ID:");
         const no = prompt("請輸入您的座號:");
-        if (!id || !no) return;
+        if(!id || !no) return;
 
         document.getElementById('modeSelect').classList.add('hidden');
         document.getElementById('studentArea').classList.remove('hidden');
 
         peer = new Peer();
         peer.on('open', () => {
-            conn = peer.connect(id, { metadata: { no: no } });
+            conn = peer.connect(id.toUpperCase(), { metadata: { no: no } });
             conn.on('data', data => {
-                if (data.type === 'exam') startStudentExam(data.quiz);
+                if (data.type === 'exam') startExam(data.quiz);
                 if (data.type === 'force') studentSubmit();
             });
         });
     }
 
-    function startStudentExam(quizText) {
-        document.getElementById('stuHeader').innerText = "測驗進行中";
-        document.getElementById('manualSubmit').classList.remove('hidden');
-        const lines = quizText.trim().split('\n');
-        myExam = lines.map(line => {
-            const p = line.split(',');
-            return { q: p[0], options: p.slice(1,5), ans: p[5].trim() };
-        });
-
+    function startExam(quiz) {
+        currentQuiz = quiz;
+        document.getElementById('stuStatus').innerText = "測驗進行中";
+        document.getElementById('stuSubmitBtn').classList.remove('hidden');
         let html = '';
-        myExam.forEach((q, i) => {
-            html += `<div class="q-card"><p>${i+1}. ${q.q}</p>`;
-            q.options.forEach((opt, j) => {
-                const val = String.fromCharCode(65 + j);
-                html += `<label><input type="radio" name="q${i}" value="${val}" onchange="sendProgress()"> ${opt}</label><br>`;
+        quiz.forEach((q, i) => {
+            html += `<div class="card"><p><b>${i+1}. ${q.q} (${q.point}分)</b></p>`;
+            Object.entries(q.opts).forEach(([key, val]) => {
+                if(val && val !== "") {
+                    html += `<label style="display:block;margin:8px 0;"><input type="checkbox" name="q${i}" value="${key}" onchange="sendProgress()"> ${key}. ${val}</label>`;
+                }
             });
             html += `</div>`;
         });
         document.getElementById('quizContent').innerHTML = html;
+        // 簡易倒數設定... (略)
     }
 
     function sendProgress() {
-        const answered = document.querySelectorAll('input:checked').length;
-        const prog = Math.round((answered / myExam.length) * 100) + "%";
-        conn.send({ type: 'update', progress: prog });
+        const answered = currentQuiz.filter((_, i) => document.querySelector(`input[name="q${i}"]:checked`)).length;
+        conn.send({ type: 'update', progress: Math.round((answered/currentQuiz.length)*100)+"%" });
     }
 
     function studentSubmit() {
-        let score = 0;
-        myExam.forEach((q, i) => {
-            const sel = document.querySelector(`input[name="q${i}"]:checked`);
-            if (sel && sel.value === q.ans) score += (100 / myExam.length);
-        });
-        conn.send({ type: 'submit', score: Math.round(score) });
-        document.getElementById('studentArea').innerHTML = "<h2>繳交成功！</h2>";
-    }
+        let totalScore = 0;
+        let answers = {};
+        let scoresPerQ = {};
 
-    function exportData() {
-        const ws = XLSX.utils.json_to_sheet(Object.values(studentData));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "成績");
-        XLSX.writeFile(wb, "考試結果.xlsx");
+        currentQuiz.forEach((q, i) => {
+            const selected = Array.from(document.querySelectorAll(`input[name="q${i}"]:checked`)).map(el => el.value).sort().join('');
+            answers[i] = selected;
+            if(selected === q.ans) {
+                totalScore += q.point;
+                scoresPerQ[i] = q.point;
+            } else {
+                scoresPerQ[i] = 0;
+            }
+        });
+
+        conn.send({ type: 'submit', score: totalScore, answers: answers, scoresPerQ: scoresPerQ });
+        document.getElementById('studentArea').innerHTML = "<h2 style='text-align:center'>試卷已繳交！</h2>";
     }
 </script>
 </body>
