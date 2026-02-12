@@ -3,27 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆-終極管理版</title>
+    <title>班級動態牆-修正</title>
     <style>
         :root { --primary: #4361ee; --bg: #f4f7fe; --card: #ffffff; --teacher: #8e44ad; --danger: #ef233c; --success: #2ec4b6; }
         body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 600px; padding-bottom: 150px; }
         .auth-box { background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; margin-top: 50px; }
         #mainContent { display: none; }
-        h1 { color: #333; text-align: center; }
-        .input-box { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: 1fr 80px; gap: 10px; }
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        #messageList { display: flex; flex-direction: column; gap: 12px; }
-        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 5px solid #ddd; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        button { background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; padding: 15px; transition: 0.3s; }
+        .msg-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 5px solid #ddd; margin-bottom: 12px; }
         .is-teacher { border-left-color: var(--teacher); }
-        .msg-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
-        #adminTools { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; z-index: 999; box-sizing: border-box; max-height: 80vh; overflow-y: auto; }
-        .mute-panel { display: flex; flex-wrap: wrap; gap: 10px; background: #333; padding: 15px; border-radius: 12px; margin-bottom: 10px; align-items: center; justify-content: center; }
-        .mute-list-card { background: #444; padding: 10px; border-radius: 8px; margin: 5px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .btn-sm { padding: 5px 10px; font-size: 0.7rem; margin-left: 5px; }
-        .status-tag { font-size: 0.75rem; color: var(--danger); font-weight: bold; margin-top: 5px; }
+        #adminTools { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #222; color: white; padding: 15px; z-index: 999; box-sizing: border-box; }
+        .mute-panel { display: flex; gap: 10px; margin-bottom: 10px; }
+        .mute-item { background: #444; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -31,22 +24,22 @@
 <div class="container">
     <div id="authBox" class="auth-box">
         <h2>🔑 班級成員登入</h2>
-        <input type="number" id="loginId" placeholder="座號 (例如 05)" style="margin-bottom: 10px;">
-        <input type="password" id="loginPw" placeholder="密碼" style="margin-bottom: 20px;">
-        <button onclick="doLogin()" style="width: 100%; padding: 15px;">登入系統</button>
+        <input type="number" id="loginId" placeholder="輸入座號 (例如 5)">
+        <input type="password" id="loginPw" placeholder="輸入密碼">
+        <button onclick="doLogin()">登入系統</button>
     </div>
 
     <div id="mainContent">
-        <h1>💬 班級動態牆</h1>
-        <div class="input-box">
-            <div class="grid">
-                <input type="text" id="msgContent" placeholder="在此輸入訊息...">
-                <button onclick="sendComment()">發佈</button>
+        <h1 style="text-align:center;">💬 班級動態牆</h1>
+        <div style="background:white; padding:20px; border-radius:15px; margin-bottom:20px;">
+            <div style="display:grid; grid-template-columns: 1fr 80px; gap:10px;">
+                <input type="text" id="msgContent" placeholder="想說什麼？" style="margin:0;">
+                <button onclick="sendComment()" style="padding:0;">發佈</button>
             </div>
-            <div id="muteStatus" class="status-tag" style="display:none;"></div>
-            <div style="font-size: 0.8rem; color: #666; margin-top: 10px; display: flex; justify-content: space-between;">
-                <span id="whoAmI">載入中...</span>
-                <span onclick="location.reload()" style="cursor:pointer; color:var(--primary)">登出</span>
+            <div id="muteStatus" style="color:red; font-size:0.8rem; margin-top:5px; display:none;"></div>
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:10px; color:#666;">
+                <span id="whoAmI"></span>
+                <span onclick="location.reload()" style="color:var(--primary); cursor:pointer;">登出</span>
             </div>
         </div>
         <div id="messageList"></div>
@@ -54,22 +47,18 @@
 </div>
 
 <div id="adminTools">
-    <div style="text-align:center; color:#ffd700; font-weight:bold; margin-bottom:10px;">🛡️ 視覺化禁言管理</div>
+    <div style="text-align:center; color:#ffd700; margin-bottom:10px; font-weight:bold;">🛡️ 老師禁言管理</div>
     <div class="mute-panel">
-        <select id="muteTargetSelect" style="width:auto;"><option value="">選擇學生...</option></select>
-        <select id="muteDaysSelect" style="width:auto;">
-            <option value="0.0416">1 小時</option>
-            <option value="1" selected>1 天</option>
-            <option value="3">3 天</option>
+        <select id="muteTargetSelect" style="flex:2;"></select>
+        <select id="muteDaysSelect" style="flex:1;">
+            <option value="1">1天</option>
+            <option value="3">3天</option>
             <option value="999">永久</option>
         </select>
-        <button onclick="setMute()" style="background:var(--danger); width:auto; padding:10px 20px;">禁言</button>
+        <button onclick="setMute()" style="flex:1; padding:0; background:var(--danger);">禁言</button>
     </div>
-    <div id="activeMuteList"></div>
-    <div style="text-align:center; margin-top:15px; border-top: 1px solid #444; padding-top:10px;">
-        <button onclick="clearAllMessages()" style="background:var(--danger); width:auto;">清空留言</button>
-        <button onclick="location.reload()" style="background:#555; width:auto;">退出管理</button>
-    </div>
+    <div id="muteListArea"></div>
+    <button onclick="clearAllMessages()" style="background:#555; margin-top:10px;">一鍵清空留言</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -87,136 +76,127 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let currentUser = null;
-    let currentDocId = ""; // 儲存資料庫中真正的 Document ID
+    let me = null;
+    let myDocId = "";
 
-    // --- 核心：修正後的登入邏輯 ---
     async function doLogin() {
-        const inputId = document.getElementById('loginId').value.padStart(2, '0');
+        const rawId = document.getElementById('loginId').value;
         const inputPw = document.getElementById('loginPw').value;
+        
+        // 嘗試三種格式：原數字 (5)、補零字串 ("05")、純數字字串 ("5")
+        const tryIds = [rawId.padStart(2, '0'), rawId.toString(), parseInt(rawId).toString()];
+        
+        let foundDoc = null;
 
-        try {
-            // 第一種嘗試：Document ID 就是座號
-            let doc = await db.collection("students").doc(inputId).get();
-            let data;
-
+        for (let id of tryIds) {
+            const doc = await db.collection("students").doc(id).get();
             if (doc.exists) {
-                data = doc.data();
-                currentDocId = inputId;
-            } else {
-                // 第二種嘗試：搜尋欄位叫 id 的文件
-                const q = await db.collection("students").where("id", "==", inputId).get();
-                if (!q.empty) {
-                    doc = q.docs[0];
-                    data = doc.data();
-                    currentDocId = doc.id;
-                }
+                foundDoc = doc;
+                myDocId = id;
+                break;
             }
-
-            if (data && String(data.password) === String(inputPw)) {
-                if (data.role !== 'teacher' && data.role !== 'admin' && data.status !== 'active') {
-                    return alert("帳號審核中 (status 需為 active)");
-                }
-                currentUser = { ...data, id: inputId }; 
-                initApp();
-            } else {
-                alert("座號或密碼錯誤");
-            }
-        } catch (e) {
-            alert("系統錯誤：" + e.message);
         }
+
+        if (foundDoc) {
+            const data = foundDoc.data();
+            // 關鍵：將資料庫密碼與輸入密碼都轉成字串比對，避免數字型態造成失敗
+            if (String(data.password) === String(inputPw)) {
+                if (data.role !== 'teacher' && data.status !== 'active') {
+                    return alert("帳號尚未批准 (需為 active)");
+                }
+                me = data;
+                initApp();
+            } else { alert("密碼錯誤"); }
+        } else { alert("找不到此座號，請確認資料庫 Document ID 是否正確"); }
     }
 
     function initApp() {
         document.getElementById('authBox').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
-        const isStaff = (currentUser.role === 'teacher' || currentUser.role === 'admin');
-        document.getElementById('whoAmI').innerText = `${currentUser.name} (#${currentUser.id})`;
+        document.getElementById('whoAmI').innerText = `${me.name} (#${myDocId})`;
         
-        if (isStaff) {
+        const isTeacher = (me.role === 'teacher');
+        if (isTeacher) {
             document.getElementById('adminTools').style.display = 'block';
-            loadMuteManager();
+            loadAdminFunc();
         }
-        checkMuteStatus();
-        listenMessages(isStaff);
+        
+        listenMessages(isTeacher);
+        // 每10秒檢查一次禁言狀態
+        setInterval(checkMute, 10000); 
     }
 
-    // --- 禁言管理功能 ---
-    async function loadMuteManager() {
+    async function checkMute() {
+        const doc = await db.collection("students").doc(myDocId).get();
+        const until = doc.data().muteUntil || 0;
+        const el = document.getElementById('muteStatus');
+        if (Date.now() < until) {
+            el.style.display = 'block';
+            el.innerText = `⚠️ 禁言中，解禁時間：${new Date(until).toLocaleString()}`;
+        } else { el.style.display = 'none'; }
+    }
+
+    async function loadAdminFunc() {
         const snap = await db.collection("students").get();
         const select = document.getElementById('muteTargetSelect');
-        const list = document.getElementById('activeMuteList');
-        
-        select.innerHTML = '<option value="">選擇學生...</option>';
-        list.innerHTML = '<p style="font-size:0.8rem; color:#888; text-align:center;">當前禁言名單</p>';
+        const area = document.getElementById('muteListArea');
+        select.innerHTML = "";
+        area.innerHTML = "";
 
         snap.forEach(doc => {
             const s = doc.data();
             if (s.role === 'teacher') return;
-
-            // 下拉選單用 id 或座號
+            
+            // 下拉選單
             const opt = document.createElement('option');
             opt.value = doc.id;
-            opt.innerText = `${s.id || doc.id} ${s.name}`;
+            opt.innerText = `${doc.id}號 ${s.name}`;
             select.appendChild(opt);
 
-            // 顯示禁言中名單
+            // 禁言名單
             if (s.muteUntil > Date.now()) {
                 const div = document.createElement('div');
-                div.className = 'mute-list-card';
+                div.className = 'mute-item';
                 div.innerHTML = `
-                    <span>${s.name} <br><small>${new Date(s.muteUntil).toLocaleString()}</small></span>
-                    <button class="btn-sm" style="background:var(--success)" onclick="unmute('${doc.id}')">解禁</button>
+                    <span>${s.name} (${new Date(s.muteUntil).toLocaleDateString()})</span>
+                    <button onclick="unmute('${doc.id}')" style="width:auto; padding:5px 10px; background:var(--success)">解除</button>
                 `;
-                list.appendChild(div);
+                area.appendChild(div);
             }
         });
     }
 
     async function setMute() {
-        const docId = document.getElementById('muteTargetSelect').value;
+        const id = document.getElementById('muteTargetSelect').value;
         const days = parseFloat(document.getElementById('muteDaysSelect').value);
-        if (!docId) return alert("請選擇學生");
         const until = Date.now() + (days * 24 * 60 * 60 * 1000);
-        await db.collection("students").doc(docId).update({ muteUntil: until });
-        loadMuteManager();
+        await db.collection("students").doc(id).update({ muteUntil: until });
+        loadAdminFunc();
     }
 
-    async function unmute(docId) {
-        await db.collection("students").doc(docId).update({ muteUntil: 0 });
-        loadMuteManager();
+    async function unmute(id) {
+        await db.collection("students").doc(id).update({ muteUntil: 0 });
+        loadAdminFunc();
     }
 
-    async function checkMuteStatus() {
-        setInterval(async () => {
-            const doc = await db.collection("students").doc(currentDocId).get();
-            const until = doc.data().muteUntil || 0;
-            const el = document.getElementById('muteStatus');
-            if (Date.now() < until) {
-                el.style.display = 'block';
-                el.innerText = `⚠️ 禁言中，預計解禁：${new Date(until).toLocaleString()}`;
-            } else { el.style.display = 'none'; }
-        }, 5000);
-    }
-
-    // --- 訊息功能 ---
     async function sendComment() {
         const content = document.getElementById('msgContent').value.trim();
         if (!content) return;
 
-        const doc = await db.collection("students").doc(currentDocId).get();
-        if (Date.now() < (doc.data().muteUntil || 0)) return alert("禁言中無法發文");
+        const doc = await db.collection("students").doc(myDocId).get();
+        if (Date.now() < (doc.data().muteUntil || 0)) return alert("禁言中無法發佈");
 
-        db.collection("messages").add({
-            author: currentUser.name,
-            authorId: currentUser.id,
+        await db.collection("messages").add({
+            author: me.name,
+            authorId: myDocId,
             content: content,
-            role: currentUser.role || 'student',
+            role: me.role || 'student',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => { document.getElementById('msgContent').value = ""; });
+        });
+        document.getElementById('msgContent').value = "";
     }
 
-    function listenMessages(isStaff) {
+    function listenMessages(isTeacher) {
         db.collection("messages").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
             const list = document.getElementById('messageList');
             list.innerHTML = "";
@@ -226,25 +206,24 @@
                 const div = document.createElement('div');
                 div.className = `msg-card ${d.role === 'teacher' ? 'is-teacher' : ''}`;
                 div.innerHTML = `
-                    <div class="msg-header">
-                        <span><b>${d.author}</b> <small>(#${d.authorId})</small></span>
-                        <span>${time} ${isStaff ? `<span style="color:var(--danger); cursor:pointer;" onclick="deleteMsg('${doc.id}')">🗑️</span>` : ''}</span>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888;">
+                        <span><b>${d.author}</b> (#${d.authorId})</span>
+                        <span>${time} ${isTeacher ? `<span onclick="deleteMsg('${doc.id}')" style="color:red; cursor:pointer;">🗑️</span>` : ''}</span>
                     </div>
-                    <div>${d.content}</div>
+                    <div style="margin-top:5px;">${d.content}</div>
                 `;
                 list.appendChild(div);
             });
         });
     }
 
-    function deleteMsg(id) { if(confirm("確定刪除？")) db.collection("messages").doc(id).delete(); }
-
+    function deleteMsg(id) { if(confirm("刪除留言？")) db.collection("messages").doc(id).delete(); }
     async function clearAllMessages() {
-        if(confirm("警告：將刪除所有留言！")) {
-            const snap = await db.collection("messages").get();
-            const batch = db.batch();
-            snap.forEach(d => batch.delete(d.ref));
-            await batch.commit();
+        if(confirm("確定清空？")) {
+            const s = await db.collection("messages").get();
+            const b = db.batch();
+            s.forEach(d => b.delete(d.ref));
+            await b.commit();
         }
     }
 </script>
