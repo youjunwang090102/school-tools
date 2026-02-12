@@ -120,7 +120,7 @@
                     // 重要連動：檢查身分與審核狀態
                     const isStaff = (data.role === 'teacher' || data.role === 'admin');
                     
-                    if (!isStaff && data.status !== "approved") {
+                    if (!isStaff && data.status !== "active") {
                         return alert("【拒絕登入】您的帳號尚未通過審核，請等候老師批准。");
                     }
 
