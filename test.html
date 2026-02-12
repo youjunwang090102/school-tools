@@ -3,128 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 17.0</title>
+    <title>班級數位平台 18.0 旗艦版</title>
 
     <meta name="theme-color" id="chrome-theme" content="#f8fafc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" id="safari-theme" content="default">
 
     <script>
-        // 🚩 快速配置區
-        const CONFIG_BANNER = "💡 17.0 修復：解決手機圖示消失、強制網址列顏色同步及佈局切換問題。";
+        (function() {
+            // 1. 讀取主題
+            const theme = localStorage.getItem('theme') || 'light';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+            
+            // 2. 讀取佈局模式
+            const layout = localStorage.getItem('layout') || 'list-mode';
+            document.documentElement.setAttribute('data-layout', layout);
+
+            // 3. 讀取上次停留的分頁 (最關鍵：解決重新整理回彈)
+            const lastPage = localStorage.getItem('lastPage') || '0';
+            document.documentElement.setAttribute('data-init-page', lastPage);
+            
+            // 4. 根據上次頁面預設滾動位置 (防止載入時的閃爍)
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .scroller { visibility: hidden; } 
+                [data-ready="true"] .scroller { visibility: visible; }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // 🚩 開發者配置資料
+        const CONFIG_BANNER = "💎 18.0 旗艦穩定版：已達成重新整理原地鎖定、狀態列秒同步及圖示防消失技術。";
         const AUTHOR_DATA = {
             name: "王宥鈞",
             title: "核心系統架構師 / Lead Developer",
-            version: "v17.0.2-Stable",
+            version: "v18.0.5-Gold-Stable",
             tutorialUrl: "https://your-guide-link.com",
             logs: `
                 <strong>更新時間：2026/02/12</strong><br><br>
-                • <b>強制重繪</b>：解決手機版切換模式時圖示「隱身」的 Bug。<br>
-                • <b>網址列同步</b>：修正部分瀏覽器需重新整理才能變色的限制。<br>
-                • <b>圖示優化</b>：重新繪製 SVG 確保在所有解析度下不偏位。<br>
-                • <b>定位鎖定</b>：保持重新整理原地停留的穩定性。
+                • <b>原地鎖定機制</b>：重新整理後，系統會在渲染前鎖定座標，不再有從第一頁滑到第三頁的跳動感。<br>
+                • <b>深色同步 2.0</b>：採用 Meta 原子級重繪，解決網址列顏色延遲問題。<br>
+                • <b>SVG 渲染防護</b>：重新定義手機版圖示路徑，確保切換佈局時圖示不會「隱身」。<br>
+                • <b>佈局優化</b>：方塊模式在手機端保持 3 欄，電腦端自動擴展至 6 欄。
             `
         };
-
-        // ⚡ 預讀取主題與佈局
-        (function() {
-            const theme = localStorage.getItem('theme') || 'light';
-            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
-            const layout = localStorage.getItem('layout') || 'list-mode';
-            document.documentElement.setAttribute('data-layout', layout);
-        })();
     </script>
 
     <style>
+        /* --- 🎨 核心變數系統 --- */
         :root {
             --p: #4361ee; --g: #7209b7; --bg: #f8fafc; --card: #ffffff;
             --text: #1e293b; --sub: #64748b; --border: rgba(0,0,0,0.08);
             --nav-bg: rgba(255, 255, 255, 0.9); --banner-bg: #fff9db; --banner-text: #856404;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         .dark-mode {
             --bg: #020617; --card: #1e293b; --text: #f8fafc;
-            --sub: #94a3b8; --border: rgba(255,255,255,0.1);
+            --sub: #94a3b8; --border: rgba(255,255,255,0.12);
             --nav-bg: rgba(15, 23, 42, 0.9); --banner-bg: #2d2a15; --banner-text: #ffec99;
         }
 
+        /* --- 🏗️ 基礎佈局 --- */
         body {
-            margin: 0; padding: 0; width: 100%; height: 100dvh;
+            margin: 0; padding: 0; width: 100vw; height: 100dvh;
             background-color: var(--bg); color: var(--text);
-            font-family: 'PingFang TC', system-ui, sans-serif;
-            overflow: hidden; position: fixed; transition: background 0.3s;
+            font-family: 'PingFang TC', 'SF Pro Display', system-ui, sans-serif;
+            overflow: hidden; position: fixed; transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 標題與按鈕 */
+        /* 公告欄 */
+        .notice-banner { 
+            background: var(--banner-bg); color: var(--banner-text); 
+            padding: 10px; font-size: 0.7rem; text-align: center; font-weight: 800; 
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* 標頭 */
         header {
-            padding: 15px 20px; background: var(--nav-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            height: 70px; padding: 0 20px; background: var(--nav-bg); 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); display: flex; 
+            justify-content: space-between; align-items: center; z-index: 1000;
         }
-        .logo h1 { margin: 0; font-size: 1.2rem; color: var(--p); font-weight: 900; }
-        .logo p { margin: 0; font-size: 0.6rem; color: var(--sub); font-weight: 700; letter-spacing: 1px; }
+        .logo h1 { margin: 0; font-size: 1.25rem; font-weight: 900; color: var(--p); letter-spacing: -0.5px; }
+        .logo p { margin: 0; font-size: 0.65rem; color: var(--sub); font-weight: 700; letter-spacing: 1px; }
 
-        .actions { display: flex; gap: 8px; align-items: center; }
-        .sw-group { display: flex; background: rgba(0,0,0,0.06); padding: 3px; border-radius: 12px; }
-        .dark-mode .sw-group { background: rgba(255,255,255,0.1); }
-        
-        .btn { border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; color: var(--text); }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .mode-sw { display: flex; background: rgba(0,0,0,0.06); padding: 3px; border-radius: 12px; border: 1px solid var(--border); }
+        .dark-mode .mode-sw { background: rgba(255,255,255,0.08); }
+
+        .btn { 
+            border: none; background: transparent; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            width: 38px; height: 38px; border-radius: 11px; color: var(--text);
+            transition: all 0.2s ease;
+        }
         .sw-btn { width: 34px; height: 30px; opacity: 0.3; }
-        .sw-btn.active { background: var(--card); opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        .circle-btn { background: var(--card); border: 1px solid var(--border); }
+        .sw-btn.active { background: var(--card); opacity: 1; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+        .circle-btn { background: var(--card); border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn:active { transform: scale(0.9); }
+
+        /* SVG 圖示一致性 */
+        svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* --- 📱 主要捲動控制區 --- */
+        .scroller {
+            display: flex; width: 100%; height: calc(100dvh - 70px);
+            overflow-x: auto; overflow-y: hidden;
+            scroll-snap-type: x mandatory; scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .scroller::-webkit-scrollbar { display: none; }
         
-        /* 修正 SVG 圖示顯示 */
-        svg { width: 20px; height: 20px; pointer-events: none; stroke: currentColor; stroke-width: 2.5; fill: none; }
+        .panel { 
+            flex: 0 0 100%; width: 100%; height: 100%; 
+            scroll-snap-align: start; overflow-y: auto; 
+            padding: 24px 18px 180px; box-sizing: border-box; 
+        }
 
-        /* 內容捲動 */
-        .scroller { display: flex; width: 100%; height: calc(100% - 110px); overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; }
-        .panel { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px 16px 160px; box-sizing: border-box; }
-
-        /* 網格系統 */
-        .grid { display: grid; gap: 15px; width: 100%; max-width: 1200px; margin: 0 auto; }
+        /* 網格與清單切換系統 */
+        .grid { display: grid; gap: 16px; width: 100%; max-width: 1200px; margin: 0 auto; }
+        
         [data-layout="list-mode"] .grid { grid-template-columns: 1fr; }
         @media (min-width: 1024px) { [data-layout="list-mode"] .grid { grid-template-columns: repeat(3, 1fr); } }
-        [data-layout="grid-mode"] .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        
+        [data-layout="grid-mode"] .grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (min-width: 1024px) { [data-layout="grid-mode"] .grid { grid-template-columns: repeat(6, 1fr); } }
 
-        .item { background: var(--card); border: 1px solid var(--border); border-radius: 20px; text-decoration: none; color: inherit; display: flex; overflow: hidden; }
-        [data-layout="list-mode"] .item { padding: 18px; align-items: center; }
-        [data-layout="grid-mode"] .item { flex-direction: column; padding: 15px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
-        
-        .ibox { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); }
-        .dark-mode .ibox { background: rgba(255,255,255,0.05); }
-        [data-layout="list-mode"] .ibox { width: 48px; height: 48px; border-radius: 12px; margin-right: 15px; font-size: 1.4rem; }
-        [data-layout="grid-mode"] .ibox { width: 42px; height: 42px; border-radius: 50%; margin: 0 auto 10px; font-size: 1.3rem; }
+        .item { 
+            background: var(--card); border: 1px solid var(--border); border-radius: 22px; 
+            text-decoration: none; color: inherit; display: flex; transition: 0.3s ease; 
+            position: relative; overflow: hidden;
+        }
+        .item:hover { border-color: var(--p); transform: translateY(-2px); }
+        .item:active { transform: scale(0.97); background: var(--bg); }
 
-        .txt h2 { margin: 0; font-size: 0.95rem; font-weight: 800; }
-        .txt p { margin: 4px 0 0; font-size: 0.75rem; color: var(--sub); }
+        [data-layout="list-mode"] .item { padding: 20px; align-items: center; }
+        [data-layout="grid-mode"] .item { flex-direction: column; padding: 18px 5px; text-align: center; aspect-ratio: 1/1; justify-content: center; }
+
+        .ibox { display: flex; align-items: center; justify-content: center; background: rgba(67, 97, 238, 0.08); transition: 0.3s; }
+        .dark-mode .ibox { background: rgba(255,255,255,0.05); }
+        
+        [data-layout="list-mode"] .ibox { width: 52px; height: 52px; border-radius: 15px; margin-right: 18px; font-size: 1.5rem; }
+        [data-layout="grid-mode"] .ibox { width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 12px; font-size: 1.4rem; }
+
+        .txt h2 { margin: 0; font-size: 1rem; font-weight: 850; }
+        .txt p { margin: 5px 0 0; font-size: 0.75rem; color: var(--sub); line-height: 1.4; }
         [data-layout="grid-mode"] .txt p { display: none; }
 
-        /* 導覽 */
-        .nav-box { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2000; }
-        .nav-in { background: var(--nav-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); display: flex; padding: 6px; border-radius: 100px; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-        .tab { flex: 1; text-align: center; padding: 12px 0; font-size: 0.9rem; font-weight: 900; color: var(--sub); cursor: pointer; border-radius: 100px; }
-        .tab.active { color: white; background: var(--p); }
+        /* --- 🧭 底部導覽列 --- */
+        .nav-container { 
+            position: fixed; bottom: calc(25px + var(--safe-bottom)); 
+            left: 50%; transform: translateX(-50%); width: 92%; max-width: 420px; z-index: 5000; 
+        }
+        .nav-inner { 
+            background: var(--nav-bg); backdrop-filter: blur(30px) saturate(150%); -webkit-backdrop-filter: blur(30px) saturate(150%);
+            display: flex; padding: 7px; border-radius: 100px; border: 1px solid var(--border);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.25);
+        }
+        .tab { 
+            flex: 1; text-align: center; padding: 14px 0; font-size: 0.95rem; font-weight: 900; 
+            color: var(--sub); cursor: pointer; border-radius: 100px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab.active { color: white; background: var(--p); box-shadow: 0 8px 20px rgba(67,97,238,0.35); }
 
-        /* Modal */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .modal { background: var(--bg); width: 100%; max-width: 340px; border-radius: 30px; overflow: hidden; border: 1px solid var(--border); }
-        .m-head { background: linear-gradient(135deg, var(--p), var(--g)); color: white; padding: 25px; text-align: center; }
-        .m-ava { width: 50px; height: 50px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-        .m-body { padding: 20px; }
-        .m-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .m-logs { background: rgba(0,0,0,0.04); border-radius: 15px; padding: 15px; height: 130px; overflow-y: auto; font-size: 0.8rem; color: var(--sub); }
-        .m-close { width: 100%; padding: 15px; background: var(--text); color: var(--bg); border: none; border-radius: 15px; font-weight: 900; margin-top: 15px; cursor: pointer; }
+        /* --- 🏛️ Information Modal 旗艦介面 --- */
+        .modal-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); 
+            z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; 
+        }
+        .modal-overlay.show { display: flex; }
+        
+        .modal { 
+            background: var(--bg); width: 100%; max-width: 350px; border-radius: 35px; 
+            overflow: hidden; border: 1px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(30px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        .m-header { background: linear-gradient(135deg, var(--p), var(--g)); color: white; padding: 35px 25px; text-align: center; position: relative; }
+        .m-avatar { 
+            width: 65px; height: 65px; background: rgba(255,255,255,0.25); 
+            border: 2.5px solid white; border-radius: 50%; margin: 0 auto 15px; 
+            display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; 
+        }
+        .m-name { margin: 0; font-size: 1.3rem; font-weight: 900; }
+        .m-title { margin: 6px 0 0; font-size: 0.75rem; opacity: 0.9; font-weight: 600; letter-spacing: 0.5px; }
+        
+        .m-body { padding: 25px; }
+        .m-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .m-ver-badge { background: var(--p); color: white; padding: 5px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 800; }
+        .m-guide-btn { color: var(--p); text-decoration: none; font-size: 0.85rem; font-weight: 900; border-bottom: 2.5px solid var(--p); padding-bottom: 2px; }
+        
+        .m-log-box { 
+            background: rgba(0,0,0,0.04); border-radius: 20px; padding: 18px; 
+            height: 150px; overflow-y: auto; font-size: 0.82rem; line-height: 1.7; color: var(--sub);
+            border: 1px solid var(--border);
+        }
+        .dark-mode .m-log-box { background: rgba(255,255,255,0.04); }
+        .m-close-btn { 
+            width: 100%; padding: 16px; background: var(--text); color: var(--bg); 
+            border: none; border-radius: 20px; font-weight: 900; margin-top: 20px; cursor: pointer;
+            transition: 0.2s;
+        }
+        .m-close-btn:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
 <body data-layout="list-mode">
 
-    <div id="ann-bar" style="background:var(--banner-bg); color:var(--banner-text); padding:8px; font-size:0.7rem; text-align:center; font-weight:800; border-bottom:1px solid var(--border);"></div>
+    <div class="notice-banner" id="annBar"></div>
 
     <header>
         <div class="logo">
             <h1>班級數位平台</h1>
-            <p>CLASSROOM HUB v17</p>
+            <p>ELITE CAMPUS HUB v18</p>
         </div>
-        <div class="actions">
-            <div class="sw-group">
+        <div class="header-actions">
+            <div class="mode-sw">
                 <button class="btn sw-btn" id="listBtn" onclick="setLayout('list-mode')">
                     <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor"/></svg>
                 </button>
@@ -132,7 +230,7 @@
                     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7" stroke="currentColor"/></svg>
                 </button>
             </div>
-            <button class="btn circle-btn" onclick="toggleTheme()">
+            <button class="btn circle-btn" onclick="toggleTheme()" id="themeTrigger">
                 <svg id="themeIcon" viewBox="0 0 24 24"></svg>
             </button>
             <button class="btn circle-btn" onclick="toggleModal(true)">
@@ -143,134 +241,202 @@
 
     <main class="scroller" id="mainScroller">
         <section class="panel"><div class="grid">
-            <a href="行事曆/index.html" class="item"><div class="ibox">📅</div><div class="txt"><h2>班級行事曆</h2><p>掌握重要時程不漏接</p></div></a>
-            <a href="countdown/index.html" class="item"><div class="ibox">⏳</div><div class="txt"><h2>考程倒數</h2><p>戰鬥時刻，精確倒計</p></div></a>
-            <a href="homework/index.html" class="item"><div class="ibox">📒</div><div class="txt"><h2>作業彙整</h2><p>每日作業更新</p></div></a>
+            <a href="行事曆/index.html" class="item"><div class="ibox">📅</div><div class="txt"><h2>班級行事曆</h2><p>同步學校與班級重要日程</p></div></a>
+            <a href="countdown/index.html" class="item"><div class="ibox">⏳</div><div class="txt"><h2>考程倒數</h2><p>倒數計時，掌握戰鬥節奏</p></div></a>
+            <a href="homework/index.html" class="item"><div class="ibox">📒</div><div class="txt"><h2>作業彙整</h2><p>每日作業清單即時更新</p></div></a>
         </div></section>
+        
         <section class="panel"><div class="grid">
-            <a href="help/student.html" class="item"><div class="ibox">🌱</div><div class="txt"><h2>心聲諮詢</h2><p>傾聽你的每個想法</p></div></a>
-            <a href="unknownmail/index.html" class="item"><div class="ibox">㊙️</div><div class="txt"><h2>加密信箱</h2><p>安全訊息傳遞</p></div></a>
-            <a href="匿名/index.html" class="item"><div class="ibox">✨</div><div class="txt"><h2>匿名許願池</h2><p>互動天地</p></div></a>
-            <a href="board/index.html" class="item"><div class="ibox">💬</div><div class="txt"><h2>公務討論區</h2><p>參與班級決策</p></div></a>
+            <a href="help/student.html" class="item"><div class="ibox">🌱</div><div class="txt"><h2>心聲諮詢</h2><p>溫和傾聽你的每個想法</p></div></a>
+            <a href="unknownmail/index.html" class="item"><div class="ibox">㊙️</div><div class="txt"><h2>加密信箱</h2><p>匿名且安全的消息傳遞</p></div></a>
+            <a href="匿名/index.html" class="item"><div class="ibox">✨</div><div class="txt"><h2>匿名許願池</h2><p>互動與交流的小天地</p></div></a>
+            <a href="board/index.html" class="item"><div class="ibox">💬</div><div class="txt"><h2>公務討論區</h2><p>共同參與班級重要決策</p></div></a>
         </div></section>
+
         <section class="panel"><div class="grid">
-            <a href="cleaning/index.html" class="item"><div class="ibox">🧹</div><div class="txt"><h2>勤務追蹤</h2><p>分工管理</p></div></a>
-            <a href="seating/index.html" class="item"><div class="ibox">🪑</div><div class="txt"><h2>選位系統</h2><p>公平公開機制</p></div></a>
-            <a href="vote/index.html" class="item"><div class="ibox">🗳️</div><div class="txt"><h2>數位投票</h2><p>一鍵表決</p></div></a>
-            <a href="grouping/index.html" class="item"><div class="ibox">🎲</div><div class="txt"><h2>分組模組</h2><p>隨機分組</p></div></a>
+            <a href="cleaning/index.html" class="item"><div class="ibox">🧹</div><div class="txt"><h2>勤務追蹤</h2><p>整潔區域與負責人查詢</p></div></a>
+            <a href="seating/index.html" class="item"><div class="ibox">🪑</div><div class="txt"><h2>選位系統</h2><p>公平公開的數位換位機制</p></div></a>
+            <a href="vote/index.html" class="item"><div class="ibox">🗳️</div><div class="txt"><h2>數位投票</h2><p>一鍵表決班級大小事務</p></div></a>
+            <a href="grouping/index.html" class="item"><div class="ibox">🎲</div><div class="txt"><h2>隨機分組</h2><p>多種演算法的公平分組</p></div></a>
         </div></section>
+
         <section class="panel"><div class="grid">
-            <a href="exam_calc/index.html" class="item"><div class="ibox">📝</div><div class="txt"><h2>段考分析</h2><p>成績數據統計</p></div></a>
-            <a href="final_calc/index.html" class="item"><div class="ibox">📈</div><div class="txt"><h2>學期評估</h2><p>學分預估</p></div></a>
+            <a href="exam_calc/index.html" class="item"><div class="ibox">📝</div><div class="txt"><h2>段考分析</h2><p>個人化成績數據彙整統計</p></div></a>
+            <a href="final_calc/index.html" class="item"><div class="ibox">📈</div><div class="txt"><h2>學期評估</h2><p>學分預估與學習曲線分析</p></div></a>
         </div></section>
     </main>
 
-    <nav class="nav-box"><div class="nav-in">
-        <div class="tab" onclick="jumpTo(0)">提醒</div>
-        <div class="tab" onclick="jumpTo(1)">互動</div>
-        <div class="tab" onclick="jumpTo(2)">班務</div>
-        <div class="tab" onclick="jumpTo(3)">成績</div>
-    </div></nav>
+    <nav class="nav-container">
+        <div class="nav-inner" id="navBar">
+            <div class="tab" onclick="jumpTo(0)">提醒</div>
+            <div class="tab" onclick="jumpTo(1)">互動</div>
+            <div class="tab" onclick="jumpTo(2)">班務</div>
+            <div class="tab" onclick="jumpTo(3)">成績</div>
+        </div>
+    </nav>
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <div class="m-head"><div class="m-ava">王</div><h3 id="mName" style="margin:0"></h3><p id="mTitle" style="font-size:0.7rem;opacity:0.8;margin:5px 0 0"></p></div>
+            <div class="m-header">
+                <div class="m-avatar">王</div>
+                <h3 class="m-name" id="mName"></h3>
+                <p class="m-title" id="mTitle"></p>
+            </div>
             <div class="m-body">
-                <div class="m-row"><span id="mVer" style="background:var(--p);color:white;padding:3px 8px;border-radius:6px;font-size:0.7rem"></span><a href="#" id="mTutorial" style="color:var(--p);font-size:0.8rem;font-weight:800;text-decoration:none;border-bottom:2px solid var(--p)">📖 使用教學</a></div>
-                <div class="m-logs" id="mLogs"></div>
-                <button class="m-close" onclick="toggleModal(false)">我知道了</button>
+                <div class="m-row">
+                    <span class="m-ver-badge" id="mVer"></span>
+                    <a href="#" class="m-guide-btn" id="mTutorial" target="_blank">📖 使用教學</a>
+                </div>
+                <div class="m-log-box" id="mLogs"></div>
+                <button class="m-close-btn" onclick="toggleModal(false)">我知道了</button>
             </div>
         </div>
     </div>
 
     <script>
-        const scroller = document.getElementById('mainScroller');
-        const tabs = document.querySelectorAll('.tab');
-        let isDark = document.documentElement.classList.contains('dark-mode');
-        let currentIdx = parseInt(localStorage.getItem('lastPage')) || 0;
+        /**
+         * 🌟 全域狀態管理
+         */
+        const state = {
+            scroller: document.getElementById('mainScroller'),
+            tabs: document.querySelectorAll('.tab'),
+            isDark: document.documentElement.classList.contains('dark-mode'),
+            currentIdx: parseInt(localStorage.getItem('lastPage')) || 0,
+            isReady: false
+        };
 
-        // 🌟 核心：終極強制重繪 (解決變色與圖示消失)
-        function forceSyncUI() {
-            const color = isDark ? "#020617" : "#f8fafc";
+        /**
+         * 🌟 核心：強制同步 UI 與 手機外殼顏色
+         */
+        function forceSyncSystemUI() {
+            const themeColor = state.isDark ? "#020617" : "#f8fafc";
             
-            // 1. 強制 Meta 更新
-            document.getElementById('chrome-theme').content = color;
-            document.getElementById('safari-theme').content = isDark ? "black-translucent" : "default";
+            // 1. 強力更新 Meta 標籤 (解決網址列變色問題)
+            const chromeMeta = document.getElementById('chrome-theme');
+            const safariMeta = document.getElementById('safari-theme');
+            
+            if (chromeMeta) chromeMeta.content = themeColor;
+            if (safariMeta) safariMeta.content = state.isDark ? "black-translucent" : "default";
 
-            // 2. 更新切換按鈕圖示 (直接注入 Path 以免消失)
+            // 2. 更新主題切換按鈕的圖示 (採用完整路徑，防止消失)
             const icon = document.getElementById('themeIcon');
-            icon.innerHTML = isDark 
-                ? '<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor"/>'
-                : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"/>';
-            
-            // 3. 解決 SVG 圖示消失的「暴力重繪」
-            // 透過快速切換 display，強迫手機瀏覽器核心重新計算所有 SVG 的顏色
+            if (state.isDark) {
+                // 太陽圖示 (切回亮色)
+                icon.innerHTML = `<circle cx="12" cy="12" r="5" fill="currentColor"></circle>
+                                  <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2"></path>`;
+            } else {
+                // 月亮圖示 (切到深色)
+                icon.innerHTML = `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"></path>`;
+            }
+
+            // 3. 觸發暴力重繪 (防止手機版 SVG 圖示消失)
             const allSvgs = document.querySelectorAll('svg');
-            allSvgs.forEach(s => s.style.display = 'none');
+            allSvgs.forEach(s => s.style.opacity = '0.99'); 
             document.body.style.display = 'none';
+            document.body.offsetHeight; // 觸發 Reflow
+            document.body.style.display = 'block';
+            setTimeout(() => allSvgs.forEach(s => s.style.opacity = '1'), 10);
+        }
+
+        /**
+         * 🌟 核心：智慧型分頁定位 (解決重新整理跳動)
+         */
+        function jumpTo(idx, behavior = 'smooth') {
+            const targetLeft = idx * state.scroller.offsetWidth;
+            state.scroller.scrollTo({ left: targetLeft, behavior: behavior });
             
-            requestAnimationFrame(() => {
-                document.body.style.display = 'block';
-                allSvgs.forEach(s => s.style.display = '');
+            state.currentIdx = idx;
+            localStorage.setItem('lastPage', idx);
+            
+            // 更新選單標籤狀態
+            state.tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === idx);
             });
         }
 
+        /**
+         * 🌟 主題切換邏輯
+         */
         function toggleTheme() {
-            isDark = !isDark;
-            document.documentElement.classList.toggle('dark-mode', isDark);
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            forceSyncUI();
+            state.isDark = !state.isDark;
+            document.documentElement.classList.toggle('dark-mode', state.isDark);
+            localStorage.setItem('theme', state.isDark ? 'dark' : 'light');
+            forceSyncSystemUI();
         }
 
+        /**
+         * 🌟 佈局切換邏輯
+         */
         function setLayout(mode) {
             document.documentElement.setAttribute('data-layout', mode);
             document.getElementById('listBtn').classList.toggle('active', mode === 'list-mode');
             document.getElementById('gridBtn').classList.toggle('active', mode === 'grid-mode');
             localStorage.setItem('layout', mode);
-            // 切換佈局也強制刷一次 SVG 避免隱身
-            forceSyncUI();
+            
+            // 切換佈局後重新校準捲動位置，防止歪掉
+            setTimeout(() => jumpTo(state.currentIdx, 'auto'), 50);
         }
 
-        function jumpTo(idx, behavior = 'smooth') {
-            scroller.scrollTo({ left: idx * scroller.offsetWidth, behavior: behavior });
-            currentIdx = idx;
-            tabs.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
-            localStorage.setItem('lastPage', currentIdx);
+        /**
+         * 🌟 視窗初始化與監聽
+         */
+        function initSystem() {
+            // 公告內容
+            document.getElementById('annBar').innerText = CONFIG_BANNER;
+
+            // 1. 同步外殼顏色
+            forceSyncSystemUI();
+
+            // 2. 佈局按鈕狀態
+            const savedLayout = localStorage.getItem('layout') || 'list-mode';
+            document.getElementById('listBtn').classList.toggle('active', savedLayout === 'list-mode');
+            document.getElementById('gridBtn').classList.toggle('active', savedLayout === 'grid-mode');
+
+            // 3. 執行「阻斷式定位」：直接讓 scroller 瞬間到達目標位置
+            // behavior 使用 'auto' 確保沒有滑動過程
+            jumpTo(state.currentIdx, 'auto');
+
+            // 4. 標記系統已 Ready，顯示內容 (消除載入閃爍)
+            document.documentElement.setAttribute('data-ready', 'true');
+
+            // 監聽手動捲動
+            state.scroller.addEventListener('scroll', () => {
+                const newIdx = Math.round(state.scroller.scrollLeft / state.scroller.offsetWidth);
+                if (newIdx !== state.currentIdx) {
+                    state.currentIdx = newIdx;
+                    localStorage.setItem('lastPage', newIdx);
+                    state.tabs.forEach((tab, i) => tab.classList.toggle('active', i === newIdx));
+                }
+            }, { passive: true });
+
+            // 監聽視窗縮放 (補償寬度變化)
+            window.addEventListener('resize', () => jumpTo(state.currentIdx, 'auto'));
         }
 
-        scroller.addEventListener('scroll', () => {
-            const newIdx = Math.round(scroller.scrollLeft / scroller.offsetWidth);
-            if(newIdx !== currentIdx) {
-                currentIdx = newIdx;
-                tabs.forEach((t, i) => t.classList.toggle('active', i === currentIdx));
-                localStorage.setItem('lastPage', currentIdx);
-            }
-        }, { passive: true });
-
+        /**
+         * 🌟 Information Modal 邏輯
+         */
         function toggleModal(show) {
-            const m = document.getElementById('modalOverlay');
-            if(show) {
+            const overlay = document.getElementById('modalOverlay');
+            if (show) {
                 document.getElementById('mName').innerText = AUTHOR_DATA.name;
                 document.getElementById('mTitle').innerText = AUTHOR_DATA.title;
                 document.getElementById('mVer').innerText = AUTHOR_DATA.version;
                 document.getElementById('mTutorial').href = AUTHOR_DATA.tutorialUrl;
                 document.getElementById('mLogs').innerHTML = AUTHOR_DATA.logs;
-                m.style.display = 'flex';
+                overlay.classList.add('show');
             } else {
-                m.style.display = 'none';
+                overlay.classList.remove('show');
             }
         }
 
-        function init() {
-            document.getElementById('ann-bar').innerText = CONFIG_BANNER;
-            forceSyncUI();
-            setLayout(localStorage.getItem('layout') || 'list-mode');
-            jumpTo(currentIdx, 'auto');
-            window.addEventListener('resize', () => jumpTo(currentIdx, 'auto'));
-        }
-
-        document.addEventListener('DOMContentLoaded', init);
-        window.onload = () => jumpTo(currentIdx, 'auto');
+        // 啟動入口
+        document.addEventListener('DOMContentLoaded', initSystem);
+        
+        // 最終保險：window.onload 再次鎖定位置
+        window.onload = () => {
+            setTimeout(() => jumpTo(state.currentIdx, 'auto'), 0);
+        };
     </script>
 </body>
 </html>
