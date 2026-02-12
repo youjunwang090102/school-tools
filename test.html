@@ -3,55 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina OS Elite | 專業互動指揮官</title>
+    <title>Lumina OS Commander | 旗艦互動系統</title>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
     <style>
-        :root { --p: #5856D6; --s: #34C759; --d: #FF3B30; --bg: #0A0A0C; --glass: rgba(255,255,255,0.08); }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'SF Pro Display', system-ui, sans-serif; }
-        body { background: var(--bg); color: #FFF; margin: 0; overflow: hidden; }
-
-        /* 背景流光 */
-        .mesh-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 20%, #1a1a2e 0%, #0a0a0c 100%); }
-        
-        .app { height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
-        .glass { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 25px; transition: 0.3s; }
-
-        /* 電腦版 vs 手機版 RWD 核心 */
-        @media (min-width: 768px) {
-            .desktop-row { display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px; }
-            .mobile-only { display: none !important; }
+        :root { 
+            --p: #5856D6; --s: #34C759; --d: #FF3B30; --w: #FF9500;
+            --bg: #0A0A0C; --card: #1C1C1E; --glass: rgba(255,255,255,0.08); 
         }
-        @media (max-width: 767px) {
-            .desktop-row { display: block; padding: 10px; }
-            .desktop-only { display: none !important; }
-            .glass { border-radius: 16px; padding: 15px; margin-bottom: 10px; }
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'SF Pro Display', 'PingFang TC', system-ui, sans-serif; }
+        body { background: var(--bg); color: #FFF; margin: 0; overflow-x: hidden; }
 
-        /* 倒數計時器樣式 */
-        #timer-display { font-size: 48px; font-weight: 800; font-family: monospace; color: var(--s); text-shadow: 0 0 15px var(--s); }
-        .timer-warning { color: var(--d) !important; text-shadow: 0 0 15px var(--d) !important; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* 背景特效 */
+        .mesh-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 10% 10%, #1a1a2e 0%, #0a0a0c 100%); }
+        .mesh-bg::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); opacity: 0.1; }
 
-        /* 選項與按鈕 */
-        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-p { background: var(--p); color: white; }
+        .app { min-height: 100vh; display: flex; flex-direction: column; }
+        .glass { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        /* 按鈕系統 */
+        .btn { padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; }
+        .btn-p { background: var(--p); color: white; box-shadow: 0 5px 15px rgba(88,86,214,0.3); }
+        .btn-s { background: var(--s); color: white; }
+        .btn-d { background: var(--d); color: white; }
         .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; }
-        
-        .option-card { display: flex; gap: 10px; margin-bottom: 10px; }
-        input[type="text"], input[type="number"] { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+        .btn:active { transform: translateY(0); }
 
-        /* 學生端投票大按鈕 */
-        .stu-vote-btn { width: 100%; padding: 20px; margin-bottom: 12px; border-radius: 18px; border: 2px solid transparent; background: rgba(255,255,255,0.05); color: white; font-size: 18px; text-align: left; transition: 0.3s; }
-        .stu-vote-btn.active { border-color: var(--p); background: rgba(88,86,214,0.2); }
-        .stu-vote-btn:disabled { opacity: 0.5; filter: grayscale(1); }
-
-        .locked-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); border-radius: 18px; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; }
+        /* RWD 佈局 */
+        .container { max-width: 1200px; margin: auto; width: 100%; padding: 15px; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
         
+        @media (max-width: 992px) {
+            .grid-layout { grid-template-columns: 1fr; }
+            .desktop-only { display: none !important; }
+        }
+
+        /* 倒數計時 */
+        .timer-unit { font-size: 48px; font-weight: 900; font-family: 'Courier New', Courier, monospace; color: var(--s); text-shadow: 0 0 20px rgba(52,199,89,0.5); }
+        .timer-warning { color: var(--d) !important; animation: shake 0.5s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 20% { transform: translate(-1px, -2px); } 100% { transform: translate(1px, 1px); } }
+
+        /* 學生投票區 */
+        .stu-opt-area { display: grid; gap: 15px; margin-top: 20px; }
+        .stu-btn { padding: 25px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; font-size: 20px; text-align: left; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .stu-btn.selected { border-color: var(--p); background: rgba(88,86,214,0.2); box-shadow: 0 0 20px rgba(88,86,214,0.4); }
+        .stu-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        input[type="text"], input[type="number"] { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 10px; color: white; outline: none; transition: 0.3s; }
+        input[type="text"]:focus { border-color: var(--p); background: rgba(0,0,0,0.6); }
+
         .hidden { display: none !important; }
-        #qr-canvas { width: 100% !important; height: auto !important; border-radius: 15px; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .badge-online { background: rgba(52,199,89,0.2); color: var(--s); }
+        
+        /* 結案遮罩 */
+        .full-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
     </style>
 </head>
 <body>
@@ -59,139 +69,183 @@
 <div class="mesh-bg"></div>
 
 <div class="app">
-    <header style="padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <div style="font-size: 20px; font-weight: 900; letter-spacing: 2px;">LUMINA <span style="color:var(--p)">OS</span></div>
-        <div id="connection-badge" class="btn" style="font-size: 12px; background: rgba(255,255,255,0.1); padding: 5px 12px;">SYSTEM IDLE</div>
+    <header style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <div style="font-size: 22px; font-weight: 900; letter-spacing: 2px;">LUMINA <span style="color:var(--p)">COMMANDER</span></div>
+        <div id="sys-status" class="badge">STANDBY</div>
     </header>
 
-    <div id="v-start" class="animate__animated animate__fadeIn" style="flex: 1; display: flex; align-items: center; justify-content: center;">
-        <div class="glass" style="text-align: center; max-width: 500px;">
-            <h1 style="font-size: 42px; margin: 0;">專業課堂互動</h1>
-            <p style="color: #888; margin: 20px 0 40px;">請選擇您的身份以啟動系統</p>
-            <div style="display: grid; gap: 15px;">
-                <button class="btn btn-p" onclick="initTeacher()" style="padding: 20px;">👨‍🏫 開啟老師控制台 (電腦版)</button>
-                <button class="btn btn-outline" onclick="showView('v-stu-login')" style="padding: 20px;">📱 學生加入投票 (手機版)</button>
+    <div class="container">
+        <div id="v-start" class="animate__animated animate__fadeIn">
+            <div class="glass" style="text-align: center; padding: 60px 20px; margin-top: 50px;">
+                <h1 style="font-size: 50px; margin-bottom: 10px;">讓數據說話</h1>
+                <p style="color: #888; font-size: 18px; margin-bottom: 40px;">專業、穩定、永續的課堂投票方案</p>
+                <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-p" onclick="checkRecovery()" style="padding: 20px 40px;">👨‍🏫 我是老師 (進入儀表板)</button>
+                    <button class="btn btn-outline" onclick="showView('v-stu-login')" style="padding: 20px 40px;">📱 我是學生 (加入投票)</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="v-teacher" class="hidden animate__animated animate__fadeIn">
-        <div class="desktop-row">
-            <div>
-                <div class="glass" style="margin-bottom: 20px;">
-                    <h3>1. 投票題目與截止設定</h3>
-                    <input type="text" id="t-topic" placeholder="請在此輸入問題..." style="width: 100%; font-size: 20px; margin-bottom: 15px;">
-                    <div id="t-options-container"></div>
-                    <button class="btn btn-outline" onclick="addOption()" style="margin-top: 10px;">+ 新增選項</button>
-                    
-                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
-                    
-                    <div style="display: flex; align-items: center; gap: 20px;">
-                        <div>
-                            <span>設定限時：</span>
-                            <input type="number" id="t-min" value="1" style="width: 60px; text-align: center;"> 分 
-                            <input type="number" id="t-sec" value="0" style="width: 60px; text-align: center;"> 秒
+        <div id="v-teacher" class="hidden animate__animated animate__fadeIn">
+            <div class="grid-layout">
+                <div class="left-col">
+                    <div class="glass">
+                        <h3>📋 1. 設定問題與選項</h3>
+                        <input type="text" id="t-topic" placeholder="請在此輸入投票題目..." style="width:100%; font-size:18px; margin-bottom:15px;">
+                        <div id="t-opt-list"></div>
+                        <button class="btn btn-outline" onclick="addOptionField()" style="margin-top:10px;">+ 新增選項</button>
+                    </div>
+
+                    <div class="glass">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>📊 2. 即時數據監控</h3>
+                            <div id="t-timer" class="timer-unit">01:00</div>
                         </div>
-                        <button class="btn btn-p" onclick="startVotingSession()">🚀 發布並開始計時</button>
+                        <div style="height: 350px; position: relative; margin-top: 20px;">
+                            <canvas id="t-chart"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <div class="glass">
-                    <div style="display: flex; justify-content: space-between;">
-                        <h3>2. 即時數據統計</h3>
-                        <div id="timer-display">01:00</div>
+                <div class="right-col">
+                    <div class="glass" style="text-align: center;">
+                        <h2 id="t-room-id" style="font-size: 50px; color: var(--p); margin: 0;">----</h2>
+                        <canvas id="qr-canvas" style="width: 100%; border-radius: 12px; margin: 15px 0;"></canvas>
+                        <p style="color: #888; font-size: 14px;">請學生掃碼或連入房號</p>
+                        
+                        <div style="display: grid; gap: 10px; margin-top: 20px;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px;">
+                                限時：<input type="number" id="t-min" value="1" style="width: 50px;"> 分 
+                                <input type="number" id="t-sec" value="0" style="width: 50px;"> 秒
+                            </div>
+                            <button class="btn btn-s" onclick="publishVote()">🚀 開始投票 (同步選項)</button>
+                            <button class="btn btn-d" onclick="confirmReset()">🔄 清空所有數據</button>
+                            <button class="btn btn-outline" onclick="exportToCSV()">💾 下載 CSV 報表</button>
+                        </div>
                     </div>
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="t-chart"></canvas>
+                    
+                    <div class="glass">
+                        <h4>現況分析</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span>連線人數</span><span id="stat-online" style="color:var(--s)">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>投票率</span><span id="stat-ratio" style="color:var(--p)">0%</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div>
-                <div class="glass" style="text-align: center;">
-                    <h2 id="t-room-id" style="font-size: 48px; color: var(--p); margin: 0;">----</h2>
-                    <p style="color: #888;">學生掃碼進入</p>
-                    <canvas id="qr-canvas"></canvas>
-                    <div style="display: grid; gap: 10px; margin-top: 20px;">
-                        <button class="btn btn-outline" onclick="resetVotes()">清空票數</button>
-                        <button class="btn" style="background: white; color: black;" onclick="forceEnd()">手動提前結束</button>
-                    </div>
-                </div>
-                <div class="glass" style="margin-top: 20px;">
-                    <h4>連線狀態</h4>
-                    <p>在線人數：<span id="t-online">0</span></p>
-                    <p>已投人數：<span id="t-voted">0</span></p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="v-stu-login" class="hidden">
-        <div class="glass" style="max-width: 350px; margin: 80px auto; text-align: center;">
-            <h2>輸入房號</h2>
-            <input type="text" id="s-input-id" style="width: 100%; font-size: 40px; text-align: center; letter-spacing: 5px;">
-            <button class="btn btn-p" style="width: 100%; margin-top: 20px; padding: 15px;" onclick="initStudent()">進入投票系統</button>
-        </div>
-    </div>
-
-    <div id="v-student" class="hidden">
-        <div style="padding: 15px;">
-            <div class="glass" style="margin-bottom: 15px; text-align: center; position: relative;">
-                <div id="s-timer" style="font-size: 24px; font-weight: bold; color: var(--s);">倒數計時中...</div>
-                <div id="s-status-tag" style="font-size: 12px; color: #888;">等待老師發起投票</div>
+        <div id="v-stu-login" class="hidden animate__animated animate__fadeIn">
+            <div class="glass" style="max-width: 400px; margin: 80px auto; text-align: center;">
+                <h2>加入投票房</h2>
+                <input type="text" id="s-room-input" maxlength="4" placeholder="請輸入房號" style="width:100%; text-align:center; font-size:40px; margin: 20px 0;">
+                <button class="btn btn-p" style="width: 100%; padding: 15px;" onclick="initStudent()">建立安全連線</button>
             </div>
-            
-            <div class="glass">
-                <h1 id="s-topic-display" style="font-size: 22px; margin-top: 0;">題目載入中...</h1>
-                <div id="s-options-area" style="position: relative;">
-                    </div>
+        </div>
+
+        <div id="v-student" class="hidden animate__animated animate__fadeIn">
+            <div class="glass" style="text-align: center; border-bottom: 4px solid var(--p);">
+                <div id="s-timer-display" style="font-size: 24px; font-weight: bold; color: var(--s);">等待老師發布...</div>
+                <h1 id="s-topic-display" style="margin: 15px 0;">--</h1>
+            </div>
+            <div id="s-opt-container" class="stu-opt-area">
+                </div>
+            <div id="s-lock-msg" class="hidden" style="text-align:center; margin-top:20px; color:var(--d);">
+                🔒 投票已截止，數據已由系統鎖定
             </div>
         </div>
     </div>
 </div>
 
-<div id="final-report" class="hidden animate__animated animate__zoomIn" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; padding: 40px; overflow-y: auto;">
-    <div style="text-align: center; max-width: 800px; margin: auto;">
-        <h1 style="font-size: 60px; color: var(--s);">投票結束</h1>
-        <div id="winner-box" class="glass" style="padding: 40px; margin: 40px 0; border: 2px solid var(--p);">
-            <p style="font-size: 24px;">獲得最高票選項</p>
-            <h2 id="winner-name" style="font-size: 80px; margin: 10px 0; color: var(--p);">選項名稱</h2>
-            <p id="winner-stats" style="font-size: 24px; color: #888;">-- 票</p>
-        </div>
-        <button class="btn btn-outline" onclick="document.getElementById('final-report').classList.add('hidden')">返回儀表板</button>
+<div id="final-screen" class="full-overlay hidden animate__animated animate__fadeIn">
+    <h2 style="color: var(--s); font-size: 30px;">投票任務完成</h2>
+    <div id="winner-card" class="glass" style="min-width: 320px; padding: 40px; border: 2px solid var(--p);">
+        <p>最高得票</p>
+        <h1 id="winner-name" style="font-size: 60px; color: var(--p); margin: 10px 0;">--</h1>
+        <p id="winner-votes" style="font-size: 20px; color: #888;">0 票</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" onclick="document.getElementById('final-screen').classList.add('hidden')">返回儀表板</button>
+        <button class="btn btn-p" onclick="exportToCSV()">下載數據檔案</button>
     </div>
 </div>
 
 <script>
     let peer, conn, role, myChart, timerInt;
-    let options = ["選項 A", "選項 B", "選項 C"];
+    let options = ["同意", "不同意", "沒意見"];
     let votes = {};
     let voterMap = new Map();
     let isLocked = false;
-    const STUN = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] };
+    let roomID = "";
+
+    const PEER_CONFIG = { 
+        'config': { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'stun:stun1.l.google.com:19302' }] } 
+    };
 
     function showView(id) {
         document.querySelectorAll('.app > div').forEach(d => { if(d.id.startsWith('v-')) d.classList.add('hidden'); });
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // --- 老師端邏輯 ---
-    function initTeacher() {
+    // --- 數據持久化核心 ---
+    function saveState() {
+        if (role !== 'teacher') return;
+        const state = {
+            roomID, options, votes, 
+            voterMap: Array.from(voterMap.entries()),
+            topic: document.getElementById('t-topic').value
+        };
+        localStorage.setItem('Lumina_Commander_Backup', JSON.stringify(state));
+    }
+
+    function checkRecovery() {
+        const saved = localStorage.getItem('Lumina_Commander_Backup');
+        if (saved) {
+            if (confirm("發現上次未完成的投票記錄，是否恢復？")) {
+                const state = JSON.parse(saved);
+                roomID = state.roomID;
+                options = state.options;
+                votes = state.votes;
+                voterMap = new Map(state.voterMap);
+                initTeacher(roomID, state.topic);
+                return;
+            }
+        }
+        initTeacher();
+    }
+
+    // --- 老師端核心 ---
+    function initTeacher(forceID = null, savedTopic = "") {
         role = 'teacher';
-        const rid = Math.floor(1000 + Math.random() * 8999).toString();
-        peer = new Peer('LUMINA-' + rid, { config: STUN });
+        roomID = forceID || Math.floor(1000 + Math.random() * 8999).toString();
+        peer = new Peer('LUMINA-' + roomID, PEER_CONFIG);
 
         peer.on('open', id => {
             showView('v-teacher');
-            document.getElementById('t-room-id').innerText = rid;
-            document.getElementById('connection-badge').innerText = "ONLINE | ROOM: " + rid;
-            QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.href.split('?')[0] + '?r=' + rid);
+            document.getElementById('t-room-id').innerText = roomID;
+            document.getElementById('sys-status').innerText = "ONLINE | " + roomID;
+            document.getElementById('sys-status').classList.add('badge-online');
+            if(savedTopic) document.getElementById('t-topic').value = savedTopic;
+            
+            QRCode.toCanvas(document.getElementById('qr-canvas'), window.location.href.split('?')[0] + '?r=' + roomID);
             renderTeacherOptions();
             initChart();
-            
+            updateChart(); // 恢復數據後的繪圖
+
+            // 狀態廣播心跳
             setInterval(() => {
-                document.getElementById('t-online').innerText = Object.keys(peer.connections).length;
-                broadcastStatus();
+                const msg = {
+                    type: 'sync',
+                    topic: document.getElementById('t-topic').value || "互動投票",
+                    options: options,
+                    isLocked: isLocked,
+                    timeLeft: document.getElementById('t-timer').innerText
+                };
+                Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(msg); }));
+                document.getElementById('stat-online').innerText = Object.keys(peer.connections).length;
+                saveState();
             }, 1000);
         });
 
@@ -208,23 +262,26 @@
     }
 
     function renderTeacherOptions() {
-        const container = document.getElementById('t-options-container');
+        const container = document.getElementById('t-opt-list');
         container.innerHTML = options.map((opt, i) => `
-            <div class="option-card">
+            <div class="animate__animated animate__fadeIn" style="display:flex; gap:10px; margin-bottom:8px;">
                 <input type="text" value="${opt}" oninput="options[${i}]=this.value" style="flex:1">
                 <button class="btn btn-outline" onclick="options.splice(${i},1); renderTeacherOptions()">✕</button>
             </div>
         `).join('');
     }
-
-    function addOption() { options.push("新選項 " + (options.length+1)); renderTeacherOptions(); }
+    function addOptionField() { options.push("新選項 " + (options.length+1)); renderTeacherOptions(); }
 
     function initChart() {
         const ctx = document.getElementById('t-chart').getContext('2d');
         myChart = new Chart(ctx, {
             type: 'bar',
             data: { labels: options, datasets: [{ data: [], backgroundColor: '#5856D6', borderRadius: 8 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } }
+            }
         });
     }
 
@@ -232,113 +289,116 @@
         myChart.data.labels = options;
         myChart.data.datasets[0].data = options.map(o => votes[o] || 0);
         myChart.update();
-        document.getElementById('t-voted').innerText = voterMap.size;
+        const total = voterMap.size;
+        const online = Object.keys(peer.connections).length;
+        document.getElementById('stat-ratio').innerText = online > 0 ? Math.round(total/online*100) + "%" : "0%";
     }
 
-    // --- 倒數計時系統 ---
-    function startVotingSession() {
+    function publishVote() {
         isLocked = false;
         voterMap.clear();
         options.forEach(o => votes[o] = 0);
         updateChart();
 
-        let duration = (parseInt(document.getElementById('t-min').value) * 60) + parseInt(document.getElementById('t-sec').value);
+        let totalSec = (parseInt(document.getElementById('t-min').value) * 60) + parseInt(document.getElementById('t-sec').value);
         if(timerInt) clearInterval(timerInt);
         
         timerInt = setInterval(() => {
-            duration--;
-            updateTimerUI(duration);
-            if(duration <= 0) {
+            totalSec--;
+            let m = Math.floor(totalSec/60).toString().padStart(2,'0');
+            let s = (totalSec%60).toString().padStart(2,'0');
+            const timerEl = document.getElementById('t-timer');
+            timerEl.innerText = `${m}:${s}`;
+            
+            if(totalSec <= 10) timerEl.classList.add('timer-warning');
+            else timerEl.classList.remove('timer-warning');
+
+            if(totalSec <= 0) {
                 clearInterval(timerInt);
-                forceEnd();
+                endVoting();
             }
         }, 1000);
-        alert("投票已發布！");
     }
 
-    function updateTimerUI(sec) {
-        let m = Math.floor(sec/60).toString().padStart(2, '0');
-        let s = (sec%60).toString().padStart(2, '0');
-        const display = document.getElementById('timer-display');
-        display.innerText = `${m}:${s}`;
-        if(sec <= 10) display.classList.add('timer-warning');
-        else display.classList.remove('timer-warning');
-    }
-
-    function forceEnd() {
+    function endVoting() {
         isLocked = true;
-        clearInterval(timerInt);
-        document.getElementById('timer-display').innerText = "00:00";
-        showFinalReport();
-    }
-
-    function showFinalReport() {
-        let max = -1, winner = "無人投票";
+        let max = -1, winner = "無";
         for(let o in votes) { if(votes[o] > max) { max = votes[o]; winner = o; } }
         document.getElementById('winner-name').innerText = winner;
-        document.getElementById('winner-stats').innerText = (votes[winner] || 0) + " 票";
-        document.getElementById('final-report').classList.remove('hidden');
+        document.getElementById('winner-votes').innerText = (votes[winner] || 0) + " 票";
+        document.getElementById('final-screen').classList.remove('hidden');
     }
 
-    function broadcastStatus() {
-        const msg = {
-            type: 'sync',
-            topic: document.getElementById('t-topic').value || "即時投票中",
-            options: options,
-            isLocked: isLocked,
-            timeLeft: document.getElementById('timer-display').innerText
-        };
-        Object.values(peer.connections).forEach(conns => conns.forEach(c => { if(c.open) c.send(msg); }));
+    function confirmReset() {
+        if(confirm("確定要清空所有資料嗎？這將刪除備份。")) {
+            localStorage.removeItem('Lumina_Commander_Backup');
+            location.reload();
+        }
     }
 
-    // --- 學生端 (手機優化) ---
-    let s_conn, lastSelected = "";
+    // --- 報表導出 ---
+    function exportToCSV() {
+        let csv = "\uFEFF題目," + document.getElementById('t-topic').value + "\n選項,票數,百分比\n";
+        const total = voterMap.size;
+        options.forEach(o => {
+            const p = total > 0 ? Math.round(votes[o]/total*100) : 0;
+            csv += `${o},${votes[o] || 0},${p}%\n`;
+        });
+        csv += `\n總投票人數,${total}`;
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `投票報表_${new Date().toLocaleDateString()}.csv`;
+        link.click();
+    }
+
+    // --- 學生端核心 ---
+    let s_conn, s_lastSel = "";
     function initStudent() {
-        role = 'student';
-        const rid = document.getElementById('s-input-id').value || new URLSearchParams(window.location.search).get('r');
-        if(!rid) return;
+        const rid = document.getElementById('s-room-input').value || new URLSearchParams(window.location.search).get('r');
+        if(!rid) return alert("請輸入房號");
+        
         showView('v-student');
-        peer = new Peer({ config: STUN });
+        peer = new Peer(PEER_CONFIG);
         peer.on('open', () => {
-            connectToTeacher(rid);
-            setInterval(() => { if(!s_conn || !s_conn.open) connectToTeacher(rid); }, 3000);
+            connectToHost(rid);
+            setInterval(() => { if(!s_conn || !s_conn.open) connectToHost(rid); }, 3000);
         });
     }
 
-    function connectToTeacher(rid) {
+    function connectToHost(rid) {
         s_conn = peer.connect('LUMINA-' + rid, { reliable: true });
         s_conn.on('data', d => {
             if(d.type === 'sync') {
                 document.getElementById('s-topic-display').innerText = d.topic;
-                document.getElementById('s-timer').innerText = "剩餘時間 " + d.timeLeft;
-                renderStudentUI(d.options, d.isLocked);
-                if(d.timeLeft === "00:00") document.getElementById('s-timer').classList.add('timer-warning');
+                document.getElementById('s-timer-display').innerText = d.isLocked ? "投票結束" : "剩餘時間 " + d.timeLeft;
+                renderStudentOptions(d.options, d.isLocked);
             }
         });
     }
 
-    function renderStudentUI(opts, locked) {
-        const area = document.getElementById('s-options-area');
-        let html = opts.map(o => `
-            <button class="stu-vote-btn ${lastSelected===o?'active':''}" 
-                    ${locked?'disabled':''} onclick="submitVote('${o}')">
+    function renderStudentOptions(opts, locked) {
+        const area = document.getElementById('s-opt-container');
+        area.innerHTML = opts.map(o => `
+            <button class="stu-btn ${s_lastSel===o?'selected':''} animate__animated animate__fadeInUp" 
+                ${locked?'disabled':''} onclick="castVote('${o}')">
                 ${o}
             </button>
         `).join('');
-        if(locked) html += `<div class="locked-overlay">🔒 投票已截止</div>`;
-        area.innerHTML = html;
-        document.getElementById('s-status-tag').innerText = locked ? "投票已鎖定" : "連線正常 | 可隨時修改";
+        document.getElementById('s-lock-msg').classList.toggle('hidden', !locked);
     }
 
-    function submitVote(val) {
-        lastSelected = val;
+    function castVote(val) {
+        s_lastSel = val;
         s_conn.send({ type: 'vote', val: val });
         if(window.navigator.vibrate) window.navigator.vibrate(50);
     }
 
+    // 初始化檢測 URL 房號
     window.onload = () => {
         const r = new URLSearchParams(window.location.search).get('r');
-        if(r) { document.getElementById('s-input-id').value = r; showView('v-stu-login'); }
+        if(r) { document.getElementById('s-room-input').value = r; showView('v-stu-login'); }
     };
 </script>
 </body>
