@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v4.1 (修復升級版)</title>
+    <title>班級勤務管理系統 v4.2 (安全加密終極版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -228,7 +228,7 @@
         } catch(e) {}
     }
 
-    // 4. 登入 (含無痛舊密碼過渡)
+    // 4. 登入 (含終極安全防護：防禦 Pass-the-Hash)
     async function doLogin() {
         let rawId = document.getElementById('loginId').value;
         if(!rawId) return;
@@ -247,10 +247,19 @@
                 const data = doc.data();
                 let isMatch = false;
                 
-                if (data.password === hashedInputPw) isMatch = true;
-                else if (data.password === pw) {
-                    isMatch = true;
-                    await db.collection("students").doc(id).update({ password: hashedInputPw });
+                // 🛡️ 嚴格判斷：如果資料庫的密碼長度是 64 (代表已經加密過)，就絕對不接受明碼比對！
+                const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                if (isDbPasswordHashed) {
+                    if (data.password === hashedInputPw) {
+                        isMatch = true;
+                    }
+                } else {
+                    // 如果還是舊版明碼 -> 允許明碼登入，並立刻背景升級為加密版
+                    if (data.password === pw) {
+                        isMatch = true;
+                        await db.collection("students").doc(id).update({ password: hashedInputPw });
+                    }
                 }
 
                 if(isMatch) {
@@ -280,7 +289,7 @@
         alert("密碼更新成功"); location.reload();
     }
 
-    // 5. 註冊
+    // 5. 註冊 (存入加密密碼)
     async function doRegister() {
         let rawId = document.getElementById('regId').value;
         let id = rawId.length === 1 ? "0" + rawId : rawId;
@@ -323,7 +332,6 @@
             document.getElementById('warnText').innerText = escapeHTML(d.warning);
         });
 
-        // 復原原始的 sort 寫法，避免 Firebase Index 報錯
         db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push(l.data()));
@@ -392,7 +400,7 @@
         if(!canApprove) document.getElementById('settingBtn').style.display = 'none';
     }
 
-    // 7. Modal 操作 (保留原汁原味)
+    // 7. Modal 操作
     window.openModal = async function(id, name) {
         selectedId = id;
         document.getElementById('targetName').innerText = `${id} ${name}`;
@@ -423,7 +431,6 @@
             }
         });
 
-        // 復原原始 sort
         if(unsubL) unsubL();
         unsubL = db.collection("point_logs").where("studentId", "==", id).onSnapshot(snap => {
             const box = document.getElementById('modalLogs'); box.innerHTML = "";
