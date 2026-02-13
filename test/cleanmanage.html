@@ -101,6 +101,7 @@
         if(saved) { me = JSON.parse(saved); document.getElementById('loginView').classList.remove('active'); document.getElementById('dashboardView').classList.add('active'); startApp(); }
     };
 
+    // 登入功能 (包含新舊密碼無縫轉換)
     async function doLogin() {
         let rawId = document.getElementById('loginId').value;
         if(!rawId) return;
@@ -112,18 +113,35 @@
             let doc = await db.collection("students").doc(id).get();
             if(!doc.exists && rawId.length > 2) { doc = await db.collection("students").doc(rawId).get(); if(doc.exists) id = rawId; }
 
-            if(doc.exists && doc.data().password === hashedInputPw) {
+            if(doc.exists) {
                 const data = doc.data();
-                if(data.status === 'pending') return alert("⏳ 您的帳號正在等待導師審核。");
-                if(data.forceReset === true) {
-                    localStorage.setItem('tempResetId', id);
-                    document.getElementById('loginView').classList.remove('active'); document.getElementById('resetView').classList.add('active');
-                    return;
+                let isMatch = false;
+                
+                // 🔐 雙重比對機制：相容新舊密碼
+                if (data.password === hashedInputPw) {
+                    isMatch = true; // 加密密碼吻合
+                } else if (data.password === pw) {
+                    isMatch = true; // 發現舊版明碼密碼！
+                    // 背景自動升級：把資料庫裡的明碼更新成加密版
+                    await db.collection("students").doc(id).update({ password: hashedInputPw });
                 }
-                me = { id, ...data };
-                localStorage.setItem('classAppMe', JSON.stringify(me));
-                location.reload();
-            } else alert("登入失敗：座號或密碼錯誤");
+
+                if(isMatch) {
+                    if(data.status === 'pending') return alert("⏳ 您的帳號正在等待導師審核。");
+                    if(data.forceReset === true) {
+                        localStorage.setItem('tempResetId', id);
+                        document.getElementById('loginView').classList.remove('active'); document.getElementById('resetView').classList.add('active');
+                        return;
+                    }
+                    me = { id, ...data };
+                    localStorage.setItem('classAppMe', JSON.stringify(me));
+                    location.reload();
+                } else {
+                    alert("登入失敗：座號或密碼錯誤");
+                }
+            } else {
+                alert("登入失敗：找不到此帳號");
+            }
         } catch(e) { alert("錯誤：" + e.message); }
     }
 
