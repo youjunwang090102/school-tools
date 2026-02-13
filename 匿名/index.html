@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>班級匿名許願池</title>
+    <title>班級匿名許願池 (安全同步版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -129,8 +129,8 @@
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <h3>管理員登入</h3>
-            <input type="number" id="adminUser" placeholder="管理員座號">
-            <input type="password" id="adminPass" placeholder="管理密碼">
+            <input type="number" id="adminUser" autocomplete="username" placeholder="管理員座號">
+            <input type="password" id="adminPass" autocomplete="current-password" placeholder="管理密碼">
             <button class="login-btn" onclick="doAdminLogin()">登入</button>
             <button class="nav-btn" style="margin-top:10px; font-size:14px; color:var(--meta-text);" onclick="closeModal()">取消</button>
         </div>
@@ -151,6 +151,20 @@
 
         let isAdmin = false;
         let currentIP = "正在獲取...";
+
+        // --- 安全防護工具 (與主系統同步) ---
+        async function hashPassword(password) {
+            try {
+                if (!crypto || !crypto.subtle) return password;
+                const msgBuffer = new TextEncoder().encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) { return password; }
+        }
+
+        function escapeHtml(t) {
+            return t ? String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;") : "";
+        }
 
         // 2. 初始化功能
         async function init() {
@@ -190,8 +204,8 @@
                     
                     const adminHtml = isAdmin ? `
                         <div class="admin-box">
-                            <b>IP:</b> ${data.ip || '無紀錄'}<br>
-                            <b>裝置:</b> ${data.device || '無紀錄'}<br>
+                            <b>IP:</b> ${escapeHtml(data.ip) || '無紀錄'}<br>
+                            <b>裝置:</b> ${escapeHtml(data.device) || '無紀錄'}<br>
                         </div>
                         <div class="admin-actions">
                             <span class="adm-link adm-pin" onclick="togglePin('${id}', ${data.isPinned})">${data.isPinned?'取消置頂':'置頂'}</span>
@@ -220,7 +234,6 @@
                 normalList.scrollTop = normalList.scrollHeight; // 自動捲動到底部
             }, err => {
                 console.error("讀取失敗:", err);
-                // 如果報錯，通常是規則問題，或是 Firebase Config 錯誤
             });
         }
 
@@ -254,21 +267,53 @@
         function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
 
+        // --- 同步升級的管理員登入邏輯 ---
         async function doAdminLogin() {
             const user = document.getElementById('adminUser').value.padStart(2, '0');
-            const pass = document.getElementById('adminPass').value;
+            const passInput = document.getElementById('adminPass').value;
+            
+            if (!user || !passInput) return alert("請輸入管理員座號與密碼");
+
+            const hashedInputPw = await hashPassword(passInput);
+
             try {
                 const doc = await db.collection("students").doc(user).get();
                 if (doc.exists) {
                     const data = doc.data();
-                    if (data.password === pass && (data.role === 'teacher' || data.role === 'admin')) {
+                    
+                    // 檢查權限：只有導師或管理員可以登入
+                    if (data.role !== 'teacher' && data.role !== 'admin') {
+                        return alert("權限不足，您不具有管理員資格");
+                    }
+
+                    let isMatch = false;
+                    const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                    // 🛡️ 雙重比對與阻擋 Pass-the-Hash
+                    if (isDbPasswordHashed) {
+                        if (data.password === hashedInputPw) isMatch = true;
+                    } else {
+                        if (data.password === passInput) {
+                            isMatch = true;
+                            // 若管理員還在用舊密碼，背景自動幫他升級
+                            await db.collection("students").doc(user).update({ password: hashedInputPw });
+                        }
+                    }
+
+                    if (isMatch) {
                         isAdmin = true;
                         alert("登入成功，管理權限已開啟");
                         closeModal();
-                        listenToMessages(); // 刷新顯示
-                    } else { alert("權限不足或密碼錯誤"); }
-                } else { alert("帳號不存在"); }
-            } catch (e) { alert("連線錯誤：請確認 Rules 中 students 集合是否開放 read"); }
+                        listenToMessages(); // 刷新顯示，讓刪除與置頂按鈕跑出來
+                    } else { 
+                        alert("密碼錯誤"); 
+                    }
+                } else { 
+                    alert("管理員帳號不存在"); 
+                }
+            } catch (e) { 
+                alert("連線錯誤：請確認 Rules 中 students 集合是否開放 read"); 
+            }
         }
 
         async function react(docId, type) {
@@ -300,10 +345,6 @@
             const isDark = document.body.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             document.getElementById('themeBtn').innerText = isDark ? '☀️' : '🌑';
-        }
-
-        function escapeHtml(t) {
-            return t ? t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") : "";
         }
 
         init();
