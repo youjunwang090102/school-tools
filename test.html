@@ -3,611 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 Ultimate v4.0</title>
+    <title>班級數位平台 Authority v4.5</title>
 
     <meta name="theme-color" id="meta-theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
-        /* * 🎨 CSS 權威核心 (The Authority Core CSS)
-         * 設計理念：Tech-Zen (科技禪)
-         * 特性：變數驅動、全息玻璃、物理回饋
-         */
         :root {
-            /* --- 使用者可自定義的變數 (Dynamic Variables) --- */
-            --hue: 220; /* 基礎色相 (藍) */
-            --sat: 90%; /* 飽和度 */
-            --blur-strength: 20px; /* 玻璃模糊度 */
-            --font-scale: 1; /* 字體縮放 */
-
-            /* --- 衍生色票 (Derived Palette) --- */
-            --primary: hsl(var(--hue), var(--sat), 60%);
-            --primary-glow: hsl(var(--hue), 100%, 75%);
-            --primary-dim: hsla(var(--hue), var(--sat), 60%, 0.1);
+            /* --- 核心控制變數 --- */
+            --hue: 220;
+            --sat: 90%;
+            --blur-strength: 15px;
+            --font-scale: 1;
+            --font-weight: 500;
+            --card-gap: 20px;
             
+            /* --- 動態色彩系統 --- */
+            --primary: hsl(var(--hue), var(--sat), 60%);
+            --primary-glow: hsla(var(--hue), var(--sat), 60%, 0.3);
             --bg-deep: #0f172a;
             --bg-surface: #1e293b;
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
-            
             --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shine: rgba(255, 255, 255, 0.05);
-
-            --ease-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
-            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --glass-border: rgba(255, 255, 255, 0.08);
             
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
-            --header-h: 70px;
         }
 
-        /* 淺色模式覆寫 (Light Mode Overrides) */
         [data-theme="light"] {
-            --bg-deep: #f0f4f8;
+            --bg-deep: #f1f5f9;
             --bg-surface: #ffffff;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --text-sub: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(0, 0, 0, 0.06);
-            --glass-shine: rgba(255, 255, 255, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.05);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
             margin: 0; padding: 0;
             background-color: var(--bg-deep);
             color: var(--text-main);
-            font-family: 'PingFang TC', 'SF Pro Display', system-ui, sans-serif;
+            font-family: 'PingFang TC', system-ui, sans-serif;
             font-size: calc(16px * var(--font-scale));
-            overflow: hidden; /* 由內部容器處理滾動 */
-            transition: background-color 0.5s var(--ease-smooth);
-            background-image: 
-                radial-gradient(circle at 10% 20%, hsla(var(--hue), 80%, 50%, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, hsla(calc(var(--hue) + 40), 80%, 50%, 0.15) 0%, transparent 40%);
+            font-weight: var(--font-weight);
+            overflow: hidden;
+            transition: background 0.4s;
         }
 
-        /* === ✨ UI 元件：全息玻璃 === */
-        .glass-panel {
+        /* --- 🎨 視覺組件：切換開關 --- */
+        .layout-switch {
             background: var(--glass-bg);
-            backdrop-filter: blur(var(--blur-strength));
-            -webkit-backdrop-filter: blur(var(--blur-strength));
             border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            display: flex; position: relative;
+            padding: 4px; gap: 4px;
+        }
+        .layout-switch .slider {
+            position: absolute; top: 4px; left: 4px;
+            width: calc(50% - 6px); height: calc(100% - 8px);
+            background: var(--primary); border-radius: 8px;
+            transition: transform 0.3s var(--ease-out-expo);
+            z-index: 1;
+        }
+        [data-layout="grid"] .layout-switch .slider { transform: translateX(100%); }
+        .switch-btn {
+            width: 40px; height: 32px; border: none; background: transparent;
+            color: var(--text-main); z-index: 2; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* === 📢 Banner === */
+        /* --- 📢 Banner --- */
         .system-banner {
             position: fixed; top: 0; width: 100%; z-index: 2000;
-            background: linear-gradient(90deg, var(--primary), hsla(var(--hue), 80%, 40%, 1));
-            color: #fff; font-size: 0.8rem; font-weight: 700;
-            text-align: center; padding: 6px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transform: translateY(0); transition: transform 0.3s;
+            background: var(--primary); color: white;
+            font-size: 13px; font-weight: 700; text-align: center; padding: 8px;
         }
-        .system-banner.hidden { transform: translateY(-100%); }
 
-        /* === 🧊 Header === */
         header {
-            position: fixed; top: 0; left: 0; right: 0;
-            height: var(--header-h); padding: 0 20px; margin-top: 25px; /* 避開 banner */
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 1000; transition: all 0.3s;
+            position: fixed; top: 40px; left: 0; right: 0;
+            height: 70px; padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center; z-index: 1000;
         }
-        header::after { /* 漸層遮罩，取代生硬的 border */
-            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
-        }
-        
-        .brand { display: flex; flex-direction: column; }
-        .brand h1 { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--text-main), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .brand span { font-size: 0.65rem; color: var(--text-sub); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+        .brand h1 { margin: 0; font-size: 22px; font-weight: 900; background: linear-gradient(to right, var(--text-main), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* === 🛠 工具列 (Tools) === */
-        .toolbar { display: flex; gap: 10px; }
-        .tool-btn {
-            width: 40px; height: 40px; border-radius: 12px; border: none;
-            background: var(--glass-bg); border: 1px solid var(--glass-border);
-            color: var(--text-main); display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s var(--ease-elastic);
-            position: relative; overflow: hidden;
-        }
-        .tool-btn:active { transform: scale(0.9); }
-        .tool-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 0 15px var(--primary-dim); }
-        
-        /* 漣漪特效 */
-        .ripple {
-            position: absolute; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0); animation: ripple 0.6s linear; pointer-events: none;
-        }
-        @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-
-        /* === 📺 主視窗 (Viewport) === */
-        .viewport-container {
-            position: absolute; top: calc(var(--header-h) + 30px); bottom: 80px; width: 100%;
-            overflow-x: auto; overflow-y: hidden;
-            display: flex; scroll-snap-type: x mandatory;
+        /* --- 📺 Viewport --- */
+        .viewport {
+            position: absolute; top: 110px; bottom: 100px; width: 100%;
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
             scrollbar-width: none;
         }
-        .viewport-container::-webkit-scrollbar { display: none; }
+        .viewport::-webkit-scrollbar { display: none; }
+        .page { flex: 0 0 100%; padding: 20px; overflow-y: auto; }
 
-        .page-section {
-            flex: 0 0 100%; width: 100%; height: 100%;
-            scroll-snap-align: start;
-            padding: 10px 20px 100px;
-            overflow-y: auto; opacity: 1; transition: opacity 0.3s;
+        .grid-system {
+            display: grid; gap: var(--card-gap); max-width: 1000px; margin: 0 auto;
+            transition: all 0.4s var(--ease-out-expo);
         }
-        /* 滾動時微淡出效果 */
-        .viewport-container.scrolling .page-section { opacity: 0.5; pointer-events: none; }
+        [data-layout="list"] .grid-system { grid-template-columns: 1fr; }
+        [data-layout="grid"] .grid-system { grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
-        /* === 🃏 智能卡片 (Smart Cards) === */
-        .grid-engine {
-            display: grid; gap: 20px;
-            width: 100%; max-width: 1000px; margin: 0 auto;
-            transition: all 0.5s var(--ease-elastic);
+        .card {
+            background: var(--bg-surface); border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 20px; text-decoration: none;
+            display: flex; align-items: center; gap: 15px; color: inherit;
+            transition: transform 0.2s;
         }
-        
-        /* List Mode */
-        [data-layout="list"] .grid-engine { grid-template-columns: 1fr; }
-        [data-layout="list"] .grid-engine { grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); }
-        
-        /* Grid Mode */
-        [data-layout="grid"] .grid-engine { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        [data-layout="grid"] .smart-card .card-desc { display: none; }
-        [data-layout="grid"] .smart-card { flex-direction: column; aspect-ratio: 1/1; justify-content: center; padding: 10px; }
-        [data-layout="grid"] .card-icon { margin: 0 0 8px 0; width: 44px; height: 44px; font-size: 1.4rem; }
-        [data-layout="grid"] .card-title { font-size: 0.85rem; text-align: center; }
+        .card:active { transform: scale(0.96); }
+        [data-layout="grid"] .card { flex-direction: column; text-align: center; aspect-ratio: 1; justify-content: center; }
+        .card-icon { font-size: 28px; width: 50px; height: 50px; background: var(--primary-glow); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+        .card-info h2 { margin: 0; font-size: 17px; color: var(--text-main); }
+        .card-info p { margin: 4px 0 0; font-size: 12px; color: var(--text-sub); }
+        [data-layout="grid"] .card-info p { display: none; }
 
-        .smart-card {
-            position: relative; text-decoration: none;
-            background: var(--bg-surface);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px; padding: 20px;
-            display: flex; align-items: center; gap: 18px;
-            transition: transform 0.1s, box-shadow 0.3s;
-            transform-style: preserve-3d; /* 3D 效果關鍵 */
-            perspective: 1000px;
+        /* --- 🧭 Dock (Fixed Overflow) --- */
+        .dock-wrap {
+            position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%;
+            transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 3000;
         }
-        /* 3D 高光層 */
-        .smart-card::before {
-            content: ''; position: absolute; inset: 0; border-radius: 24px;
-            background: linear-gradient(120deg, transparent 20%, var(--glass-shine) 50%, transparent 80%);
-            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        .dock {
+            display: flex; background: var(--glass-bg); backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px); border-radius: 100px;
+            padding: 6px; border: 1px solid var(--glass-border);
+            position: relative; overflow: hidden; /* 確保指示器不溢出 */
         }
-        .smart-card:hover::before { opacity: 1; }
-        
-        .card-icon {
-            width: 54px; height: 54px; border-radius: 16px;
-            background: var(--primary-dim); color: var(--primary);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.6rem; transition: all 0.3s;
-            box-shadow: inset 0 0 0 1px rgba(var(--hue), 255, 255, 0.1);
-        }
-        
-        .card-text { flex: 1; }
-        .card-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
-        .card-desc { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-sub); }
-
-        /* === 🧭 懸浮導航 (Floating Dock) === */
-        .dock-container {
-            position: fixed; bottom: calc(15px + var(--safe-bottom)); left: 50%;
-            transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 4000;
-        }
-        .glass-dock {
-            display: flex; padding: 5px; border-radius: 100px;
-            background: var(--nav-bg); backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);
+        .dock-indicator {
+            position: absolute; top: 6px; bottom: 6px; left: 6px;
+            width: calc(25% - 3px); background: var(--primary);
+            border-radius: 100px; transition: transform 0.4s var(--ease-out-expo);
+            z-index: 0; box-shadow: 0 4px 15px var(--primary-glow);
         }
         .dock-item {
-            flex: 1; text-align: center; padding: 12px 0;
-            font-size: 0.9rem; font-weight: 600; color: var(--text-sub);
-            border-radius: 100px; cursor: pointer; position: relative;
-            transition: color 0.3s;
+            flex: 1; z-index: 1; text-align: center; padding: 12px 0;
+            font-size: 14px; font-weight: 700; color: var(--text-sub);
+            cursor: pointer; transition: color 0.3s;
         }
-        /* 導航選中指示器 (滑動膠囊) */
-        .dock-indicator {
-            position: absolute; top: 5px; bottom: 5px; left: 0; width: 25%;
-            background: var(--primary); border-radius: 100px;
-            z-index: -1; transition: transform 0.4s var(--ease-elastic);
-            box-shadow: 0 4px 12px var(--primary-dim);
-        }
-        .dock-item.active { color: #fff; }
+        .dock-item.active { color: white; }
 
-        /* === ⚙️ 控制中心抽屜 (Settings Drawer) === */
-        .drawer-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(5px); z-index: 5000;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        /* --- 🛗 滑動抽屜 (Bottom Sheet) --- */
+        .sheet-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 5000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
-        
-        .settings-drawer {
+        .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .bottom-sheet {
             position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--bg-deep);
-            border-top-left-radius: 30px; border-top-right-radius: 30px;
-            padding: 30px; transform: translateY(100%);
-            transition: transform 0.4s var(--ease-elastic);
+            background: var(--bg-deep); border-radius: 32px 32px 0 0;
+            padding: 20px 24px calc(30px + var(--safe-bottom));
+            transform: translateY(100%); will-change: transform;
+            transition: transform 0.5s var(--ease-out-expo);
             border-top: 1px solid var(--glass-border);
+            max-height: 90vh; overflow-y: auto;
         }
-        .drawer-overlay.open .settings-drawer { transform: translateY(0); }
-
-        .drawer-handle {
-            width: 40px; height: 5px; background: var(--text-sub); opacity: 0.3;
-            border-radius: 10px; margin: -10px auto 20px;
-        }
-
-        .setting-group { margin-bottom: 25px; }
-        .setting-label { display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px; }
+        .sheet-overlay.active .bottom-sheet { transform: translateY(0); }
         
-        /* 炫彩滑桿 */
+        .sheet-handle-area {
+            width: 100%; height: 30px; display: flex; 
+            justify-content: center; align-items: center; margin-top: -10px;
+            cursor: grab;
+        }
+        .sheet-handle { width: 40px; height: 5px; background: var(--text-sub); opacity: 0.3; border-radius: 10px; }
+
+        /* --- ⚙️ 設定選項樣式 --- */
+        .setting-row { margin-bottom: 24px; }
+        .setting-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .setting-header label { font-size: 14px; font-weight: 700; color: var(--text-main); }
+        .setting-header span { font-size: 12px; color: var(--primary); font-family: monospace; }
+        
         input[type="range"] {
-            width: 100%; appearance: none; height: 6px; border-radius: 10px;
-            background: var(--bg-surface); outline: none;
+            width: 100%; appearance: none; background: var(--bg-surface);
+            height: 6px; border-radius: 10px; outline: none;
         }
         input[type="range"]::-webkit-slider-thumb {
-            appearance: none; width: 22px; height: 22px; border-radius: 50%;
-            background: var(--primary); border: 2px solid #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer;
-            transition: transform 0.1s;
+            appearance: none; width: 20px; height: 20px; border-radius: 50%;
+            background: var(--primary); border: 3px solid var(--bg-deep); box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); }
 
-        /* === 🍞 Toast 通知 === */
-        .toast-container {
-            position: fixed; top: 110px; left: 50%; transform: translateX(-50%);
-            z-index: 6000; pointer-events: none;
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .action-btn {
+            background: var(--bg-surface); border: 1px solid var(--glass-border);
+            color: var(--text-main); padding: 12px; border-radius: 15px;
+            font-weight: 700; cursor: pointer;
         }
-        .toast {
-            background: var(--bg-surface); color: var(--text-main);
-            padding: 10px 20px; border-radius: 50px;
-            font-size: 0.9rem; font-weight: 600;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 8px;
-            border: 1px solid var(--glass-border);
-            margin-bottom: 10px;
-            animation: toastIn 0.4s var(--ease-elastic);
-        }
-        @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .action-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* SVG Icons */
-        svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 </head>
 <body data-layout="list" data-theme="dark">
 
-    <div class="system-banner" id="sys-banner">
-        🚀 許願池系統負載較高，請稍候再試。
-    </div>
+    <div class="system-banner" id="ui-banner">許願池系統負載較高，請節省頻率。</div>
 
-    <header class="glass-panel" style="background:transparent; border:none; box-shadow:none;">
+    <header>
         <div class="brand">
             <h1>班級數位平台</h1>
-            <span>DIGITAL HUB v4.0</span>
+            <p style="margin:0; font-size:10px; color:var(--text-sub); font-weight:800; letter-spacing:1px;">AUTHORITY EDITION V4.5</p>
         </div>
-        <div class="toolbar">
-            <button class="tool-btn" id="btn-layout" onclick="SysCore.toggleLayout()">
-                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            </button>
-            <button class="tool-btn" onclick="SysCore.toggleSettings(true)">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </button>
-            <button class="tool-btn" onclick="SysCore.showAbout()">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </button>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div class="layout-switch">
+                <div class="slider" id="layout-slider"></div>
+                <button class="switch-btn" onclick="UI.setLayout('list')">
+                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                </button>
+                <button class="switch-btn" onclick="UI.setLayout('grid')">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                </button>
+            </div>
+            <button class="action-btn" style="width:42px; height:42px; padding:0; border-radius:50%;" onclick="UI.openSheet('settings')">⚙️</button>
+            <button class="action-btn" style="width:42px; height:42px; padding:0; border-radius:50%;" onclick="UI.openSheet('about')">ℹ️</button>
         </div>
     </header>
 
-    <main class="viewport-container" id="main-scroller">
-        
-        <section class="page-section">
-            <div class="grid-engine">
-                <a href="行事曆/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">📅</div>
-                    <div class="card-text"><h2 class="card-title">班級行事曆</h2><p class="card-desc">掌握考程與重要活動不漏接</p></div>
-                </a>
-                <a href="countdown/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">⏳</div>
-                    <div class="card-text"><h2 class="card-title">考程倒數</h2><p class="card-desc">距離段考與統測還有多久？</p></div>
-                </a>
-                <a href="homework/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">📒</div>
-                    <div class="card-text"><h2 class="card-title">作業待辦</h2><p class="card-desc">即時查看作業清單與繳交期限</p></div>
-                </a>
+    <main class="viewport" id="scroller">
+        <section class="page">
+            <div class="grid-system">
+                <a href="行事曆/index.html" class="card"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
+                <a href="countdown/index.html" class="card"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
+                <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>小老師新增作業 同學即時查看</p></div></a>
             </div>
         </section>
-
-        <section class="page-section">
-            <div class="grid-engine">
-                <a href="help/student.html" class="smart-card" data-tilt>
-                    <div class="card-icon">🌱</div>
-                    <div class="card-text"><h2 class="card-title">匿名求助</h2><p class="card-desc">向導師傳送匿名訊息求助</p></div>
-                </a>
-                <a href="unknownmail/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">✉️</div>
-                    <div class="card-text"><h2 class="card-title">匿名信箱</h2><p class="card-desc">溫馨提醒同學，避免尷尬</p></div>
-                </a>
-                <a href="匿名/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">✨</div>
-                    <div class="card-text"><h2 class="card-title">許願池</h2><p class="card-desc">讓班級變得更美好的點子</p></div>
-                </a>
-                <a href="board/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">💬</div>
-                    <div class="card-text"><h2 class="card-title">留言板</h2><p class="card-desc">實名留下你想對大家說的話</p></div>
-                </a>
+        <section class="page">
+            <div class="grid-system">
+                <a href="help/student.html" class="card"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>匿名求助導師</p></div></a>
+                <a href="unknownmail/index.html" class="card"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學</p></div></a>
+                <a href="匿名/index.html" class="card"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
+                <a href="board/index.html" class="card"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>實名留下想說的話</p></div></a>
             </div>
         </section>
-
-        <section class="page-section">
-            <div class="grid-engine">
-                <a href="cleaning/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">🧹</div>
-                    <div class="card-text"><h2 class="card-title">打掃勤務</h2><p class="card-desc">掃區配置與未掃登記點數</p></div>
-                </a>
-                <a href="seating/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">🪑</div>
-                    <div class="card-text"><h2 class="card-title">選位系統</h2><p class="card-desc">刺激的隨機選位與座位表生成</p></div>
-                </a>
-                <a href="vote/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">🗳️</div>
-                    <div class="card-text"><h2 class="card-title">數位投票</h2><p class="card-desc">公平、即時的班級事務表決</p></div>
-                </a>
-                <a href="grouping/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">🎲</div>
-                    <div class="card-text"><h2 class="card-title">隨機分組</h2><p class="card-desc">演算法輔助的快速分組</p></div>
-                </a>
+        <section class="page">
+            <div class="grid-system">
+                <a href="cleaning/index.html" class="card"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看自己掃區與點數</p></div></a>
+                <a href="seating/index.html" class="card"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>隨機選位 即時生成座位表</p></div></a>
+                <a href="vote/index.html" class="card"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
+                <a href="grouping/index.html" class="card"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組方式</p></div></a>
             </div>
         </section>
-
-        <section class="page-section">
-            <div class="grid-engine">
-                <a href="exam_calc/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">📝</div>
-                    <div class="card-text"><h2 class="card-title">段考計算機</h2><p class="card-desc">計算加權平均與預測總分</p></div>
-                </a>
-                <a href="final_calc/index.html" class="smart-card" data-tilt>
-                    <div class="card-icon">📈</div>
-                    <div class="card-text"><h2 class="card-title">學期結算</h2><p class="card-desc">學分試算：通過、補考與重修</p></div>
-                </a>
+        <section class="page">
+            <div class="grid-system">
+                <a href="exam_calc/index.html" class="card"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算加權平均與總分</p></div></a>
+                <a href="final_calc/index.html" class="card"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>判斷通過、補考、死當</p></div></a>
             </div>
         </section>
     </main>
 
-    <nav class="dock-container">
-        <div class="glass-dock">
-            <div class="dock-indicator" id="dock-highlight"></div>
-            <div class="dock-item active" onclick="SysCore.navTo(0)">提醒</div>
-            <div class="dock-item" onclick="SysCore.navTo(1)">互動</div>
-            <div class="dock-item" onclick="SysCore.navTo(2)">班務</div>
-            <div class="dock-item" onclick="SysCore.navTo(3)">成績</div>
+    <nav class="dock-wrap">
+        <div class="dock">
+            <div class="dock-indicator" id="nav-indicator"></div>
+            <div class="dock-item active" onclick="UI.navTo(0)">提醒</div>
+            <div class="dock-item" onclick="UI.navTo(1)">互動</div>
+            <div class="dock-item" onclick="UI.navTo(2)">班務</div>
+            <div class="dock-item" onclick="UI.navTo(3)">成績</div>
         </div>
     </nav>
 
-    <div class="drawer-overlay" id="settings-overlay" onclick="if(event.target===this) SysCore.toggleSettings(false)">
-        <div class="settings-drawer">
-            <div class="drawer-handle"></div>
-            <h3 style="margin-top:0;">個人化控制台</h3>
+    <div class="sheet-overlay" id="overlay-settings" onclick="UI.closeSheet('settings')">
+        <div class="bottom-sheet" id="sheet-settings" onclick="event.stopPropagation()">
+            <div class="sheet-handle-area" id="handle-settings"><div class="sheet-handle"></div></div>
+            <h2 style="margin-top:0;">個人化控制台</h2>
             
-            <div class="setting-group">
-                <label class="setting-label">主題色調 (Theme Hue)</label>
-                <input type="range" min="0" max="360" value="220" id="range-hue" oninput="SysCore.updateThemeVar('--hue', this.value)">
-            </div>
-            
-            <div class="setting-group">
-                <label class="setting-label">玻璃模糊度 (Glass Blur)</label>
-                <input type="range" min="0" max="40" value="20" id="range-blur" oninput="SysCore.updateThemeVar('--blur-strength', this.value + 'px')">
+            <div class="setting-row">
+                <div class="setting-header"><label>主題色調 Hue</label><span id="val-hue">220</span></div>
+                <input type="range" min="0" max="360" value="220" oninput="UI.setVar('--hue', this.value); UI.setEl('val-hue', this.value)">
             </div>
 
-            <div class="setting-group" style="display:flex; justify-content:space-between; align-items:center;">
-                <label class="setting-label" style="margin:0">深色模式</label>
-                <button class="tool-btn" id="btn-theme-toggle" onclick="SysCore.toggleDarkMode()" style="width:50px;">🌙</button>
+            <div class="setting-row">
+                <div class="setting-header"><label>顏色飽和度 Saturation</label><span id="val-sat">90%</span></div>
+                <input type="range" min="0" max="100" value="90" oninput="UI.setVar('--sat', this.value+'%'); UI.setEl('val-sat', this.value+'%')">
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-header"><label>介面縮放 Scale</label><span id="val-scale">1.0</span></div>
+                <input type="range" min="0.8" max="1.2" step="0.05" value="1.0" oninput="UI.setVar('--font-scale', this.value); UI.setEl('val-scale', this.value)">
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-header"><label>卡片間距 Gap</label><span id="val-gap">20px</span></div>
+                <input type="range" min="10" max="40" value="20" oninput="UI.setVar('--card-gap', this.value+'px'); UI.setEl('val-gap', this.value+'px')">
+            </div>
+
+            <div class="setting-row">
+                <label class="setting-label">顯示模式</label>
+                <div class="btn-grid" style="margin-top:10px;">
+                    <button class="action-btn active" id="mode-dark" onclick="UI.setTheme('dark')">深色科技</button>
+                    <button class="action-btn" id="mode-light" onclick="UI.setTheme('light')">純淨淺色</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="drawer-overlay" id="about-overlay" onclick="if(event.target===this) SysCore.closeAbout()">
-        <div class="settings-drawer" style="text-align:center;">
-            <div class="drawer-handle"></div>
-            <div class="card-icon" style="margin:0 auto 15px; border-radius:50%;">👨‍💻</div>
-            <h3 style="margin:0;">王宥鈞</h3>
-            <p style="color:var(--text-sub); font-size:0.8rem;">Lead Developer</p>
-            <div style="margin:20px 0; padding:15px; background:var(--bg-surface); border-radius:15px; text-align:left; font-size:0.85rem; color:var(--text-sub);">
-                <strong>最新更新 v4.0 (Ultimate):</strong><br>
-                - 全新 Tech-Zen 設計語言<br>
-                - 3D 卡片物理傾斜引擎<br>
-                - 個人化色彩控制台<br>
-                - 修正了所有已知的滾動偏移 bug
+    <div class="sheet-overlay" id="overlay-about" onclick="UI.closeSheet('about')">
+        <div class="bottom-sheet" id="sheet-about" onclick="event.stopPropagation()">
+            <div class="sheet-handle-area" id="handle-about"><div class="sheet-handle"></div></div>
+            <div style="text-align:center;">
+                <div style="width:80px; height:80px; background:var(--primary); border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:32px; color:white; font-weight:900;">王</div>
+                <h2 style="margin:0;">王宥鈞</h2>
+                <p style="color:var(--text-sub);">Lead System Architect</p>
             </div>
-            <button class="tool-btn" style="width:100%; border-radius:30px; background:var(--primary); color:white;" onclick="SysCore.closeAbout()">關閉</button>
+            <div style="background:var(--bg-surface); padding:20px; border-radius:20px; margin-top:20px;">
+                <h4 style="margin-top:0;">系統更新日誌</h4>
+                <ul style="font-size:13px; color:var(--text-sub); padding-left:20px; line-height:1.8;">
+                    <li>導入物理引擎級別的滑動抽屜回饋。</li>
+                    <li>修復底部選單指示器邊界溢出 Bug。</li>
+                    <li>新增全面自定義參數：飽和度與間距。</li>
+                    <li>優化 SVG 渲染與深淺色切換穩定性。</li>
+                </ul>
+            </div>
+            <button class="action-btn" style="width:100%; margin-top:20px; background:var(--primary); color:white;" onclick="UI.closeSheet('about')">確認並返回</button>
         </div>
     </div>
-
-    <div class="toast-container" id="toast-area"></div>
 
     <script>
-        /**
-         * 🧠 SysCore: The Authority Logic Class
-         * 取代散亂的 function，改用單例模式管理
-         */
-        class SystemCore {
-            constructor() {
-                this.dom = {
-                    scroller: document.getElementById('main-scroller'),
-                    dockHighlight: document.getElementById('dock-highlight'),
-                    dockItems: document.querySelectorAll('.dock-item'),
-                    root: document.documentElement
-                };
-                
-                this.state = {
-                    pageIndex: parseInt(localStorage.getItem('pageIdx')) || 0,
-                    layout: localStorage.getItem('layout') || 'list',
-                    hue: localStorage.getItem('hue') || 220,
-                    isDark: localStorage.getItem('theme') !== 'light' // 預設 Dark
-                };
-
-                this.init();
-            }
+        const UI = {
+            state: {
+                page: localStorage.getItem('p') || 0,
+                layout: localStorage.getItem('l') || 'list',
+                theme: localStorage.getItem('t') || 'dark',
+                sheetY: 0,
+                isDragging: false
+            },
 
             init() {
-                // 1. 恢復狀態
-                this.applyTheme();
-                this.dom.root.setAttribute('data-layout', this.state.layout);
-                document.getElementById('range-hue').value = this.state.hue;
-
-                // 2. 初始化滾動監聽 (使用防抖)
-                let scrollTimeout;
-                this.dom.scroller.addEventListener('scroll', () => {
-                    this.dom.scroller.classList.add('scrolling');
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(() => {
-                        this.dom.scroller.classList.remove('scrolling');
-                        this.updatePageIndex();
-                    }, 50);
+                this.setLayout(this.state.layout);
+                this.setTheme(this.state.theme);
+                this.navTo(this.state.page, 'auto');
+                
+                // 監聽滾動更新選單
+                const scroller = document.getElementById('scroller');
+                scroller.addEventListener('scroll', () => {
+                    const idx = Math.round(scroller.scrollLeft / scroller.offsetWidth);
+                    if(idx !== this.state.page) {
+                        this.state.page = idx;
+                        this.updateNav();
+                        localStorage.setItem('p', idx);
+                    }
                 }, { passive: true });
 
-                // 3. 綁定按鈕漣漪效果
-                document.querySelectorAll('.tool-btn, .smart-card, .dock-item').forEach(el => {
-                    el.addEventListener('click', this.createRipple);
+                // 初始化手勢
+                this.initGestures('settings');
+                this.initGestures('about');
+            },
+
+            setVar(key, val) { document.documentElement.style.setProperty(key, val); },
+            setEl(id, val) { document.getElementById(id).innerText = val; },
+
+            setLayout(mode) {
+                this.state.layout = mode;
+                document.body.setAttribute('data-layout', mode);
+                localStorage.setItem('l', mode);
+                // 確保切換後位置正確
+                setTimeout(() => this.navTo(this.state.page, 'auto'), 50);
+            },
+
+            setTheme(t) {
+                this.state.theme = t;
+                document.body.setAttribute('data-theme', t);
+                localStorage.setItem('t', t);
+                document.getElementById('mode-dark').classList.toggle('active', t==='dark');
+                document.getElementById('mode-light').classList.toggle('active', t==='light');
+                document.getElementById('meta-theme-color').content = t==='dark' ? '#0f172a' : '#f1f5f9';
+            },
+
+            navTo(idx, behavior = 'smooth') {
+                const s = document.getElementById('scroller');
+                s.scrollTo({ left: s.offsetWidth * idx, behavior });
+                this.state.page = idx;
+                this.updateNav();
+            },
+
+            updateNav() {
+                const indicator = document.getElementById('nav-indicator');
+                indicator.style.transform = `translateX(${this.state.page * 100}%)`;
+                document.querySelectorAll('.dock-item').forEach((el, i) => {
+                    el.classList.toggle('active', i == this.state.page);
                 });
+            },
 
-                // 4. 啟動 3D 卡片引擎
-                this.initTiltEffect();
+            openSheet(id) {
+                document.getElementById(`overlay-${id}`).classList.add('active');
+                document.getElementById(`sheet-${id}`).style.transform = `translateY(0)`;
+            },
 
-                // 5. 定位頁面
-                setTimeout(() => this.navTo(this.state.pageIndex, false), 100);
+            closeSheet(id) {
+                document.getElementById(`overlay-${id}`).classList.remove('active');
+                document.getElementById(`sheet-${id}`).style.transform = `translateY(100%)`;
+            },
+
+            // --- 🧊 物理手勢引擎 ---
+            initGestures(id) {
+                const sheet = document.getElementById(`sheet-${id}`);
+                const handle = document.getElementById(`handle-${id}`);
+                let startY = 0;
+                let currentY = 0;
+
+                const onStart = (e) => {
+                    startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                    this.isDragging = true;
+                    sheet.style.transition = 'none';
+                };
+
+                const onMove = (e) => {
+                    if (!this.isDragging) return;
+                    currentY = (e.type.includes('touch') ? e.touches[0].clientY : e.clientY) - startY;
+                    if (currentY < -50) currentY = -50 + currentY * 0.1; // 阻尼感
+                    sheet.style.transform = `translateY(${currentY}px)`;
+                };
+
+                const onEnd = () => {
+                    this.isDragging = false;
+                    sheet.style.transition = 'transform 0.5s cubic-bezier(0.19, 1, 0.22, 1)';
+                    if (currentY > 150) {
+                        this.closeSheet(id);
+                    } else {
+                        sheet.style.transform = `translateY(0)`;
+                    }
+                    currentY = 0;
+                };
+
+                handle.addEventListener('mousedown', onStart);
+                handle.addEventListener('touchstart', onStart, {passive:true});
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('touchmove', onMove, {passive:false});
+                window.addEventListener('mouseup', onEnd);
+                window.addEventListener('touchend', onEnd);
             }
+        };
 
-            // --- 導航邏輯 ---
-            navTo(index, smooth = true) {
-                const width = this.dom.scroller.offsetWidth;
-                this.dom.scroller.scrollTo({
-                    left: width * index,
-                    behavior: smooth ? 'smooth' : 'auto'
-                });
-                this.updateDock(index);
-                this.state.pageIndex = index;
-                localStorage.setItem('pageIdx', index);
-            }
-
-            updatePageIndex() {
-                const index = Math.round(this.dom.scroller.scrollLeft / this.dom.scroller.offsetWidth);
-                if (this.state.pageIndex !== index) {
-                    this.state.pageIndex = index;
-                    this.updateDock(index);
-                    localStorage.setItem('pageIdx', index);
-                }
-            }
-
-            updateDock(index) {
-                // 移動膠囊指示器
-                this.dom.dockHighlight.style.transform = `translateX(${index * 100}%)`;
-                this.dom.dockItems.forEach((item, i) => {
-                    item.classList.toggle('active', i === index);
-                });
-            }
-
-            // --- 視覺邏輯 ---
-            toggleLayout() {
-                this.state.layout = this.state.layout === 'list' ? 'grid' : 'list';
-                this.dom.root.setAttribute('data-layout', this.state.layout);
-                localStorage.setItem('layout', this.state.layout);
-                this.toast(`已切換至 ${this.state.layout === 'list' ? '列表' : '格狀'}檢視`);
-            }
-
-            toggleDarkMode() {
-                this.state.isDark = !this.state.isDark;
-                this.applyTheme();
-                localStorage.setItem('theme', this.state.isDark ? 'dark' : 'light');
-            }
-
-            applyTheme() {
-                this.dom.root.setAttribute('data-theme', this.state.isDark ? 'dark' : 'light');
-                this.dom.root.style.setProperty('--hue', this.state.hue);
-                document.getElementById('meta-theme-color').content = this.state.isDark ? '#0f172a' : '#f0f4f8';
-                document.getElementById('btn-theme-toggle').innerText = this.state.isDark ? '🌙' : '☀️';
-            }
-
-            updateThemeVar(cssVar, value) {
-                this.dom.root.style.setProperty(cssVar, value);
-                if (cssVar === '--hue') {
-                    this.state.hue = value;
-                    localStorage.setItem('hue', value);
-                }
-            }
-
-            toggleSettings(show) {
-                const overlay = document.getElementById('settings-overlay');
-                show ? overlay.classList.add('open') : overlay.classList.remove('open');
-            }
-
-            showAbout() { document.getElementById('about-overlay').classList.add('open'); }
-            closeAbout() { document.getElementById('about-overlay').classList.remove('open'); }
-
-            // --- 微互動特效 (Micro-interactions) ---
-            createRipple(e) {
-                const button = e.currentTarget;
-                const circle = document.createElement("span");
-                const diameter = Math.max(button.clientWidth, button.clientHeight);
-                const radius = diameter / 2;
-                
-                // 修正座標計算
-                const rect = button.getBoundingClientRect();
-                circle.style.width = circle.style.height = `${diameter}px`;
-                circle.style.left = `${e.clientX - rect.left - radius}px`;
-                circle.style.top = `${e.clientY - rect.top - radius}px`;
-                circle.classList.add("ripple");
-                
-                const existing = button.getElementsByClassName("ripple")[0];
-                if (existing) existing.remove();
-                
-                button.appendChild(circle);
-            }
-
-            initTiltEffect() {
-                // 簡單的 3D 傾斜效果 (僅在非觸控裝置或大螢幕啟用以節省效能)
-                if (window.matchMedia("(pointer: fine)").matches) {
-                    document.querySelectorAll('.smart-card').forEach(card => {
-                        card.addEventListener('mousemove', (e) => {
-                            const rect = card.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const y = e.clientY - rect.top;
-                            const centerX = rect.width / 2;
-                            const centerY = rect.height / 2;
-                            
-                            const rotateX = ((y - centerY) / centerY) * -5; // 限制角度
-                            const rotateY = ((x - centerX) / centerX) * 5;
-
-                            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-                        });
-
-                        card.addEventListener('mouseleave', () => {
-                            card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
-                        });
-                    });
-                }
-            }
-
-            toast(msg) {
-                const container = document.getElementById('toast-area');
-                const el = document.createElement('div');
-                el.className = 'toast';
-                el.innerHTML = `<span>ℹ️</span> ${msg}`;
-                container.appendChild(el);
-                setTimeout(() => {
-                    el.style.opacity = '0';
-                    el.style.transform = 'translateY(-20px)';
-                    setTimeout(() => el.remove(), 300);
-                }, 2000);
-            }
-        }
-
-        // 🚀 啟動系統
-        const SysCore = new SystemCore();
+        window.onload = () => UI.init();
     </script>
 </body>
 </html>
