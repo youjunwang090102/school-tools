@@ -1,9 +1,11 @@
-<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級投票中心 - v2.1.1</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEXUS VOTE System | Pro Refined</title>
+    <title>NEXUS VOTE System  | Pro</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -12,18 +14,21 @@
     
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
-    <style>
+<style>
+        :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e74c3c; --bg: #f4f7fe; --text: #2b2d42; }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: 0 auto; min-height: 90vh; }
         /* --- 1. 全局變數與基礎設定 --- */
         :root {
             --bg-deep: #0b0c15;
-            --bg-panel: rgba(20, 24, 35, 0.75);
+            --bg-panel: rgba(20, 24, 35, 0.65);
             --bg-panel-solid: #141823;
-            --primary: #3b82f6;       
+            --primary: #3b82f6;      /* 專業藍 */
             --primary-glow: rgba(59, 130, 246, 0.4);
-            --accent: #10b981;        
-            --danger: #ef4444;        
+            --accent: #10b981;       /* 成功綠 */
+            --danger: #ef4444;       /* 警告紅 */
             --text-main: #f3f4f6;
-            --text-dim: #6b7280; /* 加深一點，讓 Placeholder 更明顯是灰色 */
+            --text-dim: #9ca3af;
             --border: rgba(255, 255, 255, 0.1);
             --font-ui: 'Rajdhani', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -32,16 +37,20 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+
+        /* 頁面卡片樣式 */
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .vote-entry { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; cursor: pointer; border: 1px solid #e2e8f0; position: relative; transition: transform 0.2s; }
+        .vote-entry:active { transform: scale(0.98); }
         body {
             margin: 0; padding: 0;
             background-color: var(--bg-deep);
             background-image: radial-gradient(circle at 50% 50%, #161b2c 0%, #0b0c15 100%);
             color: var(--text-main);
             font-family: var(--font-ui);
-            height: 100dvh; 
+            height: 100dvh; /* 鎖定視窗高度 */
             width: 100vw;
-            overflow: hidden; 
+            overflow: hidden; /* 禁止全頁捲動 */
             display: flex;
             flex-direction: column;
         }
@@ -49,26 +58,16 @@
         /* --- 2. 通用元件 --- */
         .full-h { height: 100%; display: flex; flex-direction: column; }
         .hidden { display: none !important; }
-        
-        /* 呼吸燈效果 */
+
+        /* 標籤樣式 */
+        .author-badge { position: absolute; top: 15px; right: 15px; font-size: 0.7rem; background: #eff6ff; color: #4361ee; padding: 3px 10px; border-radius: 6px; font-weight: bold; }
+        .timer-badge { background: #fee2e2; color: #dc2626; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; margin-top: 10px; display: inline-block; }
+        /* 呼吸燈效果 (微動畫) */
         .breathing { animation: breathe 4s ease-in-out infinite; }
         @keyframes breathe {
             0%, 100% { opacity: 0.8; text-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
             50% { opacity: 1; text-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
         }
-
-        /* 錯誤搖晃動畫 */
-        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger) !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important; }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
-
-        /* 列表過渡動畫 (Vue TransitionGroup) */
-        .list-enter-active, .list-leave-active { transition: all 0.3s ease; }
-        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-20px); }
 
         /* 玻璃擬態面板 */
         .glass-panel {
@@ -95,66 +94,66 @@
             transition: 0.2s;
             font-size: 0.9rem;
         }
-        input::placeholder { color: var(--text-dim); font-style: italic; opacity: 0.7; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); background: rgba(0,0,0,0.5); }
-        
+        input:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+
+        /* 彈窗基礎 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(4px); overflow-y: auto; }
+        .modal-content { width: 92%; max-width: 480px; margin: 40px auto; animation: modalUp 0.3s ease-out; }
+        @keyframes modalUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* 發布介面視覺化元件 */
+        .publish-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 18px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 0.9rem; }
+        .visual-input { width: 100%; padding: 12px 16px; border: 2px solid #f1f5f9; border-radius: 12px; box-sizing: border-box; font-size: 1rem; transition: all 0.3s; }
+        .visual-input:focus { border-color: var(--primary); outline: none; background: #fff; }
         button { cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         button:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
+
+        .opt-wrapper { display: flex; gap: 8px; margin-bottom: 10px; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         button.btn-danger:hover { background: var(--danger); border-color: var(--danger); }
         button.btn-success { border-color: var(--accent); color: var(--accent); }
         button.btn-success:hover { background: var(--accent); color: #000; }
-        button.btn-ghost { background: transparent; border: 1px dashed var(--text-dim); color: var(--text-dim); }
-        button.btn-ghost:hover { border-color: var(--primary); color: var(--primary); background: rgba(59,130,246,0.1); }
-        
+
+        .btn-add-opt { color: var(--primary); background: #f0f7ff; border: 2px dashed #bfdbfe; width: 100%; padding: 10px; border-radius: 12px; cursor: pointer; font-weight: 600; margin-bottom: 15px; }
+        /* 滾動條美化 (僅在必要區域出現) */
         .scrollable { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--primary) transparent; }
         .scrollable::-webkit-scrollbar { width: 4px; }
         .scrollable::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
 
-        /* --- 3. 佈局架構 --- */
+        /* --- 3. 佈局架構 (Grid System) --- */
         #app { width: 100%; height: 100%; display: flex; flex-direction: column; }
 
+        /* 頂部導航列 */
         .navbar {
             height: 60px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 20px;
             border-bottom: 1px solid var(--border);
             background: rgba(11, 12, 21, 0.9);
-            z-index: 10;
         }
         .brand { font-size: 1.4rem; font-weight: 700; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
         .brand span { font-family: var(--font-mono); font-size: 0.8rem; color: var(--primary); background: rgba(59,130,246,0.1); padding: 2px 6px; border-radius: 4px; }
 
+        /* 主畫面容器 */
         .main-container {
             flex: 1; 
             padding: var(--gap);
-            overflow: hidden;
-            position: relative;
+            overflow: hidden; /* 防止內部溢出導致整體捲動 */
         }
 
-        /* Toast 通知 */
-        .toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 300px; }
-        .toast { 
-            background: rgba(20, 20, 20, 0.95); border: 1px solid var(--border); border-left: 4px solid var(--primary);
-            padding: 12px 16px; border-radius: 4px; color: #fff; font-size: 0.9rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); pointer-events: auto;
-            display: flex; align-items: center; gap: 10px;
-            animation: slideIn 0.3s ease-out;
-        }
-        .toast.error { border-left-color: var(--danger); }
-        .toast.success { border-left-color: var(--accent); }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* Host 佈局 */
+        /* Host 儀表板佈局 (Desktop) */
         .host-grid {
             display: grid;
-            grid-template-columns: 350px 1fr 280px; /* 加寬控制區以便容納輸入框 */
+            grid-template-columns: 320px 1fr 280px; /* 左控台 | 中圖表 | 右數據 */
             grid-template-rows: 1fr;
             gap: var(--gap);
             height: 100%;
         }
 
+        /* Flex Column for inner panels */
         .panel-header {
             padding: 12px 16px; border-bottom: 1px solid var(--border);
             font-weight: 700; display: flex; justify-content: space-between; align-items: center;
@@ -163,8 +162,8 @@
         .panel-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
         /* 左側控制區 */
-        .control-group { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
-        .control-group label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
+        .control-group { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .control-group label { display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px; }
 
         /* 中間視覺區 */
         .visual-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; }
@@ -181,13 +180,21 @@
         .log-vote { border-left-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
         .log-err { border-left-color: var(--danger); color: var(--danger); }
 
-        /* --- 4. RWD & Mobile --- */
-        .mobile-dock { display: none; }
+        /* --- 4. 手機版適配 (Mobile / Portrait) --- */
+        /* 手機版使用 Tab 切換，不使用捲動 */
+        .mobile-dock { display: none; } /* Desktop 隱藏 */
 
         @media (max-width: 1024px) {
-            .host-grid { display: flex; flex-direction: column; height: calc(100% - 60px); }
+            .host-grid {
+                display: flex;
+                flex-direction: column;
+                height: calc(100% - 60px); /* 預留底部 Dock */
+            }
+            
+            /* 在手機上，同一時間只顯示一個 Panel */
             .host-panel-wrapper { display: none; height: 100%; }
             .host-panel-wrapper.active { display: flex; }
+
             .mobile-dock {
                 display: flex; height: 60px;
                 background: var(--bg-panel-solid);
@@ -204,18 +211,25 @@
             .dock-icon { font-size: 1.2rem; }
         }
 
-        /* Intro & Voter */
-        .intro-screen { display: flex; gap: 30px; justify-content: center; align-items: center; height: 100%; flex-wrap: wrap; }
+        /* Intro 畫面 */
+        .intro-screen {
+            display: flex; gap: 30px; justify-content: center; align-items: center; height: 100%;
+        }
         .role-card {
             width: 280px; height: 320px;
-            cursor: pointer; text-align: center; justify-content: center; align-items: center; gap: 20px;
+            cursor: pointer; text-align: center; justify-content: center; align-items: center;
+            gap: 20px;
             transition: transform 0.2s;
         }
         .role-card:hover { transform: translateY(-5px); border-color: var(--primary); }
         .role-icon { font-size: 4rem; color: var(--text-dim); transition: 0.3s; }
         .role-card:hover .role-icon { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
 
-        .voter-wrapper { max-width: 500px; width: 100%; margin: 0 auto; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+        /* Voter 畫面 */
+        .voter-wrapper {
+            max-width: 500px; width: 100%; margin: 0 auto;
+            height: 100%; display: flex; flex-direction: column; justify-content: center;
+        }
         .option-btn {
             width: 100%; padding: 18px; margin-bottom: 12px;
             text-align: left; background: rgba(255,255,255,0.05);
@@ -226,33 +240,81 @@
             background: var(--primary); color: #fff; border-color: var(--primary);
             box-shadow: 0 0 15px var(--primary-glow);
         }
+
+        /* 切換鈕開關 */
+        .switch-container { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 16px; border-radius: 14px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .btn-submit:active { transform: scale(0.97); opacity: 0.9; }
+
+        .captcha-box { background: #334155; color: white; padding: 6px 15px; font-family: monospace; border-radius: 6px; letter-spacing: 3px; }
+        .footer-secret { margin-top: 60px; padding: 30px; text-align: center; color: #cbd5e1; font-size: 0.75rem; user-select: none; }
+        /* QR Code 容器 */
         #qrcode { background: #fff; padding: 10px; border-radius: 4px; width: fit-content; margin: 0 auto; }
-    </style>
+</style>
 </head>
 <body>
 
-<div id="app">
-    <div class="toast-container">
-        <div v-for="toast in toasts" :key="toast.id" class="toast" :class="toast.type">
-            <span>{{ toast.icon }}</span> {{ toast.msg }}
-        </div>
+<div class="container">
+    <div style="text-align: center; margin: 40px 0;">
+        <h1 style="margin-bottom: 8px; font-size: 1.8rem;">🏫 班級投票系統</h1>
+        <p style="color: #64748b; margin-bottom: 30px;">Version 2026 Stable</p>
+        <button class="btn-submit" style="width: auto; padding: 12px 40px;" onclick="openModal('loginModal')">幹部發起投票</button>
     </div>
+    
+    <div id="voteList">投票清單讀取中...</div>
 
+    <div class="footer-secret" onclick="handleSecretClick()">
+        &copy; 2026 High School Class Services <br>
+        Designed By 王宥鈞
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content"><div class="publish-card">
+        <h3 style="text-align:center; margin-top:0;">身分驗證</h3>
+        <div class="input-group">
+            <label>選擇職稱</label>
+            <select id="userRole" class="visual-input">
+                <option value="導師">導師</option><option value="班長">班長</option>
+                <option value="副班長">副班長</option><option value="學藝股長">學藝股長</option>
+                <option value="資訊股長">資訊股長</option><option value="管理員">管理員</option>
+            </select>
+<div id="app">
     <nav class="navbar">
         <div class="brand">
             NEXUS VOTE <span class="breathing">PRO</span>
-        </div>
+</div>
+        <div class="input-group">
+            <label>驗證金鑰</label>
+            <input type="password" id="userPwd" class="visual-input" placeholder="請輸入對應密碼">
         <div v-if="view !== 'intro'" style="display:flex; gap:10px; align-items: center;">
             <div v-if="isConnected" style="color: var(--accent); font-size: 0.8rem; display:flex; align-items:center; gap:5px;">
                 <div style="width:8px; height:8px; background:var(--accent); border-radius:50%; box-shadow: 0 0 8px var(--accent);"></div>
                 ONLINE
             </div>
             <button v-if="view === 'host'" @click="copyLink" style="font-size:0.8rem; padding: 6px 10px;">ID: {{ myId }} (複製)</button>
-        </div>
+</div>
+        <button class="btn-submit" onclick="verifyLogin()">驗證並進入</button>
+        <button onclick="closeModal('loginModal')" style="width:100%; border:none; background:none; margin-top:15px; color:#94a3b8; cursor:pointer;">取消</button>
+    </div></div>
+</div>
     </nav>
 
+<div id="publishModal" class="modal">
+    <div class="modal-content"><div class="publish-card">
+        <h2 style="margin-top:0; font-size:1.4rem;">📝 發起新投票</h2>
     <main class="main-container">
-        
+
+        <div class="input-group">
+            <label>主題</label>
+            <input type="text" id="newTitle" class="visual-input" placeholder="例如：班服顏色最終投票">
         <div v-if="view === 'intro'" class="intro-screen">
             <div class="glass-panel role-card" @click="initHost">
                 <div class="role-icon">⬢</div>
@@ -264,17 +326,27 @@
                 <h2>加入投票</h2>
                 <p style="color:var(--text-dim)">我是參與者 (VOTER)</p>
             </div>
-        </div>
+</div>
 
+        <div class="input-group">
+            <label>投票選項</label>
+            <div id="optionsContainer">
+                <div class="opt-wrapper"><input type="text" class="opt-input visual-input" placeholder="選項 1"></div>
+                <div class="opt-wrapper"><input type="text" class="opt-input visual-input" placeholder="選項 2"></div>
         <div v-if="view === 'voter-login'" class="voter-wrapper">
             <div class="glass-panel" style="padding: 30px; text-align: center;">
                 <h3>輸入 4 碼投票 ID</h3>
                 <input v-model="targetId" maxlength="4" placeholder="例如: A1B2" style="font-size: 2rem; text-align: center; letter-spacing: 5px; text-transform: uppercase; margin: 20px 0; width: 100%;">
-                <button class="btn-success" @click="connectToHost(targetId)" style="padding: 15px; width:100%">連線參加</button>
-                <button @click="view = 'intro'" style="margin-top: 15px; background: transparent; border: none; color: var(--text-dim);">返回</button>
-            </div>
-        </div>
+                <button class="btn-success" @click="connectToHost(targetId)" style="padding: 15px;">連線參加</button>
+                <button @click="view = 'intro'" style="margin-top: 10px; background: transparent; border: none; color: var(--text-dim);">返回</button>
+</div>
+            <button class="btn-add-opt" onclick="addOption()">＋ 增加選項</button>
+</div>
 
+        <div class="input-group">
+            <label>截止時間</label>
+            <input type="datetime-local" id="endTime" class="visual-input">
+        </div>
         <div v-if="view === 'host'" class="host-grid">
             
             <div class="glass-panel host-panel-wrapper" :class="{ active: activeTab === 'control' }">
@@ -289,44 +361,29 @@
                     <div v-if="pollStatus === 'idle'">
                         <div class="control-group">
                             <label>投票主題</label>
-                            <input v-model="pollData.title" 
-                                   :class="{ shake: errors.title }"
-                                   @input="errors.title = false"
-                                   placeholder="請輸入投票主題..." 
-                                   style="width: 100%;">
+                            <input v-model="pollData.title" placeholder="請輸入主題..." style="width: 100%;">
                         </div>
                         <div class="control-group">
                             <label>倒數時間 (秒)</label>
-                            <input type="number" v-model.number="pollData.duration" style="width: 100%;" min="10">
+                            <input type="number" v-model.number="pollData.duration" style="width: 100%;">
                         </div>
                         <div class="control-group">
-                            <label>選項配置 (至少 2 項)</label>
-                            <transition-group name="list" tag="div">
-                                <div v-for="(opt, idx) in pollData.options" :key="idx" style="display:flex; gap:5px; margin-bottom:8px;">
-                                    <input v-model="pollData.options[idx]" 
-                                           :placeholder="'選項 ' + (idx + 1)" 
-                                           :ref="el => { if(el) optionInputs[idx] = el }"
-                                           :class="{ shake: errors.options }"
-                                           @input="errors.options = false"
-                                           style="flex:1">
-                                    <button v-if="pollData.options.length > 2" class="btn-danger" @click="removeOption(idx)" style="padding: 0 10px;">×</button>
-                                </div>
-                            </transition-group>
-                            <button class="btn-ghost" @click="addOption" style="width: 100%; margin-top:5px;">+ 新增選項</button>
+                            <label>選項配置</label>
+                            <div v-for="(opt, idx) in pollData.options" :key="idx" style="display:flex; gap:5px; margin-bottom:5px;">
+                                <input v-model="pollData.options[idx]" placeholder="選項內容">
+                                <button class="btn-danger" @click="removeOption(idx)" style="padding: 0 10px;">×</button>
+                            </div>
+                            <button @click="addOption" style="width: 100%; border-style: dashed; margin-top:5px;">+ 新增選項</button>
                         </div>
-                        <button class="btn-success" style="width: 100%; padding: 15px; margin-top: 10px;" @click="validateAndStart">啟動投票</button>
+                        <button class="btn-success" style="width: 100%; padding: 15px; margin-top: 10px;" @click="startPoll">啟動投票</button>
                     </div>
 
                     <div v-if="pollStatus === 'active'" style="text-align: center;">
                         <h3 class="breathing" style="color: var(--accent);">VOTING IN PROGRESS</h3>
-                        <p style="color:var(--text-dim); margin-bottom:20px;">投票進行中，請稍候...</p>
                         <button class="btn-danger" style="width: 100%; padding: 15px;" @click="stopPoll">停止投票 / 結算</button>
                     </div>
 
                     <div v-if="pollStatus === 'ended'">
-                        <div style="text-align:center; padding:20px 0;">
-                            <h3 style="margin:0">投票已結束</h3>
-                        </div>
                         <button class="btn-success" style="width: 100%; margin-bottom: 10px;" @click="exportCSV">下載 CSV 報表</button>
                         <button style="width: 100%;" @click="resetPoll">重置下一輪</button>
                     </div>
@@ -345,6 +402,10 @@
                 </div>
             </div>
 
+        <div class="switch-container">
+            <div>
+                <div style="font-weight:600; color:#334155;">允許預覽結果</div>
+                <div style="font-size:0.75rem; color:#64748b;">關閉時，需投完票才能看比例</div>
             <div class="glass-panel host-panel-wrapper" :class="{ active: activeTab === 'data' }">
                 <div class="panel-header">系統日誌</div>
                 <div class="panel-body scrollable" ref="logContainer">
@@ -359,9 +420,17 @@
                         <span style="color:var(--primary)">{{ count }}</span>
                     </div>
                 </div>
-            </div>
-        </div>
+</div>
+            <label class="switch">
+                <input type="checkbox" id="allowPreviewToggle" checked>
+                <span class="slider"></span>
+            </label>
+</div>
 
+        <button class="btn-submit" onclick="submitNewVote()">🚀 確認發布投票</button>
+        <button onclick="closeModal('publishModal')" style="width:100%; border:none; background:none; margin-top:15px; color:#94a3b8; cursor:pointer;">取消並返回</button>
+    </div></div>
+</div>
         <div v-if="view === 'voter-active'" class="voter-wrapper">
             <div v-if="pollStatus === 'idle'" class="glass-panel" style="padding: 40px; text-align: center;">
                 <div class="breathing" style="font-size: 3rem; color: var(--accent);">●</div>
@@ -369,6 +438,20 @@
                 <p style="color: var(--text-dim);">請等待主持人發起投票...</p>
             </div>
 
+<div id="secretModal" class="modal">
+    <div class="modal-content"><div class="publish-card" style="border: 2px solid #1e293b;">
+        <h3 style="text-align:center; margin-top:0;">🛡️ 導師管理中心</h3>
+        <div class="input-group">
+            <label>管理金鑰</label>
+            <input type="password" id="adminKey" class="visual-input" placeholder="輸入 Master Key">
+        </div>
+        <div style="text-align:center; margin-bottom:15px;">
+            <span id="captchaCode" class="captcha-box">----</span>
+            <button onclick="genCaptcha()" style="background:none; border:none; color:var(--primary); font-size:0.7rem; cursor:pointer;">刷新</button>
+        </div>
+        <div class="input-group">
+            <label>動態驗證碼</label>
+            <input type="text" id="captchaInput" class="visual-input" placeholder="請輸入上方數字">
             <div v-if="pollStatus === 'active'" class="glass-panel full-h">
                 <div class="panel-header" style="justify-content: center; font-size: 1.2rem;">
                     剩餘時間: <span style="color: var(--danger); margin-left: 10px; width: 40px;">{{ displayTimer }}</span>
@@ -417,8 +500,17 @@
                     <button style="width: 100%;" @click="pollStatus = 'idle'">等待下一輪</button>
                 </div>
             </div>
-        </div>
+</div>
+        <button class="btn-submit" style="background:#1e293b;" onclick="verifySecret()">解鎖進階權限</button>
+        <button onclick="closeModal('secretModal')" style="width:100%; border:none; background:none; margin-top:15px; color:#94a3b8; cursor:pointer;">關閉</button>
+    </div></div>
+</div>
 
+<div id="adminDataModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:white; text-align:center;">📊 數據管理中心</h3>
+        <div id="adminDataList"></div>
+        <button class="btn-submit" style="background:#475569;" onclick="closeModal('adminDataModal')">關閉視窗</button>
     </main>
 
     <div v-if="view === 'host'" class="mobile-dock">
@@ -431,54 +523,165 @@
         <button class="dock-btn" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">
             <span class="dock-icon">📝</span> 數據
         </button>
-    </div>
-
+</div>
 </div>
 
+<div id="voteModal" class="modal">
+    <div class="modal-content" id="voteContent"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+
 <script>
-    const { createApp, reactive, ref, computed, nextTick } = Vue;
+    const firebaseConfig = {
+        apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+        authDomain: "vote-6668.firebaseapp.com",
+        projectId: "vote-6668",
+        storageBucket: "vote-6668.firebasestorage.app",
+        messagingSenderId: "389284021944",
+        appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const PASSWORDS = { "導師": "jojo100tch", "管理員": "Admin88888", "班長": "ClaLea3232", "副班長": "ViClaLea0101", "學藝股長": "art03210321", "資訊股長": "Info2323yjw" };
+    const MASTER_KEY = "Admin88888";
+    let currentCreatorRole = "";
+
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function verifyLogin() {
+        const role = document.getElementById('userRole').value;
+        const pwd = document.getElementById('userPwd').value;
+        if (PASSWORDS[role] === pwd) {
+            currentCreatorRole = role;
+            closeModal('loginModal');
+            openModal('publishModal');
+        } else { alert("驗證碼錯誤！"); }
+    }
+
+    function addOption() {
+        const container = document.getElementById('optionsContainer');
+        const div = document.createElement('div');
+        div.className = 'opt-wrapper';
+        div.innerHTML = `<input type="text" class="opt-input visual-input" placeholder="選項 ${container.children.length + 1}">`;
+        container.appendChild(div);
+    }
+
+    async function submitNewVote() {
+        const title = document.getElementById('newTitle').value;
+        const endTime = new Date(document.getElementById('endTime').value).getTime();
+        const allowPreview = document.getElementById('allowPreviewToggle').checked;
+        const opts = Array.from(document.querySelectorAll('.opt-input')).map(i => i.value).filter(v => v);
+
+        if (!title || opts.length < 2 || !endTime) return alert("請完整填寫主題、選項與時間！");
+
+        const counts = {}; opts.forEach(o => counts[o] = 0);
+        await db.collection("votes").add({
+            title, options: opts, counts, voters: [], 
+            endTime, allowPreview, author: currentCreatorRole, createdAt: Date.now()
+        });
+        alert("投票已發布！");
+        location.reload();
+    }
+
+    // --- 修正後的投票與顯示邏輯 ---
+    async function openVote(id) {
+        const snap = await db.collection("votes").doc(id).get();
+        const data = snap.data();
+        
+        // 檢查 localStorage 標記，確認此裝置是否已投過票
+        const localVoted = localStorage.getItem('v_'+id);
+        const isExpired = data.endTime < Date.now();
+        
+        // 核心邏輯：顯示比例的條件為 (截止) OR (本機投過) OR (發起人開啟預覽)
+        const showProportion = isExpired || localVoted === 'true' || data.allowPreview === true;
+
+        let html = `<div class="publish-card" style="position:relative;">
+            <button onclick="closeModal('voteModal')" style="position:absolute; right:15px; top:10px; border:none; background:none; font-size:1.8rem; cursor:pointer; color:#94a3b8;">&times;</button>
+            <h3 style="margin-top:5px; margin-bottom:20px; padding-right:20px;">${data.title}</h3>
+            ${!localVoted && !isExpired ? `<div class="input-group"><label>填寫真實姓名</label><input type="text" id="vName" class="visual-input" placeholder="輸入姓名解鎖投票"></div>` : ''}`;
+        
+        data.options.forEach(opt => {
+            const count = data.counts[opt] || 0;
+            const total = data.voters ? data.voters.length : 0;
+            const pct = total ? Math.round(count/total*100) : 0;
+            const isDisabled = localVoted || isExpired;
+
+            html += `<button class="btn-submit" style="margin-bottom:12px; background:${isDisabled?'#f8fafc':'#4361ee'}; color:${isDisabled?'#475569':'#fff'}; text-align:left; position:relative; overflow:hidden; border: ${isDisabled?'1px solid #e2e8f0':'none'};" 
+                     onclick="castVote('${id}','${opt}')" ${isDisabled?'disabled':''}>
+                     ${showProportion ? `<div style="position:absolute; left:0; top:0; height:100%; background:#cbd5e1; width:${pct}%; opacity:0.6; transition: width 0.8s;"></div>` : ''}
+                     <span style="position:relative; z-index:1; display:flex; justify-content:space-between;">
+                        <span>${opt}</span>
+                        ${showProportion ? `<span style="font-weight:bold;">${count}票 (${pct}%)</span>` : ''}
+                     </span>
+                     </button>`;
+        });
+
+        if (!showProportion && !isExpired) {
+            html += `<p style="text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:15px;">🔒 投票完成後將顯示即時統計比例</p>`;
+        } else if (localVoted && !isExpired) {
+            html += `<p style="text-align:center; color:#2ec4b6; font-size:0.8rem; margin-top:15px;">✅ 您已完成投票</p>`;
+        }
+        document.getElementById('voteContent').innerHTML = html;
+        openModal('voteModal');
+    }
+
+    async function castVote(id, opt) {
+        const nameInput = document.getElementById('vName');
+        const name = nameInput ? nameInput.value.trim() : "";
+        if(!name) return alert("請輸入真實姓名以利統計！");
+
+        const ref = db.collection("votes").doc(id);
+        const snap = await ref.get();
+        const data = snap.data();
+
+        // 防止同名重複投票
+        if(data.voters && data.voters.some(v => v.name === name)) {
+            alert("此姓名已投過票囉！");
+            return;
+    const { createApp, reactive, ref, computed, onMounted, nextTick, watch } = Vue;
 
     createApp({
         setup() {
             // --- State ---
-            const view = ref('intro');
-            const activeTab = ref('control');
+            const view = ref('intro'); // intro, host, voter-login, voter-active
+            const activeTab = ref('control'); // Mobile Dock tab
             const myId = ref('');
             const targetId = ref('');
             const isConnected = ref(false);
             
-            // UI Refs
-            const qrRef = ref(null);
-            const logContainer = ref(null);
-            const optionInputs = ref([]); 
-            const toasts = ref([]);
-            const errors = reactive({ title: false, options: false });
-
-            // PeerJS & Logic
+            // PeerJS
             let peer = null;
             const connections = ref([]);
-            const pollStatus = ref('idle');
             
-            // 預設初始化：空標題，2個空選項
+            // Logic
+            const pollStatus = ref('idle'); // idle, active, ended
             const pollData = reactive({
                 title: '',
-                options: ['', ''],
+                options: ['', '', ''],
                 duration: 60
             });
             const timer = ref(0);
             let timerInterval = null;
             
-            // Voting Data
-            const votes = ref([]); 
+            // Voting
+            const votes = ref([]); // { userId, option, timestamp }
             const results = ref({});
             const hasVoted = ref(false);
             const selectedOption = ref(null);
             
+            // System
             const logs = ref([]);
+            const qrRef = ref(null);
+            const logContainer = ref(null);
             let chart = null;
 
             // --- Utilities ---
             const generateShortId = () => {
+                // 產生 4 碼 ID (去除容易混淆的字元)
                 const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                 let result = '';
                 for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -493,25 +696,16 @@
                 });
             };
 
-            const showToast = (msg, type = 'info') => {
-                const id = Date.now();
-                const icon = type === 'error' ? '❌' : (type === 'success' ? '✅' : 'ℹ️');
-                toasts.value.push({ id, msg, type, icon });
-                setTimeout(() => {
-                    toasts.value = toasts.value.filter(t => t.id !== id);
-                }, 3000);
-            };
-
             const displayTimer = computed(() => {
                 const m = Math.floor(timer.value / 60).toString().padStart(2, '0');
                 const s = (timer.value % 60).toString().padStart(2, '0');
                 return `${m}:${s}`;
             });
 
-            // --- Host Logic ---
+            // --- Host Functions ---
             const initHost = () => {
                 const id = generateShortId();
-                peer = new Peer(id);
+                peer = new Peer(id); // 嘗試註冊 4 碼 ID
                 
                 peer.on('open', (id) => {
                     myId.value = id;
@@ -523,9 +717,11 @@
 
                 peer.on('error', (err) => {
                     if (err.type === 'unavailable-id') {
+                        // 如果 ID 衝突，遞迴重試
+                        console.log('ID Collision, retrying...');
                         initHost(); 
                     } else {
-                        showToast('連線初始化失敗', 'error');
+                        alert('連線初始化失敗: ' + err.type);
                     }
                 });
 
@@ -534,6 +730,7 @@
                     addLog(`Client ${conn.peer} 已連線`, 'sys');
                     
                     conn.on('open', () => {
+                        // 同步當前狀態給新連線者
                         conn.send({ 
                             type: 'SYNC', 
                             status: pollStatus.value, 
@@ -553,42 +750,16 @@
                 });
             };
 
-            // *** 核心驗證邏輯 ***
-            const validateAndStart = () => {
-                // 1. 檢查標題
-                if (!pollData.title.trim()) {
-                    errors.title = true;
-                    showToast('請輸入投票主題', 'error');
-                    setTimeout(() => errors.title = false, 500);
-                    return;
-                }
-
-                // 2. 處理選項：去除空白
-                const validOptions = pollData.options.map(o => o.trim()).filter(o => o !== '');
-                
-                // 3. 檢查數量 (至少2個)
-                if (validOptions.length < 2) {
-                    errors.options = true;
-                    showToast('至少需要兩個有效選項', 'error');
-                    setTimeout(() => errors.options = false, 500);
-                    return;
-                }
-
-                // 4. 檢查重複
-                const uniqueSet = new Set(validOptions);
-                if (uniqueSet.size !== validOptions.length) {
-                    errors.options = true;
-                    showToast('選項內容不能重複', 'error');
-                    setTimeout(() => errors.options = false, 500);
-                    return;
-                }
-
-                // 通過驗證，寫回乾淨的數據並開始
-                pollData.options = validOptions; 
-                // 確保 UI 至少有兩個格子(如果被過濾掉的話補回空字串，但邏輯上上面已經擋了，這裡只是保險)
-                while(pollData.options.length < 2) pollData.options.push('');
-                
-                startPoll();
+            const generateQR = () => {
+                const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
+                nextTick(() => {
+                    qrRef.value.innerHTML = '';
+                    new QRCode(qrRef.value, {
+                        text: url, width: 150, height: 150,
+                        colorDark: "#000000", colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                });
             };
 
             const startPoll = () => {
@@ -600,7 +771,6 @@
                 
                 broadcast({ type: 'START', data: pollData, timer: timer.value });
                 addLog('投票開始', 'sys');
-                showToast('投票已啟動', 'success');
                 updateChart();
                 
                 if (timerInterval) clearInterval(timerInterval);
@@ -621,60 +791,32 @@
                 pollStatus.value = 'idle';
                 votes.value = [];
                 results.value = {};
-                pollData.title = '';
-                pollData.options = ['', '']; // 重置為預設狀態
                 broadcast({ type: 'RESET' });
                 addLog('系統重置', 'sys');
+                // Update chart to empty
                 updateChart();
             };
 
-            // Option Management with Auto Focus
-            const addOption = () => {
-                pollData.options.push(''); // 預設為空
-                nextTick(() => {
-                    const inputs = optionInputs.value;
-                    const lastInput = inputs[pollData.options.length - 1];
-                    if (lastInput) lastInput.focus(); // 自動聚焦
-                });
-            };
-
-            const removeOption = (i) => {
-                if (pollData.options.length > 2) {
-                    pollData.options.splice(i, 1);
-                }
-            };
-
-            // --- Shared / Other ---
             const broadcast = (msg) => {
                 connections.value.forEach(c => c.send(msg));
             };
 
             const handleVote = (data, peerId) => {
                 if (pollStatus.value !== 'active') return;
+                // 檢查是否投過 (雖然 Client 端有擋，但 Host 端也要擋)
                 if (votes.value.find(v => v.userId === peerId)) return;
 
                 votes.value.push({ userId: peerId, option: data.option, timestamp: new Date().toISOString() });
-                if (results.value[data.option] !== undefined) results.value[data.option]++;
+                if (!results.value[data.option]) results.value[data.option] = 0;
+                results.value[data.option]++;
                 
                 addLog(`收到投票: ${data.option}`, 'vote');
                 updateChart();
             };
 
-            const generateQR = () => {
-                const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
-                nextTick(() => {
-                    qrRef.value.innerHTML = '';
-                    new QRCode(qrRef.value, {
-                        text: url, width: 150, height: 150,
-                        colorDark: "#000000", colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
-                });
-            };
-
-            // --- Voter Logic ---
+            // --- Voter Functions ---
             const connectToHost = (hostId) => {
-                if (!hostId) { showToast('請輸入 ID', 'error'); return; }
+                if (!hostId) return;
                 targetId.value = hostId.toUpperCase();
                 
                 peer = new Peer();
@@ -684,7 +826,6 @@
                     conn.on('open', () => {
                         isConnected.value = true;
                         view.value = 'voter-active';
-                        showToast('連線成功', 'success');
                     });
 
                     conn.on('data', (data) => {
@@ -693,6 +834,7 @@
                             Object.assign(pollData, data.data);
                             timer.value = data.timer;
                             
+                            // 如果是 RESET 或新的一輪，重置本地狀態
                             if (data.type === 'START') {
                                 hasVoted.value = false;
                                 selectedOption.value = null;
@@ -709,21 +851,21 @@
                             pollStatus.value = 'idle';
                             hasVoted.value = false;
                             selectedOption.value = null;
-                            showToast('主持人已重置投票', 'info');
                         }
                     });
 
-                    conn.on('error', () => showToast('連線中斷', 'error'));
+                    conn.on('error', (err) => alert('連線中斷'));
                 });
             };
 
             const submitVote = () => {
                 if (!selectedOption.value) return;
+                // 發送給 Host (PeerJS connection object 在這裡沒有全域存，需優化)
+                // 由於 PeerJS 架構，我們這裡直接從 peer.connections 找
                 const conns = peer.connections[targetId.value];
                 if (conns && conns[0]) {
                     conns[0].send({ type: 'VOTE', option: selectedOption.value });
                     hasVoted.value = true;
-                    showToast('投票已送出', 'success');
                 }
             };
 
@@ -734,7 +876,7 @@
                 }, 1000);
             };
 
-            // --- Chart & Export ---
+            // --- Chart.js ---
             const initChart = () => {
                 nextTick(() => {
                     const ctx = document.getElementById('voteChart');
@@ -774,15 +916,14 @@
                 chart.update();
             };
 
-            const getPercent = (count) => {
-                const total = Object.values(results.value).reduce((a, b) => a + b, 0);
-                return total === 0 ? 0 : (count / total * 100);
-            };
-
+            // --- Misc ---
+            const addOption = () => pollData.options.push('新選項');
+            const removeOption = (i) => pollData.options.splice(i, 1);
+            
             const copyLink = () => {
                 const url = `${window.location.href.split('?')[0]}?join=${myId.value}`;
                 navigator.clipboard.writeText(url);
-                showToast('連結已複製', 'success');
+                alert('連結已複製: ' + url);
             };
 
             const exportCSV = () => {
@@ -796,25 +937,122 @@
                 link.download = `VOTE_REPORT_${myId.value}.csv`;
                 link.click();
             };
-            
-            // Auto Join from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const joinId = urlParams.get('join');
-            if(joinId) {
-                view.value = 'voter-login';
-                targetId.value = joinId;
-            }
+
+            const getPercent = (count) => {
+                const total = Object.values(results.value).reduce((a,b)=>a+b, 0);
+                return total === 0 ? 0 : (count / total * 100);
+            };
+
+            // --- Auto Join ---
+            onMounted(() => {
+                const params = new URLSearchParams(window.location.search);
+                const joinId = params.get('join');
+                if (joinId) {
+                    targetId.value = joinId;
+                    connectToHost(joinId);
+                }
+            });
 
             return {
-                view, activeTab, myId, targetId, isConnected,
-                pollStatus, pollData, timer, displayTimer,
-                votes, results, hasVoted, selectedOption,
-                logs, logContainer, qrRef, connections, optionInputs, toasts, errors,
-                initHost, connectToHost, startPoll, stopPoll, resetPoll, validateAndStart,
-                addOption, removeOption, submitVote,
-                copyLink, exportCSV, getPercent
+                view, activeTab, myId, targetId, isConnected, connections,
+                pollStatus, pollData, timer, displayTimer, logs, logContainer,
+                results, hasVoted, selectedOption, qrRef,
+                initHost, connectToHost, startPoll, stopPoll, resetPoll,
+                addOption, removeOption, submitVote, copyLink, exportCSV, getPercent
             };
+}
+        
+        const newCounts = {...data.counts}; 
+        newCounts[opt] = (newCounts[opt] || 0) + 1;
+
+        await ref.update({ 
+            counts: newCounts, 
+            voters: firebase.firestore.FieldValue.arrayUnion({name, choice: opt}) 
+        });
+
+        // 關鍵修正：投票後立即在本地存儲標記，並重新渲染彈窗內容
+        localStorage.setItem('v_'+id, 'true');
+        alert("投票成功！");
+        openVote(id); 
+    }
+
+    // --- 隱藏管理功能與數據處理 ---
+    let secretClicks = 0;
+    function handleSecretClick() {
+        secretClicks++;
+        setTimeout(() => secretClicks = 0, 1000);
+        if (secretClicks === 3) { genCaptcha(); openModal('secretModal'); }
+    }
+    function genCaptcha() { document.getElementById('captchaCode').innerText = Math.floor(1000 + Math.random() * 9000); }
+    function verifySecret() {
+        const key = document.getElementById('adminKey').value;
+        const code = document.getElementById('captchaCode').innerText;
+        if (key === MASTER_KEY && document.getElementById('captchaInput').value === code) {
+            closeModal('secretModal'); renderAdminData(); openModal('adminDataModal');
+        } else { alert("驗證失敗"); genCaptcha(); }
+    }
+
+    async function renderAdminData() {
+        const snap = await db.collection("votes").orderBy("createdAt", "desc").get();
+        const listDiv = document.getElementById('adminDataList');
+        listDiv.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            listDiv.innerHTML += `<div class="card">
+                <strong>${d.title}</strong> <span style="font-size:0.8rem; color:blue;">(${d.author})</span>
+                <div style="margin-top:10px;">
+                    <button onclick="exportToExcel('${doc.id}')" style="padding:5px 12px; background:var(--success); color:white; border:none; border-radius:5px; cursor:pointer;">匯出結果</button>
+                    <button onclick="deleteVote('${doc.id}')" style="padding:5px 12px; background:var(--danger); color:white; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">刪除</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    async function exportToExcel(id) {
+        const snap = await db.collection("votes").doc(id).get();
+        const data = snap.data();
+        if(!data.voters || data.voters.length === 0) return alert("目前尚無人投票");
+        const rows = data.voters.map((v, i) => ({ "序號": i+1, "姓名": v.name, "選擇": v.choice }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "投票清單");
+        XLSX.writeFile(wb, `${data.title}_詳細名單.xlsx`);
+    }
+
+    async function deleteVote(id) {
+        if (confirm("確定刪除此投票嗎？資料無法復原。")) { 
+            await db.collection("votes").doc(id).delete(); 
+            renderAdminData(); 
         }
+    }
+
+    // 監聽投票清單渲染
+    db.collection("votes").orderBy("createdAt", "desc").onSnapshot(snap => {
+        const listDiv = document.getElementById('voteList');
+        listDiv.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            listDiv.innerHTML += `
+                <div class="vote-entry" onclick="openVote('${doc.id}')">
+                    <span class="author-badge">${data.author}</span>
+                    <div style="font-weight:bold; font-size:1.15rem; width:80%; margin-bottom:5px;">${data.title}</div>
+                    <div class="timer-badge countdown-timer" data-time="${data.endTime}">計算中...</div>
+                </div>`;
+        });
+    });
+
+    setInterval(() => {
+        document.querySelectorAll('.countdown-timer').forEach(el => {
+            const diff = parseInt(el.dataset.time) - Date.now();
+            if (diff <= 0) el.innerHTML = "🔴 投票已截止";
+            else {
+                const h = Math.floor(diff/3600000).toString().padStart(2,'0');
+                const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+                const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+                el.innerHTML = `⏳ 剩餘 ${h}:${m}:${s}`;
+            }
+        });
+    }, 1000);
     }).mount('#app');
 </script>
 </body>
