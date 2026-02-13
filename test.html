@@ -3,324 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ClassHub | Apple Experience</title>
+    <title>404 | Service Suspended</title>
     <style>
         :root {
-            /* Apple Colors */
-            --bg-color: #000000;
-            --surface: #1c1c1e;
+            --bg: #000000;
             --text-p: #f5f5f7;
             --text-s: #86868b;
-            --accent: #0071e3;
-            --glass: rgba(28, 28, 30, 0.7);
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
-            
-            /* UI Settings */
-            --radius-main: 20px;
-            --radius-btn: 12px;
-            --anim-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
-            --anim-spring: cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        [data-theme="light"] {
-            --bg-color: #f5f5f7;
-            --surface: #ffffff;
-            --text-p: #1d1d1f;
-            --text-s: #6e6e73;
-            --glass: rgba(245, 245, 247, 0.8);
+            --accent: #ff3b30; /* Apple Error Red */
         }
 
         * {
             margin: 0; padding: 0; box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
             -webkit-font-smoothing: antialiased;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-color);
+            background: var(--bg);
             color: var(--text-p);
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             height: 100vh;
-            transition: background-color 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
         }
 
-        /* --- 🍏 Apple Header --- */
-        header {
-            position: fixed; top: 0; width: 100%; height: 44px;
-            background: var(--glass); backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            z-index: 1000; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 22px; border-bottom: 0.5px solid rgba(255,255,255,0.1);
+        /* --- 🌑 動態深邃背景 --- */
+        #canvas-bg {
+            position: fixed; inset: 0; z-index: 0;
+            background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000 70%);
+            opacity: 0.6;
         }
 
-        .logo { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; opacity: 0.92; }
-        .header-tools { display: flex; gap: 20px; }
-        .h-btn { background: none; border: none; color: var(--text-p); cursor: pointer; opacity: 0.8; transition: 0.2s; }
-        .h-btn:hover { opacity: 1; }
-
-        /* --- 📱 Physics Viewport --- */
-        #viewport {
-            display: flex; width: 100vw; height: 100vh;
-            overflow-x: auto; scroll-snap-type: x mandatory;
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
-        }
-        #viewport::-webkit-scrollbar { display: none; }
-        
-        .page {
-            flex: 0 0 100vw; height: 100vh; scroll-snap-align: start;
-            padding: calc(44px + 40px) 20px 150px; overflow-y: auto;
+        /* --- 🏛️ 權威排版 --- */
+        .container {
+            position: relative; z-index: 10;
+            padding: 0 40px;
+            max-width: 600px;
         }
 
-        /* --- 📦 Card Grid --- */
-        .apple-grid {
-            display: grid; gap: 20px; width: 100%; max-width: 1000px; margin: 0 auto;
-        }
-        @media (min-width: 800px) { .apple-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 799px) { .apple-grid { grid-template-columns: 1fr; } }
-
-        .apple-card {
-            background: var(--surface); border-radius: var(--radius-main);
-            padding: 24px; text-decoration: none; color: inherit;
-            display: flex; flex-direction: column; gap: 12px;
-            transition: transform 0.4s var(--anim-apple), background-color 0.3s;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
-        }
-        .apple-card:active { transform: scale(0.96); background-color: rgba(255,255,255,0.05); }
-
-        .card-icon { font-size: 32px; height: 40px; }
-        .card-title { font-size: 19px; font-weight: 600; letter-spacing: -0.2px; }
-        .card-desc { font-size: 14px; color: var(--text-s); line-height: 1.4; }
-
-        /* --- 🧭 Fixed Dock (No Overflow) --- */
-        .dock-container {
-            position: fixed; bottom: calc(var(--safe-bottom) + 12px);
-            left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; z-index: 500;
-        }
-        .dock {
-            background: rgba(44, 44, 46, 0.7); backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-radius: 34px; padding: 4px; display: flex;
-            position: relative; border: 0.5px solid rgba(255,255,255,0.08);
-            overflow: hidden; /* 防止指示器溢出 */
-        }
-        .dock-indicator-track {
-            position: absolute; inset: 4px; width: calc(100% - 8px); z-index: 0;
-        }
-        .dock-indicator {
-            position: absolute; top: 0; left: 0; bottom: 0;
-            width: 25%; background: rgba(255,255,255,0.12);
-            border-radius: 30px; transition: transform 0.4s var(--anim-spring);
-        }
-        .dock-item {
-            flex: 1; z-index: 1; text-align: center; padding: 12px 0;
-            font-size: 13px; font-weight: 600; color: var(--text-s);
-            cursor: pointer; transition: color 0.3s;
-        }
-        .dock-item.active { color: var(--text-p); }
-
-        /* --- 🛗 Apple Material Sheet --- */
-        .sheet-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-            z-index: 2000; opacity: 0; visibility: hidden; transition: 0.4s;
-        }
-        .sheet-overlay.active { opacity: 1; visibility: visible; }
-        
-        .apple-sheet {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: var(--surface); border-radius: 30px 30px 0 0;
-            padding: 10px 20px calc(40px + var(--safe-bottom));
-            transform: translateY(100%); z-index: 2100;
-            will-change: transform; transition: transform 0.6s var(--anim-apple);
-            max-height: 94vh;
-        }
-        .sheet-handle-zone { width: 100%; height: 34px; display: flex; justify-content: center; cursor: grab; }
-        .sheet-handle { width: 36px; height: 5px; background: var(--text-s); opacity: 0.4; border-radius: 10px; margin-top: 8px; }
-
-        .sheet-content { overflow-y: auto; height: 100%; padding-top: 10px; }
-        .sheet-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 24px; }
-
-        /* --- ⚙️ Individual Control Dashboard --- */
-        .setting-group { background: rgba(255,255,255,0.03); border-radius: 14px; padding: 4px; display: flex; margin-bottom: 25px; }
-        .setting-btn { flex: 1; border: none; background: none; color: var(--text-s); padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; }
-        .setting-btn.active { background: rgba(255,255,255,0.1); color: var(--text-p); }
-
-        .slider-box { margin-bottom: 25px; }
-        .slider-header { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-s); margin-bottom: 10px; }
-        input[type="range"] {
-            -webkit-appearance: none; width: 100%; background: rgba(255,255,255,0.1);
-            height: 6px; border-radius: 3px; outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 26px; height: 26px; background: #fff;
-            border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.3); cursor: pointer;
+        .status-code {
+            font-size: 120px;
+            font-weight: 700;
+            letter-spacing: -5px;
+            background: linear-gradient(180deg, #fff 30%, #444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: pulse 4s ease-in-out infinite;
         }
 
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 17px;
+            color: var(--text-s);
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        /* --- 🍎 蘋果式按鈕 --- */
+        .apple-btn {
+            display: inline-block;
+            background: var(--text-p);
+            color: var(--bg);
+            padding: 12px 24px;
+            border-radius: 980px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .apple-btn:hover {
+            transform: scale(1.05);
+            background: #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+
+        /* --- ⚙️ 隱藏的 Debug 工具入口 --- */
+        .debug-trigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            opacity: 0.05;
+            cursor: help;
+        }
+
+        /* --- 🛠️ 模擬崩壞特效 (CSS 重裝) --- */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; filter: blur(0px); }
+            50% { opacity: 0.8; filter: blur(2px); }
+        }
+
+        /* 響應式優化 */
+        @media (max-width: 768px) {
+            .status-code { font-size: 80px; }
+            h2 { font-size: 20px; }
+        }
     </style>
 </head>
-<body data-theme="dark">
+<body>
 
-    <header>
-        <div class="logo">ClassHub</div>
-        <div class="header-tools">
-            <button class="h-btn" onclick="UI.openSheet()">
-                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 00 1.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 00 1.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            </button>
-        </div>
-    </header>
+    <div id="canvas-bg"></div>
 
-    <main id="viewport">
-        <section class="page">
-            <div class="apple-grid">
-                <a href="#" class="apple-card"><div class="card-icon">📅</div><div class="card-title">班級行事曆</div><div class="card-desc">掌握考程與重要活動紀錄</div></a>
-                <a href="#" class="apple-card"><div class="card-icon">⏳</div><div class="card-title">考程倒數</div><div class="card-desc">距離期末考僅剩 12 天</div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="apple-grid">
-                <a href="#" class="apple-card"><div class="card-icon">✉️</div><div class="card-title">匿名信箱</div><div class="card-desc">傳達那些無法當面說出口的話</div></a>
-                <a href="#" class="apple-card"><div class="card-icon">🌱</div><div class="card-title">匿名求助</div><div class="card-desc">與導師進行隱私溝通</div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="apple-grid">
-                <a href="#" class="apple-card"><div class="card-icon">🧹</div><div class="card-title">打掃勤務</div><div class="card-desc">查看個人負責區域與點數回報</div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="apple-grid">
-                <a href="#" class="apple-card"><div class="card-icon">📈</div><div class="card-title">學期總分</div><div class="card-desc">全自動化學分與加權平均計算</div></a>
-            </div>
-        </section>
-    </main>
-
-    <div class="dock-container">
-        <div class="dock">
-            <div class="dock-indicator-track">
-                <div class="dock-indicator" id="indicator"></div>
-            </div>
-            <div class="dock-item active" onclick="UI.nav(0)">提醒</div>
-            <div class="dock-item" onclick="UI.nav(1)">互動</div>
-            <div class="dock-item" onclick="UI.nav(2)">班務</div>
-            <div class="dock-item" onclick="UI.nav(3)">成績</div>
+    <div class="container">
+        <div class="status-code">404</div>
+        <h2>服務已暫停。</h2>
+        <p>
+            我們正在重新構建 ClassHub 的核心結構。<br>
+            為了追求極致的用戶體驗，本服務目前進入深度維護模式。
+        </p>
+        <a href="#" class="apple-btn" onclick="location.reload()">重新整理</a>
+        
+        <div style="margin-top: 60px; font-size: 12px; color: #444; letter-spacing: 1px;">
+            DESIGNED BY AUTHORITY | UNCOMPROMISING QUALITY
         </div>
     </div>
 
-    <div class="sheet-overlay" id="overlay" onclick="UI.closeSheet()"></div>
-    <div class="apple-sheet" id="sheet">
-        <div class="sheet-handle-zone" id="handle"><div class="sheet-handle"></div></div>
-        <div class="sheet-content">
-            <div class="sheet-title">個人化控制中心</div>
-            
-            <div class="slider-box">
-                <div class="slider-header"><span>色調 Hue</span><b id="val-h">210</b></div>
-                <input type="range" min="0" max="360" value="210" oninput="UI.setVar('--accent', `hsl(${this.value}, 100%, 50%)`); UI.setEl('val-h', this.value)">
-            </div>
-
-            <div class="slider-box">
-                <div class="slider-header"><span>玻璃透明度</span><b id="val-o">0.7</b></div>
-                <input type="range" min="0.1" max="1" step="0.1" value="0.7" oninput="UI.setVar('--glass', `rgba(28, 28, 30, ${this.value})`); UI.setEl('val-o', this.value)">
-            </div>
-
-            <div class="setting-group">
-                <button class="setting-btn active" id="btn-dark" onclick="UI.setTheme('dark')">深色模式</button>
-                <button class="setting-btn" id="btn-light" onclick="UI.setTheme('light')">淺色模式</button>
-            </div>
-
-            <div class="sheet-title" style="margin-top:40px">開發者資訊</div>
-            <div class="apple-card" style="margin-bottom:100px;">
-                <div class="card-title">王宥鈞</div>
-                <div class="card-desc">本系統基於 Apple 官網設計語言打造，追求極致的物理觸感與排版美學。</div>
-            </div>
-        </div>
-    </div>
+    <div class="debug-trigger" onclick="adminMode()"></div>
 
     <script>
-        const UI = {
-            state: { p: 0, startY: 0, currentY: 0, mode: 'partial' },
+        // 高階物理粒子背景 (模擬蘋果的高端質感)
+        const bg = document.getElementById('canvas-bg');
+        let opacity = 0.6;
+        
+        function flicker() {
+            opacity = 0.5 + Math.random() * 0.2;
+            bg.style.opacity = opacity;
+            setTimeout(flicker, 100 + Math.random() * 3000);
+        }
+        flicker();
 
-            init() {
-                const vp = document.getElementById('viewport');
-                const ind = document.getElementById('indicator');
-                
-                // 1. 物理連動指示器
-                vp.addEventListener('scroll', () => {
-                    const ratio = vp.scrollLeft / vp.offsetWidth;
-                    ind.style.transform = `translateX(${ratio * 100}%)`;
-                    
-                    const idx = Math.round(ratio);
-                    if(idx !== this.state.p) {
-                        this.state.p = idx;
-                        document.querySelectorAll('.dock-item').forEach((t, i) => t.classList.toggle('active', i === idx));
-                    }
-                }, { passive: true });
-
-                this.initGestures();
-            },
-
-            nav(i) {
-                document.getElementById('viewport').scrollTo({ left: window.innerWidth * i, behavior: 'smooth' });
-            },
-
-            setVar(k, v) { document.documentElement.style.setProperty(k, v); },
-            setEl(id, v) { document.getElementById(id).innerText = v; },
-
-            setTheme(t) {
-                document.body.setAttribute('data-theme', t);
-                document.getElementById('btn-dark').classList.toggle('active', t==='dark');
-                document.getElementById('btn-light').classList.toggle('active', t==='light');
-            },
-
-            openSheet() {
-                document.getElementById('overlay').classList.add('active');
-                document.getElementById('sheet').style.transform = 'translateY(0)';
-            },
-
-            closeSheet() {
-                document.getElementById('overlay').classList.remove('active');
-                document.getElementById('sheet').style.transform = 'translateY(100%)';
-            },
-
-            // 2. 蘋果級物理手勢引擎 (三段式)
-            initGestures() {
-                const sheet = document.getElementById('sheet');
-                const handle = document.getElementById('handle');
-
-                const start = (e) => {
-                    this.state.startY = e.touches[0].clientY;
-                    sheet.style.transition = 'none';
-                };
-
-                const move = (e) => {
-                    this.state.currentY = e.touches[0].clientY - this.state.startY;
-                    // 物理阻尼：上拉阻抗
-                    let y = this.state.currentY;
-                    if(y < 0) y = y * 0.2; 
-                    sheet.style.transform = `translateY(${y}px)`;
-                };
-
-                const end = () => {
-                    sheet.style.transition = 'transform 0.6s var(--anim-apple)';
-                    // 判定邏輯
-                    if(this.state.currentY > 150) {
-                        this.closeSheet();
-                    } else if(this.state.currentY < -100) {
-                        sheet.style.transform = 'translateY(-15vh)'; // 展開更多
-                    } else {
-                        sheet.style.transform = 'translateY(0)'; // 回彈
-                    }
-                    this.state.currentY = 0;
-                };
-
-                handle.addEventListener('touchstart', start);
-                window.addEventListener('touchmove', move, { passive: false });
-                window.addEventListener('touchend', end);
+        function adminMode() {
+            const code = prompt("請輸入權威授權碼以恢復服務：");
+            if(code === "1234") {
+                alert("授權成功。正在恢復極限開發環境...");
+                // 這裡可以導向原本的程式碼介面
+            } else {
+                alert("授權失敗。系統繼續鎖定。");
             }
-        };
+        }
 
-        window.onload = () => UI.init();
+        // 禁止右鍵與開發者工具，達成「完全封閉」的 404 感
+        document.oncontextmenu = () => false;
+        document.onkeydown = (e) => {
+            if(e.keyCode == 123) return false; // F12
+        };
     </script>
 </body>
 </html>
