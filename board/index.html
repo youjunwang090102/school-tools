@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級動態牆 v6.0</title>
+    <title>班級動態牆 v6.1 (安全同步版)</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -44,8 +44,8 @@
 <div class="container">
     <div id="loginCard" class="card" style="max-width: 450px; margin: 50px auto;">
         <h2 style="text-align: center;">💬 班級動態牆</h2>
-        <input type="number" id="stuId" placeholder="座號">
-        <input type="password" id="stuPw" placeholder="密碼">
+        <input type="number" id="stuId" autocomplete="username" placeholder="座號">
+        <input type="password" id="stuPw" autocomplete="current-password" placeholder="密碼">
         <button onclick="doLogin()">登入系統</button>
     </div>
 
@@ -91,7 +91,6 @@
 </div>
 
 <script>
-    // Firebase 配置 (沿用)
     const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -106,30 +105,72 @@
     let me = null;
     let isMuted = false;
 
+    // --- 安全防護工具 (與主系統同步) ---
+    async function hashPassword(password) {
+        try {
+            if (!crypto || !crypto.subtle) return password;
+            const msgBuffer = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) { return password; }
+    }
+
+    function escapeHTML(str) {
+        return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+    }
+
+    // --- 同步升級的登入邏輯 ---
     async function doLogin() {
         const idInput = document.getElementById('stuId').value;
         const pwInput = document.getElementById('stuPw').value;
         if(!idInput || !pwInput) return alert("請輸入座號與密碼");
 
         const id = idInput.padStart(2, '0'); 
+        const hashedInputPw = await hashPassword(pwInput); // 🔐 將輸入密碼加密
+
         try {
             const doc = await db.collection("students").doc(id).get();
             if (doc.exists) {
                 const data = doc.data();
-                if (data.password === pwInput) {
+                let isMatch = false;
+
+                // 🛡️ 雙重比對與阻擋 Pass-the-Hash
+                const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                if (isDbPasswordHashed) {
+                    if (data.password === hashedInputPw) isMatch = true;
+                } else {
+                    if (data.password === pwInput) {
+                        isMatch = true;
+                        // 背景自動升級加密
+                        await db.collection("students").doc(id).update({ password: hashedInputPw });
+                    }
+                }
+
+                if (isMatch) {
                     if (data.status === "active") {
+                        // 若偵測到預設密碼，稍微提醒
+                        if (data.forceReset === true) {
+                            alert("⚠️ 溫馨提醒：為了確保帳號安全，請盡快前往【班級打掃管理系統】修改您的預設密碼！");
+                        }
                         me = { id, ...data };
                         startApp();
-                    } else { alert("帳號尚未啟用"); }
-                } else { alert("密碼錯誤"); }
-            } else { alert("座號不存在"); }
-        } catch (e) { alert("連線失敗"); }
+                    } else { 
+                        alert("帳號尚未啟用，請等待管理員核准。"); 
+                    }
+                } else { 
+                    alert("密碼錯誤"); 
+                }
+            } else { 
+                alert("座號不存在"); 
+            }
+        } catch (e) { alert("連線失敗：" + e.message); }
     }
 
     function startApp() {
         document.getElementById('loginCard').style.display = 'none';
         document.getElementById('mainView').style.display = 'block';
-        document.getElementById('userName').innerText = `👋 ${me.name} (#${me.id})`;
+        document.getElementById('userName').innerText = `👋 ${escapeHTML(me.name)} (#${me.id})`;
         
         const isTeacher = (me.role === 'teacher' || me.role === 'admin');
         if (isTeacher) {
@@ -159,7 +200,7 @@
             if(doc.data().role !== 'teacher') {
                 const opt = document.createElement('option');
                 opt.value = doc.id;
-                opt.innerText = `${parseInt(doc.id)}號 ${doc.data().name}`;
+                opt.innerText = `${parseInt(doc.id)}號 ${escapeHTML(doc.data().name)}`;
                 select.appendChild(opt);
             }
         });
@@ -169,6 +210,8 @@
         db.collection("mute_records").onSnapshot(async snap => {
             const listArea = document.getElementById('activeMuteList');
             listArea.innerHTML = '';
+            
+            // 用戶資料較少，直接拉取對照表 (或者可考慮由前端快取處理以省流量)
             const stuSnap = await db.collection("students").get();
             let names = {};
             stuSnap.forEach(d => names[d.id] = d.data().name);
@@ -179,7 +222,7 @@
                     const div = document.createElement('div');
                     div.style = "background:rgba(255,255,255,0.1); padding:10px; border-radius:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;";
                     div.innerHTML = `
-                        <span>${parseInt(doc.id)}號 ${names[doc.id] || '學生'}<br><small style="color:#94a3b8">${new Date(data.until).toLocaleString()}</small></span>
+                        <span>${parseInt(doc.id)}號 ${escapeHTML(names[doc.id] || '學生')}<br><small style="color:#94a3b8">${new Date(data.until).toLocaleString()}</small></span>
                         <button onclick="unmute('${doc.id}')" style="width:auto; padding:5px 8px; margin:0; background:var(--s); font-size:0.7rem;">解除</button>
                     `;
                     listArea.appendChild(div);
@@ -194,9 +237,14 @@
         if(!sid) return alert("請選擇學生");
         const until = Date.now() + (days * 24 * 60 * 60 * 1000);
         await db.collection("mute_records").doc(sid).set({ until: until });
+        alert("禁言設定成功");
     }
 
-    async function unmute(sid) { await db.collection("mute_records").doc(sid).delete(); }
+    async function unmute(sid) { 
+        if(confirm("確定解除禁言？")) {
+            await db.collection("mute_records").doc(sid).delete(); 
+        }
+    }
 
     function checkMyMute() {
         db.collection("mute_records").doc(me.id).onSnapshot(doc => {
@@ -232,19 +280,25 @@
                 const time = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "...";
                 const div = document.createElement('div');
                 div.className = `msg-item ${d.role === 'teacher' ? 'is-teacher' : ''}`;
+                
+                // 套用 escapeHTML 防護訊息與作者名稱
                 div.innerHTML = `
                     <div class="msg-info">
-                        <span><b>${d.author}</b> (#${d.authorId})</span>
+                        <span><b>${escapeHTML(d.author)}</b> (#${d.authorId})</span>
                         <span>${time} ${isTeacher ? `<span style="color:var(--d); cursor:pointer; margin-left:10px;" onclick="deleteMsg('${doc.id}')">🗑️</span>` : ''}</span>
                     </div>
-                    <div style="word-break: break-all;">${d.content}</div>
+                    <div style="word-break: break-all;">${escapeHTML(d.content)}</div>
                 `;
                 container.appendChild(div);
             });
         });
     }
 
-    async function deleteMsg(mid) { if(confirm("刪除留言？")) await db.collection("messages").doc(mid).delete(); }
+    async function deleteMsg(mid) { 
+        if(confirm("確定刪除留言？")) {
+            await db.collection("messages").doc(mid).delete(); 
+        }
+    }
 </script>
 </body>
 </html>
