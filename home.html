@@ -2,398 +2,197 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 v4.4.0 (旗艦旗艦版)</title>
-
-    <meta name="theme-color" id="chrome-theme" content="#f8fafc">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" id="safari-theme" content="default">
-
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
-
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme') || 'light';
-            const layout = localStorage.getItem('layout') || 'list-mode';
-            const lastPage = localStorage.getItem('lastPage') || '0';
-            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
-            document.documentElement.setAttribute('data-layout', layout);
-            document.documentElement.setAttribute('data-init-page', lastPage);
-            
-            // 防止載入閃爍
-            const gateStyle = document.createElement('style');
-            gateStyle.innerHTML = `body { opacity: 0; } [data-system-ready="true"] body { opacity: 1; transition: opacity 0.4s ease; }`;
-            document.head.appendChild(gateStyle);
-        })();
-
-        const SYS_CONFIG = {
-            banner: "🎓 教育驗證系統已上線。若回上頁出現載入畫面為正常校驗程序。",
-            author: {
-                name: "王宥鈞", role: "開發者 ｜ Developer", ver: "v4.4.0 (Pro)",
-                updates: [
-                    "- 解決 Firebase Auth 載入時的 UI 閃現問題。",
-                    "- 重新視覺化精美註冊表單，提升互動感。",
-                    "- 修正管理員特殊登入 (admin) 邏輯漏洞。",
-                    "- 維持完整 3D 懸浮與卡片自訂排序記憶。"
-                ]
-            }
-        };
-    </script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Class Calendar Pro | Premium</title>
     <style>
-        /* =============================================
-           🎨 1. 核心視覺系統 (完全還原)
-           ============================================= */
         :root {
-            --p: #4361ee; --p-light: rgba(67, 97, 238, 0.1); --g: #7209b7; 
-            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --sub: #64748b; 
-            --border: rgba(0,0,0,0.08); --nav-bg: rgba(255, 255, 255, 0.85); 
-            --banner-bg: #fff9db; --banner-text: #856404; --accent: #4361ee;
-            --secondary: #10b981; --safe-bottom: env(safe-area-inset-bottom, 20px);
-        }
-        .dark-mode {
-            --bg: #020617; --card: #111827; --text: #f8fafc; --sub: #94a3b8; 
-            --border: rgba(255,255,255,0.1); --nav-bg: rgba(15, 23, 42, 0.85); 
-            --banner-bg: #1e1b0a; --banner-text: #ffe066; --accent: #fbbf24;
+            --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-green: #34C759;
+            --ios-orange: #FF9500; --ios-yellow: #FFCC00; --ios-gray: #8E8E93;
+            --bg: #F2F2F7; --card: rgba(255, 255, 255, 0.8);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; width: 100vw; height: 100dvh; background-color: var(--bg); color: var(--text); font-family: 'SF Pro TC', 'PingFang TC', system-ui; overflow: hidden; position: fixed; }
-
-        /* =============================================
-           🛡️ 2. 升級版門控介面 (Auth Portal)
-           ============================================= */
-        #auth-portal {
-            position: fixed; inset: 0; background: var(--bg); z-index: 10000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px;
-            transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; 
+            background: var(--bg); margin: 0; padding: 15px; color: #000;
         }
-        #auth-portal.hide { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* 管理員狀態列 */
+        #adminStatusBar {
+            display: none; background: var(--ios-green); color: white;
+            padding: 8px; border-radius: 12px; text-align: center;
+            font-size: 13px; font-weight: 600; margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+        }
+
+        /* 頂級標題設計 */
+        .header-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
+        h1 { font-size: 34px; font-weight: 800; letter-spacing: -1.5px; margin: 0; }
+
+        /* 日曆卡片美化 */
+        .calendar-card { 
+            background: white; border-radius: 30px; padding: 20px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 15px; }
+        .weekday { color: var(--ios-gray); font-size: 12px; font-weight: 600; text-align: center; padding-bottom: 15px; }
         
-        /* 載入中動畫 */
-        #auth-loading { position: absolute; text-align: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid var(--p-light); border-top: 4px solid var(--p); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .auth-card {
-            background: var(--card); width: 100%; max-width: 440px;
-            border-radius: 40px; padding: 40px 30px; border: 1px solid var(--border);
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15); text-align: center;
-            display: none; animation: modalIn 0.5s ease-out;
+        .day-cell { 
+            aspect-ratio: 1 / 1.3; border-top: 0.5px solid #f2f2f7; 
+            position: relative; padding: 5px; cursor: pointer;
+            transition: background 0.2s;
         }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
-        .auth-card h2 { margin: 0; color: var(--p); font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
-        .auth-card p { color: var(--sub); margin: 8px 0 25px; font-size: 14px; font-weight: 600; }
-        
-        .auth-input-group { margin-bottom: 15px; text-align: left; }
-        .auth-input-group label { display: block; font-size: 12px; font-weight: 800; margin-bottom: 6px; color: var(--sub); margin-left: 10px; }
-        .auth-input, .auth-select {
-            width: 100%; padding: 15px 20px; border-radius: 18px; border: 2.5px solid var(--border);
-            background: var(--bg); color: var(--text); font-size: 16px; font-weight: 600; outline: none; transition: 0.3s;
-        }
-        .auth-input:focus { border-color: var(--p); background: var(--card); }
+        .day-cell:active { background: #f2f2f7; border-radius: 10px; }
 
-        .captcha-box { display: flex; gap: 10px; margin-top: 5px; height: 50px; }
-        .captcha-display { 
-            flex: 1; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); border-radius: 14px; 
-            font-family: 'Courier New', monospace; font-size: 22px; font-weight: 900; 
-            display: flex; align-items: center; justify-content: center; letter-spacing: 6px; 
-            color: var(--p); user-select: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        .day-num { font-size: 16px; font-weight: 500; display: block; text-align: center; margin-bottom: 4px; }
+        .today .day-num { 
+            background: var(--ios-red); color: white; width: 26px; height: 26px; 
+            border-radius: 50%; line-height: 26px; margin: 0 auto; 
         }
 
-        .auth-btn { width: 100%; padding: 18px; background: var(--p); color: white; border: none; border-radius: 20px; font-weight: 900; font-size: 16px; cursor: pointer; transition: 0.3s; margin-top: 15px; box-shadow: 0 10px 20px rgba(67, 97, 238, 0.2); }
-        .auth-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(67, 97, 238, 0.3); }
-
-        /* =============================================
-           📱 3. 旗艦版介面還原 (100% 原始佈局)
-           ============================================= */
-        header { height: 72px; padding: 0 20px; background: var(--nav-bg); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1000; }
-        .brand h1 { margin: 0; font-size: 20px; font-weight: 900; color: var(--p); letter-spacing: -1px; }
-        .brand p { margin: 0; font-size: 10px; color: var(--sub); font-weight: 800; letter-spacing: 1px; }
-
-        .icon-btn { border: none; background: transparent; cursor: pointer; width: 40px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--sub); transition: 0.3s; }
-        .icon-btn.active { background: var(--p); color: #fff; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4); }
-        .circle-tool { width: 42px; height: 42px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-
-        .viewport { width: 100%; height: calc(100dvh - 72px - 40px); display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
-        .page-panel { flex: 0 0 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 25px 20px 180px; box-sizing: border-box; }
-        .content-grid { display: grid; gap: 18px; width: 100%; max-width: 1100px; margin: 0 auto; }
-
-        .card {
-            background: var(--card); border: 1px solid var(--border); border-radius: 26px; text-decoration: none; color: inherit;
-            display: flex; position: relative; overflow: hidden; transform-style: preserve-3d;
-            transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), 1);
-            transition: transform 0.15s ease-out, background 0.3s ease, box-shadow 0.3s ease; will-change: transform; cursor: grab;
+        /* 事項標籤美化 */
+        .event-dot {
+            width: 4px; height: 4px; border-radius: 50%; display: inline-block; margin: 0 1px;
         }
-        .card::after { content: ""; position: absolute; inset: 0; background: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(67, 97, 238, 0.08), transparent 40%); opacity: 0; transition: opacity 0.4s; }
-        [data-layout="list-mode"] .card { padding: 22px; align-items: center; }
-        [data-layout="grid-mode"] .card { flex-direction: column; padding: 20px 10px; text-align: center; aspect-ratio: 1 / 1.1; justify-content: center; }
-        
-        .card-icon { display: flex; align-items: center; justify-content: center; background: var(--p-light); color: var(--p); width: 56px; height: 56px; border-radius: 16px; margin-right: 20px; font-size: 24px; }
-        [data-layout="grid-mode"] .card-icon { width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 12px; }
+        .event-bar {
+            font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white;
+            margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
 
-        .card-info h2 { margin: 0; font-size: 16px; font-weight: 800; }
-        .card-info p { margin: 4px 0 0; font-size: 12px; color: var(--sub); font-weight: 600; }
+        /* 彈窗設計 */
+        .modal { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); 
+            backdrop-filter: blur(15px); z-index: 1000; 
+        }
+        .modal-content { 
+            background: white; border-radius: 30px; width: 85%; max-width: 380px; 
+            margin: 15vh auto; padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); 
+        }
 
-        .nav-dock { position: fixed; bottom: calc(25px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 5000; }
-        .nav-glass { background: var(--nav-bg); backdrop-filter: blur(25px); display: flex; padding: 6px; border-radius: 100px; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
-        .nav-item { flex: 1; text-align: center; padding: 14px 0; font-size: 14px; font-weight: 900; color: var(--sub); cursor: pointer; border-radius: 100px; transition: 0.3s; }
-        .nav-item.active { color: #ffffff; background: var(--p); box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3); }
+        .ios-input { 
+            width: 100%; border: none; background: #efeff4; padding: 15px; 
+            border-radius: 15px; margin: 10px 0; font-size: 16px; box-sizing: border-box;
+        }
 
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 25px; }
-        .overlay.active { display: flex; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { 
+            flex: 1; padding: 15px; border-radius: 15px; border: none; 
+            font-size: 17px; font-weight: 600; cursor: pointer; 
+        }
+        .btn-primary { background: var(--ios-blue); color: white; }
+        .btn-secondary { background: #efeff4; color: var(--ios-blue); }
+        .btn-danger { color: var(--ios-red); font-size: 14px; background: transparent; }
+
+        /* 顏色類別 */
+        .type-考試 { background: var(--ios-red); }
+        .type-提醒 { background: var(--ios-blue); }
+        .type-集會 { background: var(--ios-green); }
     </style>
 </head>
-<body data-layout="list-mode">
+<body>
 
-    <div id="auth-portal">
-        <div id="auth-loading"><div class="spinner"></div><p style="color:var(--sub); font-weight:bold;">驗證身分中...</p></div>
-
-        <div class="auth-card" id="login-form">
-            <h2>登入平台</h2>
-            <p>請輸入學號與密碼進入您的班級</p>
-            <div class="auth-input-group"><label>學號 / 帳號</label><input type="text" id="auth-id" class="auth-input" placeholder="學號或 admin"></div>
-            <div class="auth-input-group"><label>登入密碼</label><input type="password" id="auth-pw" class="auth-input" placeholder="請輸入密碼"></div>
-            <button class="auth-btn" onclick="sysAuth.doLogin()">確認登入</button>
-            <p onclick="sysAuth.switchMode('reg')" style="cursor:pointer; color:var(--p); font-weight:800; margin-top:20px; font-size:14px;">新同學？申請加入班級</p>
-        </div>
-
-        <div class="auth-card" id="reg-form">
-            <h2>加入申請</h2>
-            <p>請填寫真實資料以便導師核對</p>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                <div class="auth-input-group"><label>學號 (6碼)</label><input type="number" id="reg-id" class="auth-input" placeholder="112001"></div>
-                <div class="auth-input-group"><label>座號</label><input type="number" id="reg-seat" class="auth-input" placeholder="05"></div>
-            </div>
-            <div class="auth-input-group"><label>真實姓名</label><input type="text" id="reg-name" class="auth-input" placeholder="王小明"></div>
-            <div class="auth-input-group">
-                <label>所屬班級</label>
-                <select id="reg-class" class="auth-select"><option value="203">203 班</option><option value="204">204 班</option></select>
-            </div>
-            <div class="auth-input-group"><label>教育信箱 (@gm.tntcsh.tn.edu.tw)</label><input type="email" id="reg-email" class="auth-input" placeholder="學號@gm.tntcsh.tn.edu.tw"></div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                <div class="auth-input-group"><label>設定密碼</label><input type="password" id="reg-pw1" class="auth-input"></div>
-                <div class="auth-input-group"><label>再次確認</label><input type="password" id="reg-pw2" class="auth-input"></div>
-            </div>
-            <div class="auth-input-group">
-                <label>請輸入圖中驗證碼</label>
-                <div class="captcha-box"><div id="captcha-display" class="captcha-display">LOADING</div><input type="text" id="reg-captcha" class="auth-input" style="width:110px" placeholder="4碼"></div>
-            </div>
-            <button class="auth-btn" style="background:var(--secondary); box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);" onclick="sysAuth.doRegister()">送出審核申請</button>
-            <p onclick="sysAuth.switchMode('login')" style="cursor:pointer; color:var(--p); font-weight:800; margin-top:20px; font-size:14px;">已有帳號？返回登入</p>
-        </div>
+<div class="container">
+    <div id="adminStatusBar">🛡️ 管理員模式已啟動，現在可以編輯行程</div>
+    
+    <div class="header-section">
+        <h1 id="title" onclick="tryAdmin()">行事曆</h1>
+        <div id="monthDisplay" style="font-weight: 700; color: var(--ios-blue);">2026年 2月</div>
     </div>
 
-    <div class="top-notice" id="ui-banner"></div>
-    <header>
-        <div class="brand"><h1>班級數位平台</h1><p id="auth-status-text">Classroom Hub</p></div>
-        <div class="controls">
-            <div class="toggle-group">
-                <button class="icon-btn" id="listToggle" onclick="updateLayout('list-mode')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
-                <button class="icon-btn" id="gridToggle" onclick="updateLayout('grid-mode')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+    <div class="calendar-card">
+        <div class="grid" id="calendarGrid"></div>
+    </div>
+</div>
+
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalDateTitle" style="margin:0 0 15px 0;">日期</h2>
+        
+        <div id="eventListView"></div>
+
+        <div id="adminForm" style="display:none; border-top: 0.5px solid #ddd; margin-top: 20px; padding-top: 15px;">
+            <input type="text" id="evTitle" class="ios-input" placeholder="事項名稱">
+            <select id="evType" class="ios-input">
+                <option value="考試">🔴 考試</option>
+                <option value="提醒">🔵 提醒</option>
+                <option value="集會">🟢 集會</option>
+            </select>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="saveEvent()">儲存行程</button>
             </div>
-            <button class="icon-btn circle-tool" onclick="updateTheme()"><svg id="theme-icon" viewBox="0 0 24 24"></svg></button>
-            <button class="icon-btn circle-tool" onclick="sysAuth.doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
         </div>
-    </header>
-
-    <main class="viewport" id="scroll-engine">
-        <section class="page-panel" id="panel-0"><div class="content-grid" id="grid-0">
-            <a href="行事曆/index.html" class="card" draggable="true"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
-            <a href="countdown/index.html" class="card" draggable="true"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
-            <a href="homework/index.html" class="card" draggable="true"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>即時查看作業不遺漏</p></div></a>
-        </div></section>
-
-        <section class="page-panel" id="panel-1"><div class="content-grid" id="grid-1">
-            <a href="help/student.html" class="card" draggable="true"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>安全且私密的求助管道</p></div></a>
-            <a href="unknownmail/index.html" class="card" draggable="true"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>溫馨提醒同學的小工具</p></div></a>
-            <a href="匿名/index.html" class="card" draggable="true"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>分享你的美好點子</p></div></a>
-            <a href="board/index.html" class="card" draggable="true"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>與班上同學互動交流</p></div></a>
-        </div></section>
-
-        <section class="page-panel" id="panel-2"><div class="content-grid" id="grid-2">
-            <a href="cleaning/index.html" class="card" draggable="true"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看掃區與缺失點數</p></div></a>
-            <a href="seating/index.html" class="card" draggable="true"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>刺激且公平的座位排定</p></div></a>
-            <a href="vote/index.html" class="card" draggable="true"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>決定班級的大小事務</p></div></a>
-        </div></section>
-
-        <section class="page-panel" id="panel-3"><div class="content-grid" id="grid-3">
-            <a href="exam_calc/index.html" class="card" draggable="true"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>平均分與總分計算</p></div></a>
-            <a href="final_calc/index.html" class="card" draggable="true"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>學分取得與預警判斷</p></div></a>
-        </div></section>
-    </main>
-
-    <nav class="nav-dock">
-        <div class="nav-glass">
-            <div class="nav-item active" onclick="moveTo(0)">提醒</div>
-            <div class="nav-item" onclick="moveTo(1)">互動</div>
-            <div class="nav-item" onclick="moveTo(2)">班務</div>
-            <div class="nav-item" onclick="moveTo(3)">成績</div>
+        
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
         </div>
-    </nav>
+    </div>
+</div>
 
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0", authDomain: "vote-6668.firebaseapp.com", projectId: "vote-6668", storageBucket: "vote-6668.firebasestorage.app", messagingSenderId: "389284021944", appId: "1:389284021944:web:3c5311697cbfc7c010564d" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(), auth = firebase.auth();
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
 
-        let me = null, currentCaptcha = "";
+<script>
+    // --- 核心邏輯 ---
+    let isAdmin = false;
+    let adminToken = ""; // 數位暗號
+    let clickCount = 0;
+    const MASTER_KEY = "Admin88888"; // 老師輸入的密碼
+    const BACKEND_SECRET = "TeacherSecret777"; // 與 Rules 對應的暗號
 
-        const sysAuth = {
-            generateCaptcha: () => {
-                const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-                let code = ""; for(let i=0; i<4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-                currentCaptcha = code;
-                document.getElementById('captcha-display').innerText = code;
-            },
-            switchMode: (mode) => {
-                document.getElementById('auth-loading').style.display = 'none';
-                document.getElementById('login-form').style.display = mode === 'login' ? 'block' : 'none';
-                document.getElementById('reg-form').style.display = mode === 'reg' ? 'block' : 'none';
-                if(mode === 'reg') sysAuth.generateCaptcha();
-            },
-            doLogin: async () => {
-                const id = document.getElementById('auth-id').value.trim();
-                const pw = document.getElementById('auth-pw').value;
-                if(!id || !pw) return alert("請輸入帳密");
-                const email = (id.toLowerCase() === "admin") ? "admin@class.local" : `${id}@class.local`;
-                try {
-                    await auth.signInWithEmailAndPassword(email, pw);
-                } catch (e) { alert("登入失敗：身分驗證不通過。"); }
-            },
-            doRegister: async () => {
-                const id = document.getElementById('reg-id').value.trim();
-                const seat = document.getElementById('reg-seat').value.trim();
-                const name = document.getElementById('reg-name').value.trim();
-                const cls = document.getElementById('reg-class').value;
-                const email = document.getElementById('reg-email').value.trim();
-                const p1 = document.getElementById('reg-pw1').value;
-                const p2 = document.getElementById('reg-pw2').value;
-                const captcha = document.getElementById('reg-captcha').value.toUpperCase();
+    firebase.initializeApp({ /* 你的 Config */ });
+    const db = firebase.firestore();
 
-                if(id.length !== 6) return alert("學號須為 6 碼");
-                if(!email.endsWith("@gm.tntcsh.tn.edu.tw")) return alert("信箱後綴錯誤");
-                if(!email.startsWith(id)) return alert("信箱與學號不符");
-                if(p1 !== p2 || p1.length < 6) return alert("密碼不一致或太短");
-                if(captcha !== currentCaptcha) { sysAuth.generateCaptcha(); return alert("驗證碼錯誤"); }
-
-                try {
-                    const userEmail = `${id}@class.local`;
-                    await auth.createUserWithEmailAndPassword(userEmail, p1);
-                    await db.collection("students").doc(id).set({
-                        name, classId: cls, seat, eduMail: email, role: "student", status: "pending"
-                    });
-                    alert("註冊成功！請待導師審核啟用。");
-                    await auth.signOut();
-                    sysAuth.switchMode('login');
-                } catch (e) { alert("註冊失敗：" + e.message); }
-            },
-            doLogout: async () => { if(confirm("確定登出平台？")) { await auth.signOut(); location.reload(); } }
-        };
-
-        // 🛡️ 核心：解決閃現與狀態監聽
-        auth.onAuthStateChanged(async (user) => {
-            const portal = document.getElementById('auth-portal');
-            if(user) {
-                const id = user.email.split('@')[0];
-                try {
-                    const doc = await db.collection("students").doc(id).get();
-                    if(doc.exists && doc.data().status === 'active') {
-                        me = { id, ...doc.data() };
-                        document.getElementById('auth-status-text').innerText = `${me.classId} ${me.seat} ｜ ${me.name}`;
-                        portal.classList.add('hide');
-                    } else {
-                        if(doc.exists && doc.data().status === 'pending') alert("帳號審核中");
-                        await auth.signOut();
-                        sysAuth.switchMode('login');
-                    }
-                } catch(e) { await auth.signOut(); sysAuth.switchMode('login'); }
-            } else {
-                portal.classList.remove('hide');
-                sysAuth.switchMode('login');
+    function tryAdmin() {
+        clickCount++;
+        if (clickCount === 5) {
+            const pass = prompt("請輸入管理員密碼");
+            if(pass === MASTER_KEY) {
+                isAdmin = true;
+                adminToken = BACKEND_SECRET;
+                document.getElementById('adminStatusBar').style.display = 'block';
+                render();
             }
-        });
+            clickCount = 0;
+        }
+        setTimeout(() => clickCount = 0, 2000);
+    }
 
-        // 🕹️ 旗艦版控制器 (100% 還原特效)
-        const Hub = {
-            dom: { scroller: document.getElementById('scroll-engine'), tabs: document.querySelectorAll('.nav-item'), themeIcon: document.getElementById('theme-icon') },
-            state: { currentIdx: parseInt(localStorage.getItem('lastPage')) || 0, isDark: document.documentElement.classList.contains('dark-mode'), layout: localStorage.getItem('layout') || 'list-mode' }
-        };
-        function sysHaptic(p = 15) { if(navigator.vibrate) navigator.vibrate(p); }
-        function moveTo(idx, behavior = 'smooth') {
-            sysHaptic(10);
-            const width = Hub.dom.scroller.offsetWidth;
-            Hub.dom.scroller.scrollTo({ left: idx * width, behavior });
-            Hub.state.currentIdx = idx;
-            localStorage.setItem('lastPage', idx);
-            Hub.dom.tabs.forEach((tab, i) => tab.classList.toggle('active', i === idx));
-        }
-        function updateLayout(mode) {
-            document.documentElement.setAttribute('data-layout', mode);
-            Hub.state.layout = mode; localStorage.setItem('layout', mode);
-            document.getElementById('listToggle').classList.toggle('active', mode === 'list-mode');
-            document.getElementById('gridToggle').classList.toggle('active', mode === 'grid-mode');
-            setTimeout(() => moveTo(Hub.state.currentIdx, 'auto'), 50);
-        }
-        function updateTheme() {
-            sysHaptic(20); Hub.state.isDark = !Hub.state.isDark;
-            document.documentElement.classList.toggle('dark-mode', Hub.state.isDark);
-            localStorage.setItem('theme', Hub.state.isDark ? 'dark' : 'light');
-            Hub.dom.themeIcon.innerHTML = Hub.state.isDark ? '☀️' : '🌑';
-        }
-        function initCardFX() {
-            const savedOrder = JSON.parse(localStorage.getItem('sysCardOrder')) || {};
-            document.querySelectorAll('.content-grid').forEach((grid, idx) => {
-                const order = savedOrder[`grid-${idx}`];
-                if(order) order.forEach(h => {
-                    const card = [...grid.querySelectorAll('.card')].find(c => c.getAttribute('href') === h);
-                    if(card) grid.appendChild(card);
-                });
+    // 儲存函數 (加強安全)
+    async function saveEvent() {
+        const title = document.getElementById('evTitle').value;
+        const type = document.getElementById('evType').value;
+        const date = document.getElementById('modalDateTitle').innerText;
+
+        if(!title) return;
+
+        try {
+            await db.collection("calendar_events").add({
+                title, type, date,
+                adminSecret: adminToken, // 🔒 只有帶著這個暗號，後端規則才會允許寫入
+                createdAt: Date.now()
             });
-            document.querySelectorAll('.card').forEach(card => {
-                card.addEventListener('mousemove', e => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-                    card.style.setProperty('--mouse-x', `${x}px`); card.style.setProperty('--mouse-y', `${y}px`);
-                    const rx = (y - rect.height/2) / (rect.height/2) * -8;
-                    const ry = (x - rect.width/2) / (rect.width/2) * 8;
-                    card.style.setProperty('--rx', `${rx}deg`); card.style.setProperty('--ry', `${ry}deg`);
-                    card.style.setProperty('--scale', `1.03`);
-                });
-                card.addEventListener('mouseleave', () => {
-                    card.style.setProperty('--rx', `0deg`); card.style.setProperty('--ry', `0deg`); card.style.setProperty('--scale', `1`);
-                });
-                card.addEventListener('dragstart', function(e) { this.classList.add('dragging'); e.dataTransfer.setData('text/plain', this.getAttribute('href')); });
-                card.addEventListener('dragend', function() { 
-                    this.classList.remove('dragging'); 
-                    const orderMap = {};
-                    document.querySelectorAll('.content-grid').forEach((grid, i) => { orderMap[`grid-${i}`] = [...grid.querySelectorAll('.card')].map(c => c.getAttribute('href')); });
-                    localStorage.setItem('sysCardOrder', JSON.stringify(orderMap));
-                });
-                card.addEventListener('dragover', e => e.preventDefault());
-                card.addEventListener('dragenter', function() {
-                    const dragging = document.querySelector('.dragging');
-                    if(dragging && dragging !== this) {
-                        const grid = this.parentNode;
-                        if([...grid.children].indexOf(dragging) < [...grid.children].indexOf(this)) grid.insertBefore(dragging, this.nextSibling);
-                        else grid.insertBefore(dragging, this);
-                    }
-                });
-            });
+            closeModal();
+        } catch (e) {
+            alert("❌ 權限不足：只有老師帳號可以編輯。");
         }
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('ui-banner').innerText = SYS_CONFIG.banner;
-            Hub.dom.themeIcon.innerHTML = Hub.state.isDark ? '☀️' : '🌑';
-            initCardFX(); updateLayout(Hub.state.layout);
-            setTimeout(() => { moveTo(Hub.state.currentIdx, 'auto'); document.documentElement.setAttribute('data-system-ready', 'true'); }, 50);
-            Hub.dom.scroller.addEventListener('scroll', () => {
-                const newIdx = Math.round(Hub.dom.scroller.scrollLeft / Hub.dom.scroller.offsetWidth);
-                if(newIdx !== Hub.state.currentIdx) { Hub.state.currentIdx = newIdx; Hub.dom.tabs.forEach((tab, i) => tab.classList.toggle('active', i === newIdx)); }
-            }, { passive: true });
-        });
-    </script>
+    }
+
+    // 刪除函數
+    async function deleteEvent(id) {
+        if(!confirm("確定刪除？")) return;
+        try {
+            // 注意：刪除動作在 Rules 中較難檢查 Secret，
+            // 建議改用「標記刪除」方式，或者在 Rules 中允許老師 UID 刪除。
+            await db.collection("calendar_events").doc(id).delete(); 
+            closeModal();
+        } catch (e) {
+            alert("權限不足。");
+        }
+    }
+
+    // ... 渲染邏輯 render() 與 openDay() 與之前相似，但需加入 isAdmin 判斷來顯示編輯/刪除按鈕 ...
+</script>
 </body>
 </html>
