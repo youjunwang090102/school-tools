@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 v3.1.0(bata)</title>
+    <title>班級數位平台 Pro v3.2.0</title>
 
     <meta name="theme-color" id="chrome-theme" content="#f8fafc">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -43,12 +43,14 @@
                 ver: "v3.1.0(bata)",
                 docUrl: "#",
                 updates: [
+                    "-New- 支援用戶長按可拖曳調整卡片順序。",
+                    "-New- 加入滑鼠 3D 懸浮光影與點擊觸覺震動反饋 (Haptics)。"
                     "- 強化深色模式按鈕高對比顯示，優化使用體驗。",
-                    "- 修正重新整理後 Page Index 偏移問題。",
+                    "- 修正重新整理後偏移問題。",
                     "- 增加下方選單，方便切換服務項目類別。",
                     "- 最佳化 SVG 向量渲染路徑，以免行動裝置版圖示顯示異常。",
                     "- 支援滑動頁面功能，優化用戶體驗",
-                    "- 增加圖示觸控面積，對觸控使用者較為友善。"
+                    
                 ]
             }
         };
@@ -133,7 +135,6 @@
             color: var(--sub); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 💡 這裡解決您說的「底色不夠鮮艷」問題 */
         .icon-btn.active {
             background: var(--p); 
             color: #ffffff !important;
@@ -176,6 +177,7 @@
         /* 網格核心佈局 */
         .content-grid {
             display: grid; gap: 18px; width: 100%; max-width: 1100px; margin: 0 auto;
+            min-height: 100px; /* 給予拖曳時的基本高度 */
         }
 
         /* --- 列表模式 (List) --- */
@@ -187,13 +189,48 @@
         [data-layout="grid-mode"] .content-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (min-width: 1024px) { [data-layout="grid-mode"] .content-grid { grid-template-columns: repeat(6, 1fr); } }
 
-        /* 卡片設計 */
+        /* ✨ 升級：卡片設計加強 (加入 3D Hover & 光影 & 拖曳狀態) */
         .card {
             background: var(--card); border: 1px solid var(--border);
             border-radius: 24px; text-decoration: none; color: inherit;
-            display: flex; transition: all 0.3s ease; position: relative;
+            display: flex; position: relative;
+            
+            /* 新增：3D Hover 基礎設定 */
+            overflow: hidden;
+            transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale3d(var(--scale, 1), var(--scale, 1), 1);
+            transition: transform 0.15s ease-out, background 0.3s ease, box-shadow 0.3s ease, opacity 0.2s;
+            will-change: transform;
+            cursor: grab; /* 提示可拖曳 */
+            
+            /* 手機版優化：防止原生選擇與反白，增強拖曳體驗 */
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         }
-        .card:active { transform: scale(0.96); background: var(--p-light); }
+        
+        .card:active { 
+            --scale: 0.96; background: var(--p-light); cursor: grabbing; 
+        }
+
+        /* 拖曳中的視覺效果 */
+        .card.dragging {
+            opacity: 0.3;
+            transform: scale3d(0.92, 0.92, 1);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+            z-index: 50;
+        }
+
+        /* 滑鼠跟隨的動態光影 (Spotlight) */
+        .card::after {
+            content: ""; position: absolute; inset: 0;
+            background: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(67, 97, 238, 0.08), transparent 40%);
+            opacity: 0; transition: opacity 0.4s ease; pointer-events: none; z-index: 10;
+        }
+        .dark-mode .card::after {
+            background: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.1), transparent 40%);
+        }
+        /* 僅在非觸控裝置上啟用 hover 光影，避免手機端點擊殘留 */
+        @media (hover: hover) and (pointer: fine) {
+            .card:hover::after { opacity: 1; }
+        }
 
         [data-layout="list-mode"] .card { padding: 22px; align-items: center; }
         [data-layout="grid-mode"] .card { flex-direction: column; padding: 20px 10px; text-align: center; aspect-ratio: 1 / 1.1; justify-content: center; }
@@ -310,29 +347,29 @@
     </header>
 
     <main class="viewport" id="scroll-engine">
-        <section class="page-panel"><div class="content-grid">
-            <a href="行事曆/index.html" class="card"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
-            <a href="countdown/index.html" class="card"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
-            <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>小老師新增作業 同學即時查看不遺漏</p></div></a>
+        <section class="page-panel" id="panel-0"><div class="content-grid">
+            <a href="行事曆/index.html" class="card" draggable="true"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
+            <a href="countdown/index.html" class="card" draggable="true"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
+            <a href="homework/index.html" class="card" draggable="true"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>小老師新增作業 同學即時查看不遺漏</p></div></a>
         </div></section>
 
-        <section class="page-panel"><div class="content-grid">
-            <a href="help/student.html" class="card"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>匿名求助導師</p></div></a>
-            <a href="unknownmail/index.html" class="card"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學 避免尷尬</p></div></a>
-            <a href="匿名/index.html" class="card"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
-            <a href="board/index.html" class="card"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>實名留下想說的話</p></div></a>
+        <section class="page-panel" id="panel-1"><div class="content-grid">
+            <a href="help/student.html" class="card" draggable="true"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>匿名求助導師</p></div></a>
+            <a href="unknownmail/index.html" class="card" draggable="true"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學 避免尷尬</p></div></a>
+            <a href="匿名/index.html" class="card" draggable="true"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
+            <a href="board/index.html" class="card" draggable="true"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>實名留下想說的話</p></div></a>
         </div></section>
 
-        <section class="page-panel"><div class="content-grid">
-            <a href="cleaning/index.html" class="card"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看自己掃區、未掃登記點數</p></div></a>
-            <a href="seating/index.html" class="card"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>刺激的隨機選位 即時生成座位表</p></div></a>
-            <a href="vote/index.html" class="card"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
-            <a href="grouping/index.html" class="card"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組方式</p></div></a>
+        <section class="page-panel" id="panel-2"><div class="content-grid">
+            <a href="cleaning/index.html" class="card" draggable="true"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看自己掃區、未掃登記點數</p></div></a>
+            <a href="seating/index.html" class="card" draggable="true"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>刺激的隨機選位 即時生成座位表</p></div></a>
+            <a href="vote/index.html" class="card" draggable="true"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
+            <a href="grouping/index.html" class="card" draggable="true"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組方式</p></div></a>
         </div></section>
 
-        <section class="page-panel"><div class="content-grid">
-            <a href="exam_calc/index.html" class="card"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算段考加權平均與總分</p></div></a>
-            <a href="final_calc/index.html" class="card"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>判斷通過、補考、死當</p></div></a>
+        <section class="page-panel" id="panel-3"><div class="content-grid">
+            <a href="exam_calc/index.html" class="card" draggable="true"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算段考加權平均與總分</p></div></a>
+            <a href="final_calc/index.html" class="card" draggable="true"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>判斷通過、補考、死當</p></div></a>
         </div></section>
     </main>
 
@@ -382,8 +419,16 @@
             }
         };
 
-        // 🌟 [核心 1] 座標鎖定與移動 (解決重新整理偏移)
+        // ✨ [新增] 系統級觸覺震動引擎 (Haptic Engine)
+        function sysHaptic(pattern = 15) {
+            if (navigator.vibrate) {
+                try { navigator.vibrate(pattern); } catch(e) {}
+            }
+        }
+
+        // 🌟 [核心 1] 座標鎖定與移動
         function moveTo(idx, behavior = 'smooth') {
+            sysHaptic(10); // 點擊導覽列輕微震動
             const width = Hub.dom.scroller.offsetWidth;
             Hub.dom.scroller.scrollTo({ left: idx * width, behavior: behavior });
             Hub.state.currentIdx = idx;
@@ -399,27 +444,23 @@
 
         // 🌟 [核心 2] 模式切換與鮮艷度同步
         function updateLayout(mode) {
+            if(Hub.state.layout !== mode) sysHaptic(15);
             document.documentElement.setAttribute('data-layout', mode);
             Hub.state.layout = mode;
             localStorage.setItem('layout', mode);
             
-            // 更新按鈕 Active 狀態 (觸發高對比色)
             document.getElementById('listToggle').classList.toggle('active', mode === 'list-mode');
             document.getElementById('gridToggle').classList.toggle('active', mode === 'grid-mode');
-
-            // 暴力重繪 SVG 以防消失
             forceRepaint();
-            
-            // 校準捲動位置
             setTimeout(() => moveTo(Hub.state.currentIdx, 'auto'), 60);
         }
 
         // 🌟 [核心 3] 深色模式與外殼同步
         function updateTheme() {
+            sysHaptic(20);
             Hub.state.isDark = !Hub.state.isDark;
             document.documentElement.classList.toggle('dark-mode', Hub.state.isDark);
             localStorage.setItem('theme', Hub.state.isDark ? 'dark' : 'light');
-            
             syncSystemUI();
             forceRepaint();
         }
@@ -428,24 +469,23 @@
             const color = Hub.state.isDark ? "#020617" : "#f8fafc";
             Hub.dom.chromeMeta.content = color;
             Hub.dom.safariMeta.content = Hub.state.isDark ? "black-translucent" : "default";
-
-            // 重新注入向量路徑確保圖示在對比色下清晰
             Hub.dom.themeIcon.innerHTML = Hub.state.isDark 
                 ? `<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor"/>`
                 : `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor" stroke="currentColor"/>`;
         }
 
-        // 🌟 [核心 4] 暴力重繪技術 (Brute Force Paint)
+        // 🌟 [核心 4] 暴力重繪技術
         function forceRepaint() {
             const svgs = document.querySelectorAll('svg');
             document.body.style.display = 'none';
-            document.body.offsetHeight; // 觸發 reflow
+            document.body.offsetHeight;
             document.body.style.display = 'block';
             svgs.forEach(s => s.style.opacity = '1');
         }
 
-        // 🌟 [核心 5] 資訊視窗與初始化
+        // 🌟 [核心 5] 資訊視窗
         function showInfo(active) {
+            sysHaptic(15);
             const overlay = document.getElementById('ui-overlay');
             if (active) {
                 document.getElementById('author-name').innerText = SYS_CONFIG.author.name;
@@ -460,23 +500,113 @@
         }
 
         /**
+         * ✨ [新增核心 6] 旗艦級卡片效果：3D Hover、光影與拖曳重排系統
+         */
+        function initPremiumCardFX() {
+            const cards = document.querySelectorAll('.card');
+            let dragSrcEl = null;
+
+            // 1. 讀取儲存的排列順序
+            const savedOrder = JSON.parse(localStorage.getItem('sysCardOrder')) || {};
+            document.querySelectorAll('.content-grid').forEach((grid, index) => {
+                const order = savedOrder[`grid-${index}`];
+                if (order) {
+                    const gridCards = Array.from(grid.querySelectorAll('.card'));
+                    order.forEach(href => {
+                        const card = gridCards.find(c => c.getAttribute('href') === href);
+                        if (card) grid.appendChild(card); // 依照記憶重新 append 節點
+                    });
+                }
+            });
+
+            cards.forEach(card => {
+                // --- A. 滑鼠 3D 懸浮與光影計算 (Mouse Tracking) ---
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    card.style.setProperty('--mouse-x', `${x}px`);
+                    card.style.setProperty('--mouse-y', `${y}px`);
+
+                    // 計算 3D 翻轉角度 (最大偏移 6 度)
+                    const rx = ((y - rect.height / 2) / (rect.height / 2)) * -6;
+                    const ry = ((x - rect.width / 2) / (rect.width / 2)) * 6;
+                    card.style.setProperty('--rx', `${rx}deg`);
+                    card.style.setProperty('--ry', `${ry}deg`);
+                    card.style.setProperty('--scale', `1.02`); // 微幅放大
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.setProperty('--rx', `0deg`);
+                    card.style.setProperty('--ry', `0deg`);
+                    card.style.setProperty('--scale', `1`);
+                });
+
+                // --- B. 拖曳重排邏輯 (Drag & Drop) ---
+                card.addEventListener('dragstart', function(e) {
+                    dragSrcEl = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', this.getAttribute('href'));
+                    sysHaptic(50); // 提起卡片時較強烈的震動
+                });
+
+                card.addEventListener('dragenter', function(e) {
+                    if (dragSrcEl !== this && this.classList.contains('card')) {
+                        const grid = this.parentNode;
+                        const srcIdx = [...grid.children].indexOf(dragSrcEl);
+                        const tgtIdx = [...grid.children].indexOf(this);
+                        // 動態將被拖曳的元素插入目標之前或之後，達成即時交換視覺
+                        if (srcIdx < tgtIdx) {
+                            grid.insertBefore(dragSrcEl, this.nextSibling);
+                        } else {
+                            grid.insertBefore(dragSrcEl, this);
+                        }
+                        sysHaptic(10); // 交換瞬間微震動
+                    }
+                });
+
+                card.addEventListener('dragover', (e) => e.preventDefault()); // 允許放置
+
+                card.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    sysHaptic([30, 50, 30]); // 成功放下時的回饋震動
+
+                    // 儲存最新的排列順序到 localStorage
+                    const orderMap = {};
+                    document.querySelectorAll('.content-grid').forEach((grid, index) => {
+                        const gridCards = Array.from(grid.querySelectorAll('.card'));
+                        orderMap[`grid-${index}`] = gridCards.map(c => c.getAttribute('href'));
+                    });
+                    localStorage.setItem('sysCardOrder', JSON.stringify(orderMap));
+                });
+
+                card.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                
+                // 阻擋拖曳放開瞬間觸發超連結跳轉
+                card.addEventListener('click', (e) => {
+                    if (card.classList.contains('dragging')) e.preventDefault();
+                });
+            });
+        }
+
+        /**
          * 🏁 系統掛載
          */
         window.addEventListener('DOMContentLoaded', () => {
-            // 設定公告
             document.getElementById('ui-banner').innerText = SYS_CONFIG.banner;
             
-            // 初始化狀態
             syncSystemUI();
             updateLayout(Hub.state.layout);
+            initPremiumCardFX(); // 啟動旗艦級卡片效果
             
-            // 執行原地定位 (behavior 'auto' 避免滑動感)
             setTimeout(() => {
                 moveTo(Hub.state.currentIdx, 'auto');
                 document.documentElement.setAttribute('data-system-ready', 'true');
             }, 50);
 
-            // 監聽滾動索引
             Hub.dom.scroller.addEventListener('scroll', () => {
                 const newIdx = Math.round(Hub.dom.scroller.scrollLeft / Hub.dom.scroller.offsetWidth);
                 if (newIdx !== Hub.state.currentIdx) {
@@ -486,11 +616,9 @@
                 }
             }, { passive: true });
 
-            // 防抖動視窗縮放監聽
             window.addEventListener('resize', () => moveTo(Hub.state.currentIdx, 'auto'));
         });
 
-        // 終極保險：確保所有資源加載後位置依然正確
         window.onload = () => moveTo(Hub.state.currentIdx, 'auto');
     </script>
 </body>
