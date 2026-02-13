@@ -6,163 +6,270 @@
     <title>班級數位平台 v3.3.0</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+    <meta name="apple-mobile-web-app-status-bar-style" id="safari-theme" content="default">
+    <meta name="theme-color" id="chrome-theme" content="#f8fafc">
+
+    <script>
+        /** 🏁 保留您的啟動前置邏輯 */
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            const layout = localStorage.getItem('layout') || 'list-mode';
+            const lastPage = localStorage.getItem('lastPage') || '0';
+
+            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+            document.documentElement.setAttribute('data-layout', layout);
+            document.documentElement.setAttribute('data-init-page', lastPage);
+            
+            const gateStyle = document.createElement('style');
+            gateStyle.innerHTML = `body { opacity: 0; } [data-system-ready="true"] body { opacity: 1; transition: opacity 0.3s ease; }`;
+            document.head.appendChild(gateStyle);
+        })();
+
+        const SYS_CONFIG = {
+            banner: "許願池系統負載較高，請節省頻率以維持其他服務正常。",
+            author: { name: "王宥鈞", role: "開發者", ver: "v3.3.0" }
+        };
+    </script>
+
     <style>
-        /* 繼承您原本的變數與美學 */
+        /* 🎨 1. 完全保留您的變數系統 */
         :root {
-            --p: #4361ee; --bg: #f8fafc; --card: #ffffff; --text: #1e293b;
-            --nav-bg: rgba(255, 255, 255, 0.8); --border: rgba(0,0,0,0.08);
-            --safe-top: env(safe-area-inset-top);
+            --p: #4361ee; --p-light: rgba(67, 97, 238, 0.1); --g: #7209b7; 
+            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --sub: #64748b; 
+            --border: rgba(0,0,0,0.08); --nav-bg: rgba(255, 255, 255, 0.85); 
+            --accent: #4361ee; --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
+
         .dark-mode {
-            --bg: #020617; --card: #111827; --text: #f8fafc; --nav-bg: rgba(15, 23, 42, 0.8);
+            --bg: #020617; --card: #111827; --text: #f8fafc; --sub: #94a3b8; 
+            --border: rgba(255,255,255,0.1); --nav-bg: rgba(15, 23, 42, 0.85); 
+            --accent: #fbbf24;
         }
 
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--bg); color: var(--text); overflow: hidden;
-            font-family: system-ui, -apple-system, sans-serif;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100dvh;
+            background-color: var(--bg); color: var(--text);
+            font-family: 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+            overflow: hidden; position: fixed;
         }
 
-        /* --- 核心：App 容器層級 --- */
-        #app-shell { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        /* 📢 頂部公告與導覽 (適配手機高度) */
+        .top-notice {
+            background: var(--banner-bg); color: var(--banner-text);
+            padding: calc(var(--safe-top) / 2 + 5px) 15px 5px; font-size: 12px; 
+            text-align: center; font-weight: 700; border-bottom: 1px solid var(--border);
+        }
 
         header {
-            padding: calc(var(--safe-top) + 15px) 20px 15px;
+            height: 72px; padding: 0 20px;
             background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; z-index: 1000;
         }
 
-        /* 頁面捲動引擎 (保留您的核心) */
+        .brand h1 { margin: 0; font-size: 20px; font-weight: 900; color: var(--p); }
+        .brand p { margin: 0; font-size: 10px; color: var(--sub); font-weight: 800; text-transform: uppercase; }
+
+        /* 🕹️ 按鈕控制器 (保留 SVG 與 Active 邏輯) */
+        .controls { display: flex; gap: 8px; }
+        .toggle-group { display: flex; background: rgba(0,0,0,0.05); padding: 4px; border-radius: 12px; }
+        .icon-btn {
+            border: none; background: transparent; width: 36px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; color: var(--sub); transition: all 0.2s;
+        }
+        .icon-btn.active { background: var(--p); color: #fff !important; }
+        .dark-mode .icon-btn.active { background: var(--accent); color: #000 !important; }
+        .circle-tool { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); }
+        svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+
+        /* 📖 主內容容器 */
         .viewport {
-            flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            width: 100%; height: calc(100dvh - 72px - 100px);
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
             scrollbar-width: none; -webkit-overflow-scrolling: touch;
         }
         .viewport::-webkit-scrollbar { display: none; }
-        .page-panel { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .page-panel { flex: 0 0 100%; width: 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 20px 20px 150px; }
 
-        /* 您原本的卡片美學 */
-        .card {
-            background: var(--card); border: 1px solid var(--border); border-radius: 24px;
-            padding: 22px; margin-bottom: 15px; display: flex; align-items: center;
-            text-decoration: none; color: inherit; transition: 0.2s;
+        /* 🃏 卡片佈局 (完全保留您的原本設計) */
+        .content-grid { display: grid; gap: 16px; width: 100%; }
+        [data-layout="list-mode"] .card { padding: 22px; display: flex; align-items: center; }
+        [data-layout="grid-mode"] .content-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        [data-layout="grid-mode"] .card { flex-direction: column; padding: 15px 5px; text-align: center; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; color: inherit; transition: 0.2s; cursor: pointer; }
+        .card:active { transform: scale(0.96); background: var(--p-light); }
+        .card-icon { 
+            display: flex; align-items: center; justify-content: center; background: var(--p-light); color: var(--p); 
+            width: 50px; height: 50px; border-radius: 14px; font-size: 22px;
         }
-        .card:active { transform: scale(0.97); background: rgba(67, 97, 238, 0.1); }
-        .card-icon { width: 56px; height: 56px; border-radius: 16px; background: rgba(67, 97, 238, 0.1); color: var(--p); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 20px; }
+        [data-layout="list-mode"] .card-icon { margin-right: 18px; }
+        [data-layout="grid-mode"] .card-icon { margin-bottom: 10px; width: 42px; height: 42px; border-radius: 50%; }
+        .card-info h2 { margin: 0; font-size: 15px; font-weight: 800; }
+        .card-info p { margin: 4px 0 0; font-size: 11px; color: var(--sub); }
+        [data-layout="grid-mode"] .card-info p { display: none; }
 
-        /* --- 解決網址列彈出的關鍵：Tool Viewer --- */
-        #tool-viewer {
-            position: fixed; inset: 0; background: var(--bg); z-index: 10000;
+        /* 🧭 底部導覽 (解決 App 錯位) */
+        .nav-dock { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 5000; }
+        .nav-glass { background: var(--nav-bg); backdrop-filter: blur(25px); display: flex; padding: 5px; border-radius: 100px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; font-size: 13px; font-weight: 900; color: var(--sub); border-radius: 100px; }
+        .nav-item.active { color: #fff; background: var(--p); }
+
+        /* 📺 沉浸式工具檢視器 (核心：防網址列跳出) */
+        #tool-container {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
             transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column;
         }
-        #tool-viewer.active { transform: translateY(0); }
-        
+        #tool-container.active { transform: translateY(0); }
         .tool-header {
             padding: calc(var(--safe-top) + 10px) 20px 10px;
-            background: var(--card); display: flex; align-items: center; border-bottom: 1px solid var(--border);
+            background: var(--card); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .back-btn { padding: 10px; font-weight: 900; color: var(--p); cursor: pointer; }
-        
         iframe { flex: 1; border: none; width: 100%; height: 100%; }
-
-        /* 底部導覽 (您的原始設計優化) */
-        .nav-dock { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; z-index: 5000; }
-        .nav-glass { background: var(--nav-bg); backdrop-filter: blur(25px); border-radius: 100px; display: flex; padding: 6px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .nav-item { flex: 1; text-align: center; padding: 14px 0; font-size: 14px; font-weight: 800; color: #94a3b8; border-radius: 100px; }
-        .nav-item.active { background: var(--p); color: white; }
     </style>
 </head>
-<body>
+<body data-layout="list-mode">
 
-<div id="app-shell">
+    <div class="top-notice" id="ui-banner"></div>
+
     <header>
-        <div>
-            <h1 style="margin:0; font-size:20px; color:var(--p);">班級數位平台</h1>
-            <p style="margin:0; font-size:10px; color:#94a3b8; font-weight:800;">DIGITAL CLASSROOM</p>
+        <div class="brand"><h1>班級數位平台</h1><p>Digital Classroom System</p></div>
+        <div class="controls">
+            <div class="toggle-group">
+                <button class="icon-btn" id="listToggle" onclick="Hub.updateLayout('list-mode')"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+                <button class="icon-btn" id="gridToggle" onclick="Hub.updateLayout('grid-mode')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+            </div>
+            <button class="icon-btn circle-tool" onclick="Hub.updateTheme()"><svg id="theme-icon" viewBox="0 0 24 24"></svg></button>
         </div>
-        <button onclick="document.documentElement.classList.toggle('dark-mode')" style="border:none; background:none; font-size:20px;">🌓</button>
     </header>
 
     <main class="viewport" id="scroll-engine">
-        <section class="page-panel">
-            <div class="card" onclick="openTool('countdown/index.html', '考程倒數')">
-                <div class="card-icon">⏳</div>
-                <div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div>
-            </div>
-            <div class="card" onclick="openTool('homework/index.html', '作業待辦')">
-                <div class="card-icon">📒</div>
-                <div class="card-info"><h2>作業待辦</h2><p>及時查看不遺漏</p></div>
-            </div>
-        </section>
+        <section class="page-panel"><div class="content-grid">
+            <div class="card" onclick="Hub.openTool('calendar/index.html', '班級行事曆')"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動</p></div></div>
+            <div class="card" onclick="Hub.openTool('homework/index.html', '作業待辦')"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>同學即時查看不遺漏</p></div></div>
+        </div></section>
+        
+        <section class="page-panel"><div class="content-grid">
+            <div class="card" onclick="Hub.openTool('unknownmail/index.html', '匿名信箱')"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學</p></div></div>
+            <div class="card" onclick="Hub.openTool('board/index.html', '留言板')"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>留下想說的話</p></div></div>
+        </div></section>
+        
+        <section class="page-panel"><div class="content-grid">
+            <div class="card" onclick="Hub.openTool('seating/index.html', '選位系統')"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>隨機生成座位表</p></div></div>
+            <div class="card" onclick="Hub.openTool('vote/index.html', '數位投票')"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></div>
+        </div></section>
 
-        <section class="page-panel">
-            <div class="card" onclick="openTool('unknownmail/index.html', '匿名信箱')">
-                <div class="card-icon">✉️</div>
-                <div class="card-info"><h2>匿名信箱</h2><p>傳送提醒給同學</p></div>
-            </div>
-        </section>
+        <section class="page-panel"><div class="content-grid">
+            <div class="card" onclick="Hub.openTool('exam_calc/index.html', '段考加權')"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算平均與總分</p></div></div>
+        </div></section>
     </main>
 
     <nav class="nav-dock">
         <div class="nav-glass">
-            <div class="nav-item active" onclick="moveTo(0)">提醒</div>
-            <div class="nav-item" onclick="moveTo(1)">互動</div>
-            <div class="nav-item">班務</div>
-            <div class="nav-item">成績</div>
+            <div class="nav-item" onclick="Hub.moveTo(0)">提醒</div>
+            <div class="nav-item" onclick="Hub.moveTo(1)">互動</div>
+            <div class="nav-item" onclick="Hub.moveTo(2)">班務</div>
+            <div class="nav-item" onclick="Hub.moveTo(3)">成績</div>
         </div>
     </nav>
-</div>
 
-<div id="tool-viewer">
-    <div class="tool-header">
-        <div class="back-btn" onclick="closeTool()">✕ 關閉工具</div>
-        <div id="tool-title" style="flex:1; text-align:center; font-weight:800;"></div>
+    <div id="tool-container">
+        <div class="tool-header">
+            <button class="icon-btn" onclick="Hub.closeTool()" style="width: auto; padding: 0 15px; font-weight: 800; color: var(--p);">✕ 關閉</button>
+            <div id="tool-title" style="font-weight: 800;"></div>
+            <div style="width: 60px;"></div> </div>
+        <iframe id="tool-iframe" src=""></iframe>
     </div>
-    <iframe id="tool-frame" src=""></iframe>
-</div>
 
-<script>
-    const scroller = document.getElementById('scroll-engine');
-    const tabs = document.querySelectorAll('.nav-item');
+    <script>
+        const Hub = {
+            state: {
+                currentIdx: parseInt(localStorage.getItem('lastPage')) || 0,
+                isDark: document.documentElement.classList.contains('dark-mode'),
+                layout: localStorage.getItem('layout') || 'list-mode'
+            },
+            
+            init() {
+                document.getElementById('ui-banner').innerText = SYS_CONFIG.banner;
+                this.updateLayout(this.state.layout);
+                this.syncThemeUI();
+                setTimeout(() => {
+                    this.moveTo(this.state.currentIdx, 'auto');
+                    document.documentElement.setAttribute('data-system-ready', 'true');
+                }, 50);
+                this.bindEvents();
+            },
 
-    // 核心 1: 捲動同步
-    function moveTo(idx) {
-        const width = scroller.offsetWidth;
-        scroller.scrollTo({ left: idx * width, behavior: 'smooth' });
-        updateNav(idx);
-    }
+            moveTo(idx, behavior = 'smooth') {
+                const scroller = document.getElementById('scroll-engine');
+                scroller.scrollTo({ left: idx * scroller.offsetWidth, behavior });
+                this.state.currentIdx = idx;
+                localStorage.setItem('lastPage', idx);
+                this.updateNavUI();
+            },
 
-    function updateNav(idx) {
-        tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
-    }
+            updateNavUI() {
+                document.querySelectorAll('.nav-item').forEach((tab, i) => {
+                    tab.classList.toggle('active', i === this.state.currentIdx);
+                });
+            },
 
-    // 核心 2: 解決網址列跑出來的關鍵
-    function openTool(url, title) {
-        const viewer = document.getElementById('tool-viewer');
-        const frame = document.getElementById('tool-frame');
-        document.getElementById('tool-title').innerText = title;
-        
-        frame.src = url; // 動態加載
-        viewer.classList.add('active'); // 向上滑入
-        
-        // 為了極致 App 體驗，可以鎖定背景捲動
-        document.body.style.overflow = 'hidden';
-    }
+            updateLayout(mode) {
+                document.documentElement.setAttribute('data-layout', mode);
+                this.state.layout = mode;
+                localStorage.setItem('layout', mode);
+                document.getElementById('listToggle').classList.toggle('active', mode === 'list-mode');
+                document.getElementById('gridToggle').classList.toggle('active', mode === 'grid-mode');
+                setTimeout(() => this.moveTo(this.state.currentIdx, 'auto'), 60);
+            },
 
-    function closeTool() {
-        const viewer = document.getElementById('tool-viewer');
-        viewer.classList.remove('active');
-        setTimeout(() => { document.getElementById('tool-frame').src = ''; }, 400);
-    }
+            updateTheme() {
+                this.state.isDark = !this.state.isDark;
+                document.documentElement.classList.toggle('dark-mode', this.state.isDark);
+                localStorage.setItem('theme', this.state.isDark ? 'dark' : 'light');
+                this.syncThemeUI();
+            },
 
-    // 監聽捲動
-    scroller.addEventListener('scroll', () => {
-        const idx = Math.round(scroller.scrollLeft / scroller.offsetWidth);
-        updateNav(idx);
-    });
-</script>
+            syncThemeUI() {
+                const color = this.state.isDark ? "#020617" : "#f8fafc";
+                document.getElementById('chrome-theme').content = color;
+                document.getElementById('safari-theme').content = this.state.isDark ? "black-translucent" : "default";
+                document.getElementById('theme-icon').innerHTML = this.state.isDark 
+                    ? `<circle cx="12" cy="12" r="5" fill="currentColor"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2" stroke="currentColor"/>`
+                    : `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor" stroke="currentColor"/>`;
+            },
 
+            openTool(url, title) {
+                const container = document.getElementById('tool-container');
+                document.getElementById('tool-title').innerText = title;
+                document.getElementById('tool-iframe').src = url;
+                container.classList.add('active');
+            },
+
+            closeTool() {
+                document.getElementById('tool-container').classList.remove('active');
+                setTimeout(() => { document.getElementById('tool-iframe').src = ''; }, 400);
+            },
+
+            bindEvents() {
+                const scroller = document.getElementById('scroll-engine');
+                scroller.addEventListener('scroll', () => {
+                    const newIdx = Math.round(scroller.scrollLeft / scroller.offsetWidth);
+                    if (newIdx !== this.state.currentIdx) {
+                        this.state.currentIdx = newIdx;
+                        localStorage.setItem('lastPage', newIdx);
+                        this.updateNavUI();
+                    }
+                }, { passive: true });
+                window.addEventListener('resize', () => this.moveTo(this.state.currentIdx, 'auto'));
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => Hub.init());
+    </script>
 </body>
 </html>
