@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>進階管理員後台</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #edf2f7; margin: 0; padding: 20px; }
+        .admin-container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
+        button { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #4361ee; color: white; }
+        .danger-btn { background: #ef233c; }
+        .warn-btn { background: #f6ad55; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: #4a5568; }
+        select, input[type="text"] { padding: 6px; border-radius: 6px; border: 1px solid #cbd5e0; width: 100%; }
+        
+        .pending-box { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; margin-bottom: 20px; display:none; }
+        .pending-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #bee3f8; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="authCheck" style="text-align:center; padding:50px;"><h2>正在驗證管理員身分...</h2></div>
+
+<div id="adminPanel" class="admin-container" style="display:none;">
+    <div class="header">
+        <h2 style="margin:0;">⚙️ 進階管理後台</h2>
+        <div>
+            <button class="warn-btn" onclick="editThreshold()">設定警告點數</button>
+            <button onclick="location.href='index.html'" style="background:#718096;">返回系統</button>
+        </div>
+    </div>
+
+    <div id="pendingBox" class="pending-box">
+        <h3 style="margin-top:0; color:#2b6cb0;">⏳ 待審核申請</h3>
+        <div id="pendingList"></div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button onclick="saveAllChanges()" style="background:#48bb78;">💾 儲存所有身分與工作變更</button>
+        <button onclick="batchDelete()" class="danger-btn">🗑️ 批次刪除選取學生</button>
+    </div>
+
+    <table id="studentTable">
+        <thead>
+            <tr>
+                <th style="width: 50px;"><input type="checkbox" id="selectAll" onclick="toggleAll()"></th>
+                <th style="width: 60px;">座號</th>
+                <th style="width: 120px;">姓名</th>
+                <th style="width: 150px;">身分權限</th>
+                <th>打掃工作 (可手動輸入新工作)</th>
+                <th style="width: 100px;">操作</th>
+            </tr>
+        </thead>
+        <tbody id="studentBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0", authDomain: "vote-6668.firebaseapp.com", projectId: "vote-6668", storageBucket: "vote-6668.firebasestorage.app", messagingSenderId: "389284021944", appId: "1:389284021944:web:3c5311697cbfc7c010564d" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let allStudents = [];
+    let jobOptions = [];
+
+    async function hashPassword(password) {
+        const msgBuffer = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function escapeHTML(str) { return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag)); }
+
+    // 權限驗證 (讀取 localStorage)
+    window.onload = async () => {
+        const saved = localStorage.getItem('classAppMe');
+        if(!saved) { alert("請先從首頁登入"); location.href = 'index.html'; return; }
+        const me = JSON.parse(saved);
+        if(!['admin', 'teacher'].includes(me.role)) { alert("權限不足，僅限導師/管理員使用"); location.href = 'index.html'; return; }
+        
+        document.getElementById('authCheck').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        loadData();
+    };
+
+    async function loadData() {
+        // 載入工作選項
+        const jobSnap = await db.collection("duty_options").get();
+        jobOptions = []; jobSnap.forEach(doc => jobOptions.push(doc.id));
+        
+        // 載入學生資料
+        db.collection("students").onSnapshot(snap => {
+            allStudents = [];
+            const pendingList = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                if(data.status === 'pending') pendingList.push({id: doc.id, ...data});
+                else allStudents.push({id: doc.id, ...data});
+            });
+            renderPending(pendingList);
+            renderTable();
+        });
+    }
+
+    function getJobSelectHTML(currentJob) {
+        let html = `<input type="text" list="jobs" class="job-input" value="${escapeHTML(currentJob)}" placeholder="輸入或選擇工作">`;
+        html += `<datalist id="jobs">`;
+        jobOptions.forEach(j => html += `<option value="${escapeHTML(j)}">`);
+        html += `</datalist>`;
+        return html;
+    }
+
+    function renderTable() {
+        allStudents.sort((a,b) => parseInt(a.id) - parseInt(b.id));
+        const tbody = document.getElementById('studentBody');
+        tbody.innerHTML = "";
+        allStudents.forEach(s => {
+            const roleSelect = `
+                <select class="role-select">
+                    <option value="student" ${s.role==='student'?'selected':''}>一般學生</option>
+                    <option value="inner_manager" ${s.role==='inner_manager'?'selected':''}>內衛生 (幹部)</option>
+                    <option value="outer_manager" ${s.role==='outer_manager'?'selected':''}>外衛生 (幹部)</option>
+                </select>`;
+            
+            tbody.innerHTML += `
+                <tr data-id="${s.id}">
+                    <td><input type="checkbox" class="stu-check" value="${s.id}"></td>
+                    <td><b>${s.id}</b></td>
+                    <td>${escapeHTML(s.name)}</td>
+                    <td>${roleSelect}</td>
+                    <td>${getJobSelectHTML(s.duty_zone)}</td>
+                    <td><button onclick="resetPw('${s.id}')" class="warn-btn" style="padding:4px 8px; font-size:0.8rem;">↺ 重設密碼</button></td>
+                </tr>`;
+        });
+    }
+
+    function renderPending(list) {
+        const box = document.getElementById('pendingBox');
+        const plist = document.getElementById('pendingList');
+        if(list.length > 0) {
+            box.style.display = 'block'; plist.innerHTML = "";
+            list.forEach(s => {
+                plist.innerHTML += `
+                <div class="pending-item">
+                    <span><b>${s.id}</b> ${escapeHTML(s.name)}</span>
+                    <div>
+                        <button onclick="approve('${s.id}')" style="background:#48bb78; padding:5px 10px;">✅ 批准</button>
+                        <button onclick="reject('${s.id}')" class="danger-btn" style="padding:5px 10px;">❌ 拒絕</button>
+                    </div>
+                </div>`;
+            });
+        } else { box.style.display = 'none'; }
+    }
+
+    // --- 操作功能 ---
+    function toggleAll() {
+        const checked = document.getElementById('selectAll').checked;
+        document.querySelectorAll('.stu-check').forEach(cb => cb.checked = checked);
+    }
+
+    window.saveAllChanges = async function() {
+        if(!confirm("確定要儲存列表上所有的身分與工作變更嗎？")) return;
+        const rows = document.querySelectorAll('#studentBody tr');
+        let newJobs = new Set();
+
+        const batch = db.batch();
+        rows.forEach(row => {
+            const id = row.getAttribute('data-id');
+            const newRole = row.querySelector('.role-select').value;
+            const newJob = row.querySelector('.job-input').value.trim();
+            
+            if(newJob && !jobOptions.includes(newJob)) newJobs.add(newJob);
+            
+            const ref = db.collection('students').doc(id);
+            batch.update(ref, { role: newRole, duty_zone: newJob || "未分配" });
+        });
+
+        // 將手動輸入的新工作加入資料庫選項中
+        newJobs.forEach(job => { batch.set(db.collection('duty_options').doc(job), { active: true }); });
+
+        await batch.commit();
+        alert("✅ 所有變更已成功儲存！");
+    }
+
+    window.batchDelete = async function() {
+        const checked = Array.from(document.querySelectorAll('.stu-check:checked')).map(cb => cb.value);
+        if(checked.length === 0) return alert("請先勾選要刪除的學生");
+        if(!confirm(`⚠️ 確定要永久刪除選取的 ${checked.length} 位學生嗎？\n此操作無法復原！`)) return;
+
+        const batch = db.batch();
+        checked.forEach(id => batch.delete(db.collection('students').doc(id)));
+        await batch.commit();
+        alert("✅ 批次刪除完成");
+    }
+
+    window.resetPw = async function(id) {
+        if(!confirm(`確定要將座號 ${id} 的密碼還原為預設嗎？(座號重複3次)`)) return;
+        const defPw = id.repeat(3); 
+        await db.collection("students").doc(id).update({ password: await hashPassword(defPw), forceReset: true });
+        alert(`已還原密碼為：${defPw}`);
+    }
+
+    window.approve = async function(id) { await db.collection("students").doc(id).update({ status: 'active' }); }
+    window.reject = async function(id) { if(confirm("確定拒絕並刪除此申請？")) await db.collection("students").doc(id).delete(); }
+    
+    window.editThreshold = async function() {
+        const n = prompt("請輸入「記點達 N 次」時顯示警告：");
+        if(n && !isNaN(n)) { await db.collection("settings").doc("config").set({ threshold: parseInt(n) }, {merge:true}); alert("警告點數設定成功！"); }
+    }
+</script>
+</body>
+</html>
