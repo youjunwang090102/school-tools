@@ -3,333 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級平台 v5.0 Professional</title>
-
+    <title>ClassHub Pro v6.0</title>
     <style>
         :root {
-            --hue: 220;
-            --sat: 90%;
-            --primary: hsl(var(--hue), var(--sat), 60%);
-            --primary-glow: hsla(var(--hue), var(--sat), 60%, 0.3);
-            --bg-deep: #0f172a;
-            --bg-surface: #1e293b;
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --glass-bg: rgba(30, 41, 59, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --radius: 20px;
-            --font-scale: 1;
-            --card-gap: 16px;
-            --anim-speed: 0.4s;
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --primary: #38bdf8;
+            --text: #f1f5f9;
+            --text-dim: #94a3b8;
+            --safe-b: env(safe-area-inset-bottom, 20px);
+            --radius: 24px;
         }
 
         [data-theme="light"] {
-            --bg-deep: #f8fafc;
-            --bg-surface: #ffffff;
-            --text-main: #0f172a;
-            --text-sub: #64748b;
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --glass-border: rgba(0, 0, 0, 0.05);
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-dim: #64748b;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0; padding: 0; background: var(--bg-deep); color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow: hidden; transition: background 0.3s;
+            margin: 0; background: var(--bg); color: var(--text);
+            font-family: "Inter", -apple-system, system-ui, sans-serif;
+            overflow: hidden; transition: background 0.5s ease;
         }
 
-        /* --- 🎨 自繪圖標組件 --- */
-        .icon-svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-
-        /* --- 🔝 Header --- */
+        /* --- 極簡 Header --- */
         header {
-            position: fixed; top: 0; left: 0; right: 0; height: 80px;
-            padding: 30px 24px 0; display: flex; justify-content: space-between; align-items: center;
-            z-index: 1000; background: linear-gradient(to bottom, var(--bg-deep) 60%, transparent);
+            position: fixed; top: 0; width: 100%; height: 90px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 40px 24px 0; z-index: 100;
         }
-        .brand h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+        .logo { font-size: 20px; font-weight: 800; letter-spacing: -1px; }
+        .nav-btns { display: flex; gap: 15px; }
+        .icon-btn {
+            background: none; border: none; color: var(--text);
+            cursor: pointer; padding: 5px;
+        }
 
-        /* --- 📱 分頁系統 (一頁一格 + 阻尼) --- */
+        /* --- 物理分頁系統 --- */
         .viewport {
             display: flex; width: 100vw; height: 100vh;
             overflow-x: auto; scroll-snap-type: x mandatory;
-            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
         }
         .viewport::-webkit-scrollbar { display: none; }
         .page {
             flex: 0 0 100vw; height: 100vh; scroll-snap-align: start;
-            padding: 100px 24px 150px; overflow-y: auto;
+            padding: 110px 24px 140px; overflow-y: auto;
         }
 
-        /* --- 🖥️ 自動偵測顯示方式 --- */
-        .grid-system {
-            display: grid; gap: var(--card-gap); width: 100%; max-width: 1200px; margin: 0 auto;
+        /* --- 響應式卡片 (偵測螢幕) --- */
+        .grid {
+            display: grid; gap: 16px; width: 100%; max-width: 1000px; margin: 0 auto;
         }
-        /* 電腦端自動格狀 */
-        @media (min-width: 768px) { .grid-system { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
-        /* 手機端自動列表 (除非手動切換) */
-        @media (max-width: 767px) { 
-            [data-layout="list"] .grid-system { grid-template-columns: 1fr; } 
-            [data-layout="grid"] .grid-system { grid-template-columns: repeat(2, 1fr); }
-        }
+        @media (min-width: 800px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 799px) { .grid { grid-template-columns: 1fr; } }
 
-        .card {
-            background: var(--bg-surface); border: 1px solid var(--glass-border);
-            border-radius: var(--radius); padding: 20px; text-decoration: none;
-            display: flex; align-items: center; gap: 16px; color: inherit;
-            transition: transform 0.2s, background 0.2s;
+        .item {
+            background: var(--surface); border-radius: var(--radius);
+            padding: 24px; text-decoration: none; color: inherit;
+            display: flex; align-items: center; gap: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
         }
-        .card:active { transform: scale(0.97); background: var(--glass-border); }
+        .item:active { transform: scale(0.96); }
+        .icon-box { width: 48px; height: 48px; border-radius: 16px; background: rgba(56, 189, 248, 0.1); display: flex; align-items: center; justify-content: center; font-size: 24px; }
 
-        /* --- 🧭 Dock (精確對齊與聯動) --- */
-        .dock-wrap {
-            position: fixed; bottom: var(--safe-bottom); left: 50%;
-            transform: translateX(-50%); width: 90%; max-width: 450px; z-index: 2000;
+        /* --- 底部導覽列 (水銀連動) --- */
+        .dock-container {
+            position: fixed; bottom: var(--safe-b); left: 50%;
+            transform: translateX(-50%); width: 92%; max-width: 400px; z-index: 200;
         }
         .dock {
-            display: flex; background: var(--glass-bg); backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); border-radius: 30px;
-            padding: 6px; border: 1px solid var(--glass-border); position: relative;
+            display: flex; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); border-radius: 30px; padding: 6px;
+            border: 1px solid rgba(255,255,255,0.1); position: relative;
         }
-        .dock-indicator {
-            position: absolute; top: 6px; bottom: 6px; left: 6px;
+        .indicator {
+            position: absolute; top: 6px; left: 6px; bottom: 6px;
             width: calc(25% - 12px); background: var(--primary);
-            border-radius: 25px; z-index: 0;
-            box-shadow: 0 4px 12px var(--primary-glow);
-            /* 取消 transition，改用 JS 手動控制實現跟隨手指 */
+            border-radius: 25px; z-index: 0; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
         }
-        .dock-item {
-            flex: 1; z-index: 1; text-align: center; padding: 12px 0;
-            font-size: 13px; font-weight: 700; color: var(--text-sub);
-            cursor: pointer; transition: color 0.3s;
-        }
-        .dock-item.active { color: white; }
+        .tab { flex: 1; padding: 12px 0; text-align: center; z-index: 1; font-size: 13px; font-weight: 700; color: var(--text-dim); transition: 0.3s; }
+        .tab.active { color: white; }
 
-        /* --- 🛗 滑動抽屜 (手勢物理模擬) --- */
-        .sheet-overlay {
+        /* --- 頂級物理抽屜 (Bottom Sheet) --- */
+        .overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-            z-index: 3000; visibility: hidden; opacity: 0; transition: 0.3s;
+            opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000;
         }
-        .sheet-overlay.active { visibility: visible; opacity: 1; }
-        .bottom-sheet {
+        .overlay.active { opacity: 1; visibility: visible; }
+        .sheet {
             position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--bg-deep); border-radius: 30px 30px 0 0;
-            padding: 20px 24px calc(40px + var(--safe-bottom));
+            background: var(--bg); border-radius: 32px 32px 0 0;
+            padding: 15px 24px calc(30px + var(--safe-b));
             transform: translateY(100%); will-change: transform;
-            transition: transform var(--anim-speed) cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 92vh; overflow: hidden;
         }
+        .handle-area { width: 100%; height: 30px; display: flex; justify-content: center; cursor: grab; }
+        .handle { width: 40px; height: 5px; background: var(--text-dim); opacity: 0.3; border-radius: 10px; }
+        .sheet-content { overflow-y: auto; height: 100%; padding-top: 10px; }
 
-        .handle-bar {
-            width: 40px; height: 4px; background: var(--text-sub);
-            border-radius: 10px; margin: 0 auto 20px; opacity: 0.4;
-        }
-
-        /* 控制台按鈕修正 */
-        .btn-group {
-            display: flex; background: var(--bg-surface); 
-            border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 20px;
-        }
-        .btn-group button {
-            flex: 1; border: none; background: transparent; color: var(--text-sub);
-            padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;
-        }
-        .btn-group button.active { background: var(--primary); color: white; }
-
-        input[type="range"] {
-            width: 100%; margin: 15px 0 25px; accent-color: var(--primary);
-        }
+        /* 設定內元素 */
+        .set-group { background: var(--surface); border-radius: 20px; padding: 5px; margin-bottom: 20px; display: flex; }
+        .set-group button { flex: 1; border: none; background: none; color: var(--text-dim); padding: 12px; font-weight: 700; border-radius: 15px; }
+        .set-group button.active { background: var(--primary); color: white; }
     </style>
 </head>
-<body data-layout="list" data-theme="dark">
+<body>
 
     <header>
-        <div class="brand"><h1>ClassHub <span style="color:var(--primary)">.</span></h1></div>
-        <div style="display:flex; gap:12px;">
-            <button class="card" style="padding:10px; border-radius:12px;" onclick="UI.openSheet('settings')">
-                <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <div class="logo">ClassHub<span style="color:var(--primary)">.</span></div>
+        <div class="nav-btns">
+            <button class="icon-btn" onclick="APP.openSheet('settings')">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 00 1.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             </button>
-            <button class="card" style="padding:10px; border-radius:12px;" onclick="UI.openSheet('about')">
-                <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <button class="icon-btn" onclick="APP.openSheet('about')">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             </button>
         </div>
     </header>
 
-    <main class="viewport" id="scroller">
-        <section class="page"><div class="grid-system" id="grid-0">
-            <a href="#" class="card"><span>📅</span><div><h2>班級行事曆</h2><p>掌握考程不漏接</p></div></a>
-            <a href="#" class="card"><span>⏳</span><div><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
-            <a href="#" class="card"><span>📒</span><div><h2>作業待辦</h2><p>即時更新內容</p></div></a>
+    <main class="viewport" id="vp">
+        <section class="page"><div class="grid">
+            <a href="#" class="item"><div class="icon-box">📅</div><div><h3>班級行事曆</h3><p style="color:var(--text-dim);margin:0;font-size:13px">掌握考程與重要活動</p></div></a>
+            <a href="#" class="item"><div class="icon-box">⏳</div><div><h3>考程倒數</h3><p style="color:var(--text-dim);margin:0;font-size:13px">段考、統測精密倒數</p></div></a>
         </div></section>
-        <section class="page"><div class="grid-system">
-            <a href="#" class="card"><span>🌱</span><div><h2>匿名求助</h2><p>導師即時傾聽</p></div></a>
-            <a href="#" class="card"><span>✉️</span><div><h2>匿名信箱</h2><p>私密訊息傳遞</p></div></a>
-            <a href="#" class="card"><span>✨</span><div><h2>匿名許願池</h2><p>提出班級建議</p></div></a>
+        <section class="page"><div class="grid">
+            <a href="#" class="item"><div class="icon-box">✉️</div><div><h3>匿名信箱</h3><p style="color:var(--text-dim);margin:0;font-size:13px">安全無痕的交流空間</p></div></a>
         </div></section>
-        <section class="page"><div class="grid-system">
-            <a href="#" class="card"><span>🧹</span><div><h2>打掃勤務</h2><p>區域與點數查詢</p></div></a>
-            <a href="#" class="card"><span>🪑</span><div><h2>選位系統</h2><p>隨機公平選位</p></div></a>
+        <section class="page"><div class="grid">
+            <a href="#" class="item"><div class="icon-box">🧹</div><div><h3>打掃勤務</h3><p style="color:var(--text-dim);margin:0;font-size:13px">個人區域與點數回報</p></div></a>
         </div></section>
-        <section class="page"><div class="grid-system">
-            <a href="#" class="card"><span>📝</span><div><h2>段考加權</h2><p>成績落點計算</p></div></a>
-            <a href="#" class="card"><span>📈</span><div><h2>學期總分</h2><p>學分獲取預估</p></div></a>
+        <section class="page"><div class="grid">
+            <a href="#" class="item"><div class="icon-box">📈</div><div><h3>學期總分</h3><p style="color:var(--text-dim);margin:0;font-size:13px">加權平均自動化計算</p></div></a>
         </div></section>
     </main>
 
-    <nav class="dock-wrap">
+    <div class="dock-container">
         <div class="dock">
-            <div class="dock-indicator" id="indicator"></div>
-            <div class="dock-item active" onclick="UI.navTo(0)">提醒</div>
-            <div class="dock-item" onclick="UI.navTo(1)">互動</div>
-            <div class="dock-item" onclick="UI.navTo(2)">班務</div>
-            <div class="dock-item" onclick="UI.navTo(3)">成績</div>
-        </div>
-    </nav>
-
-    <div class="sheet-overlay" id="overlay-settings" onclick="UI.closeSheet('settings')">
-        <div class="bottom-sheet" id="sheet-settings" onclick="event.stopPropagation()">
-            <div class="handle-bar" id="handle-settings"></div>
-            <h3>個人化控制台</h3>
-            
-            <label>顯示模式</label>
-            <div class="btn-group">
-                <button id="btn-list" onclick="UI.setLayout('list')">列表</button>
-                <button id="btn-grid" onclick="UI.setLayout('grid')">網格</button>
-            </div>
-
-            <label>色調 Hue (<span id="txt-hue">220</span>)</label>
-            <input type="range" min="0" max="360" value="220" oninput="UI.updateStyle('--hue', this.value, 'txt-hue')">
-
-            <label>飽和度 Sat (<span id="txt-sat">90</span>%)</label>
-            <input type="range" min="0" max="100" value="90" oninput="UI.updateStyle('--sat', this.value+'%', 'txt-sat')">
-
-            <label>圓角半徑 Radius (<span id="txt-rad">20</span>px)</label>
-            <input type="range" min="0" max="40" value="20" oninput="UI.updateStyle('--radius', this.value+'px', 'txt-rad')">
-
-            <div class="btn-group">
-                <button onclick="UI.setTheme('dark')">深色模式</button>
-                <button onclick="UI.setTheme('light')">淺色模式</button>
-            </div>
+            <div class="indicator" id="ind"></div>
+            <div class="tab active" onclick="APP.nav(0)">提醒</div>
+            <div class="tab" onclick="APP.nav(1)">互動</div>
+            <div class="tab" onclick="APP.nav(2)">班務</div>
+            <div class="tab" onclick="APP.nav(3)">成績</div>
         </div>
     </div>
 
-    <div class="sheet-overlay" id="overlay-about" onclick="UI.closeSheet('about')">
-        <div class="bottom-sheet" id="sheet-about">
-            <div class="handle-bar" id="handle-about"></div>
-            <h3>開發者資訊</h3>
-            <p>本系統由網頁設計權威親自校準，採用頂級物理滑動引擎與 100% 自繪圖標。</p>
-            <div class="card" style="background:var(--primary-glow); border:none;">
-                <div style="font-weight:bold;">Version 5.0.0</div>
-                <div style="font-size:12px; opacity:0.8;">Build: 2026.02.13</div>
+    <div class="overlay" id="ov-settings" onclick="APP.closeSheet('settings')">
+        <div class="sheet" id="sh-settings" onclick="event.stopPropagation()">
+            <div class="handle-area" id="hd-settings"><div class="handle"></div></div>
+            <div class="sheet-content">
+                <h2 style="margin:0 0 20px">個人化設定</h2>
+                <p style="font-size:14px; color:var(--text-dim)">外觀模式</p>
+                <div class="set-group">
+                    <button id="dark-btn" class="active" onclick="APP.theme('dark')">深色科技</button>
+                    <button id="light-btn" onclick="APP.theme('light')">純淨淺色</button>
+                </div>
+                <p style="font-size:14px; color:var(--text-dim)">系統飽和度</p>
+                <input type="range" style="width:100%; accent-color:var(--primary)" oninput="document.documentElement.style.setProperty('--primary', `hsl(200, ${this.value}%, 60%)`)">
+                
+                <div style="margin-top:40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+                    <p style="color:var(--text-dim)">往上拉動以展開進階開發者選項...</p>
+                    <div style="height:400px; background:rgba(255,255,255,0.03); border-radius:20px; display:flex; align-items:center; justify-content:center; color:var(--text-dim)">
+                        進階診斷資訊 (物理展開成功)
+                    </div>
+                </div>
             </div>
-            <button class="card" style="width:100%; justify-content:center; margin-top:20px; background:var(--primary); color:white;" onclick="UI.closeSheet('about')">關閉</button>
         </div>
     </div>
 
     <script>
-        const UI = {
-            state: { p: 0, layout: 'list' },
-
+        const APP = {
             init() {
-                const scroller = document.getElementById('scroller');
-                const indicator = document.getElementById('indicator');
+                const vp = document.getElementById('vp');
+                const ind = document.getElementById('ind');
                 
-                // 核心：即時聯動指示器 (隨滑動位置改變)
-                scroller.addEventListener('scroll', () => {
-                    const progress = scroller.scrollLeft / scroller.offsetWidth;
-                    const index = Math.round(progress);
-                    
-                    // 動態計算指示器位置 (實現極致流暢感)
-                    const offset = (scroller.scrollLeft / scroller.offsetWidth) * 100;
-                    indicator.style.transform = `translateX(${offset}%)`;
-                    
-                    if(index !== this.state.p) {
-                        this.state.p = index;
-                        this.updateActiveTab();
-                    }
-                }, { passive: true });
+                // 1. 水銀聯動導覽
+                vp.addEventListener('scroll', () => {
+                    const x = vp.scrollLeft / vp.offsetWidth;
+                    ind.style.transform = `translateX(${x * 100}%)`;
+                    const idx = Math.round(x);
+                    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+                }, {passive: true});
 
-                this.initGestures('settings');
-                this.initGestures('about');
-                this.setLayout('list');
+                this.gestures('settings');
+                this.gestures('about');
             },
 
-            navTo(idx) {
-                const scroller = document.getElementById('scroller');
-                scroller.scrollTo({ left: scroller.offsetWidth * idx, behavior: 'smooth' });
+            nav(i) {
+                document.getElementById('vp').scrollTo({left: window.innerWidth * i, behavior: 'smooth'});
             },
 
-            updateActiveTab() {
-                document.querySelectorAll('.dock-item').forEach((el, i) => {
-                    el.classList.toggle('active', i === this.state.p);
-                });
-            },
-
-            setLayout(mode) {
-                this.state.layout = mode;
-                document.body.setAttribute('data-layout', mode);
-                document.getElementById('btn-list').classList.toggle('active', mode === 'list');
-                document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
-            },
-
-            setTheme(t) { document.body.setAttribute('data-theme', t); },
-
-            updateStyle(prop, val, txtId) {
-                document.documentElement.style.setProperty(prop, val);
-                if(txtId) document.getElementById(txtId).innerText = val.replace('%','').replace('px','');
+            theme(t) {
+                document.body.setAttribute('data-theme', t);
+                document.getElementById('dark-btn').classList.toggle('active', t==='dark');
+                document.getElementById('light-btn').classList.toggle('active', t==='light');
             },
 
             openSheet(id) {
-                const overlay = document.getElementById(`overlay-${id}`);
-                const sheet = document.getElementById(`sheet-${id}`);
-                overlay.classList.add('active');
-                sheet.style.transform = 'translateY(0)';
+                document.getElementById(`ov-${id}`).classList.add('active');
+                document.getElementById(`sh-${id}`).style.transform = 'translateY(0)';
             },
 
             closeSheet(id) {
-                const overlay = document.getElementById(`overlay-${id}`);
-                const sheet = document.getElementById(`sheet-${id}`);
-                overlay.classList.remove('active');
-                sheet.style.transform = 'translateY(100%)';
+                document.getElementById(`ov-${id}`).classList.remove('active');
+                document.getElementById(`sh-${id}`).style.transform = 'translateY(100%)';
             },
 
-            // 物理手勢：往下滑動收回
-            initGestures(id) {
-                const sheet = document.getElementById(`sheet-${id}`);
-                const handle = document.getElementById(`handle-${id}`);
+            // 2. 頂級物理手勢 (含三段式展開)
+            gestures(id) {
+                const sh = document.getElementById(`sh-${id}`);
+                const hd = document.getElementById(`hd-${id}`);
                 let startY, currentY, isDragging = false;
 
-                const start = (e) => {
-                    startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                const onStart = (e) => {
+                    startY = e.touches[0].clientY;
                     isDragging = true;
-                    sheet.style.transition = 'none';
+                    sh.style.transition = 'none';
                 };
 
-                const move = (e) => {
+                const onMove = (e) => {
                     if(!isDragging) return;
-                    const y = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-                    currentY = Math.max(0, y - startY); // 只允許向下
-                    sheet.style.transform = `translateY(${currentY}px)`;
+                    currentY = e.touches[0].clientY - startY;
+                    
+                    // 往上拉的阻尼
+                    if(currentY < 0) {
+                        sh.style.transform = `translateY(${currentY * 0.2}px)`;
+                    } else {
+                        sh.style.transform = `translateY(${currentY}px)`;
+                    }
                 };
 
-                const end = () => {
-                    if(!isDragging) return;
+                const onEnd = () => {
                     isDragging = false;
-                    sheet.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-                    if(currentY > 120) this.closeSheet(id);
-                    else sheet.style.transform = 'translateY(0)';
+                    sh.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+                    
+                    if(currentY > 150) this.closeSheet(id); // 下滑收起
+                    else if(currentY < -100) sh.style.transform = 'translateY(-10vh)'; // 上拉展開更多
+                    else sh.style.transform = 'translateY(0)'; // 回彈
                     currentY = 0;
                 };
 
-                handle.addEventListener('touchstart', start);
-                window.addEventListener('touchmove', move, {passive: false});
-                window.addEventListener('touchend', end);
+                hd.addEventListener('touchstart', onStart);
+                window.addEventListener('touchmove', onMove, {passive: false});
+                window.addEventListener('touchend', onEnd);
             }
         };
-
-        window.onload = () => UI.init();
+        window.onload = () => APP.init();
     </script>
 </body>
 </html>
