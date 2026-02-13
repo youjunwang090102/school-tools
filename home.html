@@ -3,196 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Class Calendar Pro | Premium</title>
+    <title>匿名信箱 - LINE 聯網版</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
-        :root {
-            --ios-blue: #007AFF; --ios-red: #FF3B30; --ios-green: #34C759;
-            --ios-orange: #FF9500; --ios-yellow: #FFCC00; --ios-gray: #8E8E93;
-            --bg: #F2F2F7; --card: rgba(255, 255, 255, 0.8);
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; 
-            background: var(--bg); margin: 0; padding: 15px; color: #000;
-        }
-
-        .container { max-width: 500px; margin: 0 auto; }
-
-        /* 管理員狀態列 */
-        #adminStatusBar {
-            display: none; background: var(--ios-green); color: white;
-            padding: 8px; border-radius: 12px; text-align: center;
-            font-size: 13px; font-weight: 600; margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
-        }
-
-        /* 頂級標題設計 */
-        .header-section { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
-        h1 { font-size: 34px; font-weight: 800; letter-spacing: -1.5px; margin: 0; }
-
-        /* 日曆卡片美化 */
-        .calendar-card { 
-            background: white; border-radius: 30px; padding: 20px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
-        }
-
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 15px; }
-        .weekday { color: var(--ios-gray); font-size: 12px; font-weight: 600; text-align: center; padding-bottom: 15px; }
+        :root { --p: #4361ee; --s: #2ec4b6; --t: #ef233c; --bg: #f8f9fa; --line: #06c755; }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        #loginSection { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        .login-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         
-        .day-cell { 
-            aspect-ratio: 1 / 1.3; border-top: 0.5px solid #f2f2f7; 
-            position: relative; padding: 5px; cursor: pointer;
-            transition: background 0.2s;
-        }
-        .day-cell:active { background: #f2f2f7; border-radius: 10px; }
+        /* 綁定提示條 */
+        #lineBindingNotice { display:none; background:#fff3cd; padding:12px; text-align:center; font-size:0.85rem; border-bottom:1px solid #ffeeba; color: #856404; }
+        .line-btn { background: var(--line); color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 8px; }
 
-        .day-num { font-size: 16px; font-weight: 500; display: block; text-align: center; margin-bottom: 4px; }
-        .today .day-num { 
-            background: var(--ios-red); color: white; width: 26px; height: 26px; 
-            border-radius: 50%; line-height: 26px; margin: 0 auto; 
-        }
-
-        /* 事項標籤美化 */
-        .event-dot {
-            width: 4px; height: 4px; border-radius: 50%; display: inline-block; margin: 0 1px;
-        }
-        .event-bar {
-            font-size: 9px; padding: 2px 4px; border-radius: 4px; color: white;
-            margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        /* 彈窗設計 */
-        .modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); 
-            backdrop-filter: blur(15px); z-index: 1000; 
-        }
-        .modal-content { 
-            background: white; border-radius: 30px; width: 85%; max-width: 380px; 
-            margin: 15vh auto; padding: 25px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); 
-        }
-
-        .ios-input { 
-            width: 100%; border: none; background: #efeff4; padding: 15px; 
-            border-radius: 15px; margin: 10px 0; font-size: 16px; box-sizing: border-box;
-        }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { 
-            flex: 1; padding: 15px; border-radius: 15px; border: none; 
-            font-size: 17px; font-weight: 600; cursor: pointer; 
-        }
-        .btn-primary { background: var(--ios-blue); color: white; }
-        .btn-secondary { background: #efeff4; color: var(--ios-blue); }
-        .btn-danger { color: var(--ios-red); font-size: 14px; background: transparent; }
-
-        /* 顏色類別 */
-        .type-考試 { background: var(--ios-red); }
-        .type-提醒 { background: var(--ios-blue); }
-        .type-集會 { background: var(--ios-green); }
+        .nav { display: none; background: white; padding: 5px; justify-content: space-around; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .nav-btn { border: none; background: none; font-weight: bold; padding: 12px 5px; color: #888; cursor: pointer; font-size: 0.85rem; flex: 1; position: relative; }
+        .nav-btn.active { color: var(--p); border-bottom: 3px solid var(--p); }
+        .badge { position: absolute; top: 5px; right: 10px; background: var(--t); color: white; font-size: 10px; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        
+        .container { padding: 20px; max-width: 500px; margin: auto; display: none; }
+        .card { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 12px; border: 1px solid #eee; position: relative; }
+        .card.unread { border-left: 5px solid var(--p); background: #f0f4ff; }
+        
+        .student-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 180px; overflow-y: auto; background: #f0f0f0; padding: 10px; border-radius: 12px; margin: 10px 0; }
+        .stu-chip { font-size: 0.75rem; background: white; padding: 6px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid #ddd; }
+        .stu-chip.selected { background: var(--p); color: white; border-color: var(--p); }
+        
+        textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 16px; margin-top: 10px; resize: none; }
+        button.main-btn { width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        
+        .msg-info { font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
+        .reply-area { margin-top: 10px; padding: 8px; background: #f0fffb; border-radius: 8px; color: #008f7a; font-size: 0.85rem; border-left: 3px solid var(--s); }
+        .admin-tag { background: #fff0f0; color: var(--t); font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; margin-bottom: 10px; display: inline-block; }
+        
+        .action-btns { margin-top: 10px; display: flex; gap: 8px; }
+        .action-btns button { padding: 5px 10px; font-size: 0.75rem; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; background: white; }
+        .btn-confirm { background: #e7f3ff !important; color: #007bff; border-color: #007bff !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="adminStatusBar">🛡️ 管理員模式已啟動，現在可以編輯行程</div>
-    
-    <div class="header-section">
-        <h1 id="title" onclick="tryAdmin()">行事曆</h1>
-        <div id="monthDisplay" style="font-weight: 700; color: var(--ios-blue);">2026年 2月</div>
-    </div>
-
-    <div class="calendar-card">
-        <div class="grid" id="calendarGrid"></div>
-    </div>
-</div>
-
-<div id="eventModal" class="modal">
-    <div class="modal-content">
-        <h2 id="modalDateTitle" style="margin:0 0 15px 0;">日期</h2>
-        
-        <div id="eventListView"></div>
-
-        <div id="adminForm" style="display:none; border-top: 0.5px solid #ddd; margin-top: 20px; padding-top: 15px;">
-            <input type="text" id="evTitle" class="ios-input" placeholder="事項名稱">
-            <select id="evType" class="ios-input">
-                <option value="考試">🔴 考試</option>
-                <option value="提醒">🔵 提醒</option>
-                <option value="集會">🟢 集會</option>
-            </select>
-            <div class="btn-group">
-                <button class="btn btn-primary" onclick="saveEvent()">儲存行程</button>
-            </div>
-        </div>
-        
-        <div class="btn-group">
-            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+    <div id="loginSection">
+        <div class="login-card">
+            <h2 style="color:var(--p)">匿名心聲箱</h2>
+            <input type="number" id="loginId" autocomplete="username" placeholder="座號 (例如 05)">
+            <input type="password" id="loginPw" autocomplete="current-password" placeholder="密碼">
+            <button class="main-btn" onclick="doLogin()">登入</button>
         </div>
     </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <div id="lineBindingNotice">
+        📢 綁定 LINE，有人寄信時立刻通知！
+        <button class="line-btn" onclick="linkToLineBot()">立即綁定</button>
+    </div>
 
-<script>
-    // --- 核心邏輯 ---
-    let isAdmin = false;
-    let adminToken = ""; // 數位暗號
-    let clickCount = 0;
-    const MASTER_KEY = "Admin88888"; // 老師輸入的密碼
-    const BACKEND_SECRET = "TeacherSecret777"; // 與 Rules 對應的暗號
+    <div id="navBar" class="nav">
+        <button id="btn-send" class="nav-btn" onclick="showPage('send')">發送</button>
+        <button id="btn-sentBox" class="nav-btn" onclick="showPage('sentBox')">已發送</button>
+        <button id="btn-receive" class="nav-btn" onclick="showPage('receive')">
+            收件匣 <span id="unreadBadge" class="badge" style="display:none;">0</span>
+        </button>
+        <button id="btn-admin" class="nav-btn" style="display:none;" onclick="showPage('admin')">監控</button>
+        <button class="nav-btn" onclick="location.reload()" style="color:#ccc">登出</button>
+    </div>
 
-    firebase.initializeApp({ /* 你的 Config */ });
-    const db = firebase.firestore();
+    <div id="sendPage" class="container">
+        <h3>傳送匿名心聲</h3>
+        <div id="stuGrid" class="student-grid"></div>
+        <textarea id="msgBody" placeholder="想說的話..."></textarea>
+        <button class="main-btn" onclick="sendToStudents()">確認發送</button>
+    </div>
 
-    function tryAdmin() {
-        clickCount++;
-        if (clickCount === 5) {
-            const pass = prompt("請輸入管理員密碼");
-            if(pass === MASTER_KEY) {
-                isAdmin = true;
-                adminToken = BACKEND_SECRET;
-                document.getElementById('adminStatusBar').style.display = 'block';
-                render();
+    <div id="sentBoxPage" class="container">
+        <h3>我寄出的信件</h3>
+        <div id="sentList"></div>
+    </div>
+
+    <div id="receivePage" class="container">
+        <h3>收到的信件</h3>
+        <div id="receiveList"></div>
+    </div>
+
+    <div id="adminPage" class="container">
+        <h3>🔍 全班信件紀錄</h3>
+        <div id="adminList"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+            authDomain: "vote-6668.firebaseapp.com",
+            projectId: "vote-6668",
+            storageBucket: "vote-6668.firebasestorage.app",
+            messagingSenderId: "389284021944",
+            appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let me = null;
+        let selectedIds = [];
+
+        async function hashPassword(password) {
+            try {
+                if (!crypto || !crypto.subtle) return password;
+                const msgBuffer = new TextEncoder().encode(password);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) { return password; }
+        }
+
+        function escapeHTML(str) {
+            return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+        }
+
+        async function doLogin() {
+            const rawId = document.getElementById('loginId').value;
+            if(!rawId) return alert("請輸入座號");
+            const id = rawId.padStart(2, '0');
+            const pwInput = document.getElementById('loginPw').value;
+            if(!pwInput) return alert("請輸入密碼");
+            
+            const hashedInputPw = await hashPassword(pwInput);
+
+            try {
+                const doc = await db.collection("students").doc(id).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    let isMatch = false;
+                    const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                    if (isDbPasswordHashed) {
+                        if (data.password === hashedInputPw) isMatch = true;
+                    } else {
+                        if (data.password === pwInput) {
+                            isMatch = true;
+                            await db.collection("students").doc(id).update({ password: hashedInputPw });
+                        }
+                    }
+
+                    if (isMatch) {
+                        if(data.status === 'pending') return alert("⏳ 您的帳號正在審核中。");
+                        
+                        me = { id, ...data };
+                        document.getElementById('loginSection').style.display = 'none';
+                        document.getElementById('navBar').style.display = 'flex';
+                        if (me.role === 'teacher' || me.role === 'admin') document.getElementById('btn-admin').style.display = 'block';
+                        
+                        showPage('send');
+                        loadStudentList();
+                        startListenMessages();
+                        checkLineBinding(); // ✨ 登入成功後檢查 LINE 綁定狀態
+                    } else {
+                        alert("座號或密碼錯誤");
+                    }
+                } else {
+                    alert("座號不存在");
+                }
+            } catch (e) { alert("系統錯誤: " + e.message); }
+        }
+
+        // ✨ LINE 相關新功能
+        async function checkLineBinding() {
+            const userDoc = await db.collection("users").doc(me.id).get();
+            if (userDoc.exists && userDoc.data().lineUserId) {
+                document.getElementById('lineBindingNotice').style.display = 'none';
+            } else {
+                document.getElementById('lineBindingNotice').style.display = 'block';
             }
-            clickCount = 0;
         }
-        setTimeout(() => clickCount = 0, 2000);
-    }
 
-    // 儲存函數 (加強安全)
-    async function saveEvent() {
-        const title = document.getElementById('evTitle').value;
-        const type = document.getElementById('evType').value;
-        const date = document.getElementById('modalDateTitle').innerText;
+        function linkToLineBot() {
+            // 請將此處換成您機器人的加入好友網址
+            const lineBotUrl = "https://line.me/R/ti/p/@您的機器人ID"; 
+            alert("請在加入好友後，傳送：\n\n綁定 " + me.id + "\n\n即可完成連動！");
+            window.location.href = lineBotUrl;
+        }
 
-        if(!title) return;
+        function showPage(p) {
+            document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(p + 'Page').style.display = 'block';
+            document.getElementById('btn-' + p).classList.add('active');
+        }
 
-        try {
-            await db.collection("calendar_events").add({
-                title, type, date,
-                adminSecret: adminToken, // 🔒 只有帶著這個暗號，後端規則才會允許寫入
-                createdAt: Date.now()
+        async function loadStudentList() {
+            const snap = await db.collection("students").orderBy(firebase.firestore.FieldPath.documentId()).get();
+            const grid = document.getElementById('stuGrid');
+            grid.innerHTML = "";
+            snap.forEach(doc => {
+                if(doc.id === me.id) return;
+                const chip = document.createElement('div');
+                chip.className = 'stu-chip';
+                chip.innerText = `${doc.id} ${escapeHTML(doc.data().name)}`;
+                chip.onclick = () => {
+                    chip.classList.toggle('selected');
+                    const sid = doc.id;
+                    if(selectedIds.includes(sid)) selectedIds = selectedIds.filter(i => i !== sid);
+                    else selectedIds.push(sid);
+                };
+                grid.appendChild(chip);
             });
-            closeModal();
-        } catch (e) {
-            alert("❌ 權限不足：只有老師帳號可以編輯。");
         }
-    }
 
-    // 刪除函數
-    async function deleteEvent(id) {
-        if(!confirm("確定刪除？")) return;
-        try {
-            // 注意：刪除動作在 Rules 中較難檢查 Secret，
-            // 建議改用「標記刪除」方式，或者在 Rules 中允許老師 UID 刪除。
-            await db.collection("calendar_events").doc(id).delete(); 
-            closeModal();
-        } catch (e) {
-            alert("權限不足。");
+        async function sendToStudents() {
+            const content = document.getElementById('msgBody').value;
+            if (selectedIds.length === 0 || !content) return alert("請選擇對象並填寫內容");
+            if(confirm(`將傳送給這 ${selectedIds.length} 位同學，確定嗎？`)) {
+                const batch = db.batch();
+                selectedIds.forEach(tId => {
+                    const ref = db.collection("secret_messages").doc();
+                    batch.set(ref, {
+                        sender_id: me.id, sender_name: me.name, receiver_id: tId,
+                        content: content, reply: "", read: false,
+                        time: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                alert("發送成功！");
+                document.getElementById('msgBody').value = "";
+                selectedIds = [];
+                document.querySelectorAll('.stu-chip').forEach(c => c.classList.remove('selected'));
+                showPage('sentBox');
+            }
         }
-    }
 
-    // ... 渲染邏輯 render() 與 openDay() 與之前相似，但需加入 isAdmin 判斷來顯示編輯/刪除按鈕 ...
-</script>
+        function startListenMessages() {
+            db.collection("secret_messages").where("receiver_id", "==", me.id).onSnapshot(snap => {
+                const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
+                updateBadge(unreadCount);
+                renderList(snap, 'receiveList', 'receive');
+            });
+            db.collection("secret_messages").where("sender_id", "==", me.id).onSnapshot(snap => {
+                renderList(snap, 'sentList', 'sent');
+            });
+            if (me.role === 'teacher' || me.role === 'admin') {
+                db.collection("secret_messages").orderBy("time", "desc").onSnapshot(snap => {
+                    renderList(snap, 'adminList', 'admin');
+                });
+            }
+        }
+
+        function updateBadge(count) {
+            const badge = document.getElementById('unreadBadge');
+            badge.innerText = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        function renderList(snap, elementId, type) {
+            const box = document.getElementById(elementId);
+            box.innerHTML = snap.empty ? "<p style='color:#ccc;text-align:center;padding:20px;'>尚無資料</p>" : "";
+            let docs = [];
+            snap.forEach(doc => docs.push({docId: doc.id, ...doc.data()}));
+            docs.sort((a, b) => (b.time?.seconds || 0) - (a.time?.seconds || 0));
+            docs.forEach(d => {
+                const t = d.time ? d.time.toDate().toLocaleString() : "傳送中...";
+                const card = document.createElement('div');
+                card.className = 'card' + (type === 'receive' && !d.read ? ' unread' : '');
+                let header = "";
+                if(type === 'admin') header = `<div class="admin-tag">來自: ${escapeHTML(d.sender_id)} ➔ 對象: ${escapeHTML(d.receiver_id)}</div>`;
+                if(type === 'sent') header = `<div class="msg-info" style="color:var(--p)">寄給座號：${escapeHTML(d.receiver_id)} ${d.read ? ' (已讀)' : ' (未讀)'}</div>`;
+                let actionButtons = "";
+                if(type === 'receive') {
+                    actionButtons = `<div class="action-btns">`;
+                    if(!d.read) actionButtons += `<button class="btn-confirm" onclick="markRead('${d.docId}')">確認讀信</button>`;
+                    if(!d.reply) actionButtons += `<button onclick="replyMsg('${d.docId}')">回覆對方</button>`;
+                    actionButtons += `</div>`;
+                }
+                card.innerHTML = `
+                    ${header}
+                    <div class="msg-info">📅 ${t}</div>
+                    <div style="font-weight:bold; color:#333; white-space: pre-wrap;">${escapeHTML(d.content)}</div>
+                    ${d.reply ? `<div class="reply-area"><b>回覆內容：</b><br>${escapeHTML(d.reply)}</div>` : ""}
+                    ${actionButtons}
+                `;
+                box.appendChild(card);
+            });
+        }
+
+        async function markRead(docId) {
+            await db.collection("secret_messages").doc(docId).update({ read: true });
+        }
+
+        async function replyMsg(docId) {
+            const r = prompt("請輸入回覆內容：");
+            if(r) { await db.collection("secret_messages").doc(docId).update({ reply: r, read: true }); }
+        }
+    </script>
 </body>
 </html>
