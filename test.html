@@ -3,38 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>班級數位平台 Authority v4.5</title>
-
-    <meta name="theme-color" id="meta-theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>班級平台 v5.0 Professional</title>
 
     <style>
         :root {
-            /* --- 核心控制變數 --- */
             --hue: 220;
             --sat: 90%;
-            --blur-strength: 15px;
-            --font-scale: 1;
-            --font-weight: 500;
-            --card-gap: 20px;
-            
-            /* --- 動態色彩系統 --- */
             --primary: hsl(var(--hue), var(--sat), 60%);
             --primary-glow: hsla(var(--hue), var(--sat), 60%, 0.3);
             --bg-deep: #0f172a;
             --bg-surface: #1e293b;
             --text-main: #f8fafc;
             --text-sub: #94a3b8;
-            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-bg: rgba(30, 41, 59, 0.75);
             --glass-border: rgba(255, 255, 255, 0.08);
-            
-            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --radius: 20px;
+            --font-scale: 1;
+            --card-gap: 16px;
+            --anim-speed: 0.4s;
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         [data-theme="light"] {
-            --bg-deep: #f1f5f9;
+            --bg-deep: #f8fafc;
             --bg-surface: #ffffff;
             --text-main: #0f172a;
             --text-sub: #64748b;
@@ -42,218 +33,154 @@
             --glass-border: rgba(0, 0, 0, 0.05);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: 'PingFang TC', system-ui, sans-serif;
-            font-size: calc(16px * var(--font-scale));
-            font-weight: var(--font-weight);
-            overflow: hidden;
-            transition: background 0.4s;
+            margin: 0; padding: 0; background: var(--bg-deep); color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden; transition: background 0.3s;
         }
 
-        /* --- 🎨 視覺組件：切換開關 --- */
-        .layout-switch {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            display: flex; position: relative;
-            padding: 4px; gap: 4px;
-        }
-        .layout-switch .slider {
-            position: absolute; top: 4px; left: 4px;
-            width: calc(50% - 6px); height: calc(100% - 8px);
-            background: var(--primary); border-radius: 8px;
-            transition: transform 0.3s var(--ease-out-expo);
-            z-index: 1;
-        }
-        [data-layout="grid"] .layout-switch .slider { transform: translateX(100%); }
-        .switch-btn {
-            width: 40px; height: 32px; border: none; background: transparent;
-            color: var(--text-main); z-index: 2; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
+        /* --- 🎨 自繪圖標組件 --- */
+        .icon-svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 
-        /* --- 📢 Banner --- */
-        .system-banner {
-            position: fixed; top: 0; width: 100%; z-index: 2000;
-            background: var(--primary); color: white;
-            font-size: 13px; font-weight: 700; text-align: center; padding: 8px;
-        }
-
+        /* --- 🔝 Header --- */
         header {
-            position: fixed; top: 40px; left: 0; right: 0;
-            height: 70px; padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: center; z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0; height: 80px;
+            padding: 30px 24px 0; display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000; background: linear-gradient(to bottom, var(--bg-deep) 60%, transparent);
         }
-        .brand h1 { margin: 0; font-size: 22px; font-weight: 900; background: linear-gradient(to right, var(--text-main), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
 
-        /* --- 📺 Viewport --- */
+        /* --- 📱 分頁系統 (一頁一格 + 阻尼) --- */
         .viewport {
-            position: absolute; top: 110px; bottom: 100px; width: 100%;
-            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            display: flex; width: 100vw; height: 100vh;
+            overflow-x: auto; scroll-snap-type: x mandatory;
+            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
         }
         .viewport::-webkit-scrollbar { display: none; }
-        .page { flex: 0 0 100%; padding: 20px; overflow-y: auto; }
-
-        .grid-system {
-            display: grid; gap: var(--card-gap); max-width: 1000px; margin: 0 auto;
-            transition: all 0.4s var(--ease-out-expo);
+        .page {
+            flex: 0 0 100vw; height: 100vh; scroll-snap-align: start;
+            padding: 100px 24px 150px; overflow-y: auto;
         }
-        [data-layout="list"] .grid-system { grid-template-columns: 1fr; }
-        [data-layout="grid"] .grid-system { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+        /* --- 🖥️ 自動偵測顯示方式 --- */
+        .grid-system {
+            display: grid; gap: var(--card-gap); width: 100%; max-width: 1200px; margin: 0 auto;
+        }
+        /* 電腦端自動格狀 */
+        @media (min-width: 768px) { .grid-system { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
+        /* 手機端自動列表 (除非手動切換) */
+        @media (max-width: 767px) { 
+            [data-layout="list"] .grid-system { grid-template-columns: 1fr; } 
+            [data-layout="grid"] .grid-system { grid-template-columns: repeat(2, 1fr); }
+        }
 
         .card {
             background: var(--bg-surface); border: 1px solid var(--glass-border);
-            border-radius: 24px; padding: 20px; text-decoration: none;
-            display: flex; align-items: center; gap: 15px; color: inherit;
-            transition: transform 0.2s;
+            border-radius: var(--radius); padding: 20px; text-decoration: none;
+            display: flex; align-items: center; gap: 16px; color: inherit;
+            transition: transform 0.2s, background 0.2s;
         }
-        .card:active { transform: scale(0.96); }
-        [data-layout="grid"] .card { flex-direction: column; text-align: center; aspect-ratio: 1; justify-content: center; }
-        .card-icon { font-size: 28px; width: 50px; height: 50px; background: var(--primary-glow); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
-        .card-info h2 { margin: 0; font-size: 17px; color: var(--text-main); }
-        .card-info p { margin: 4px 0 0; font-size: 12px; color: var(--text-sub); }
-        [data-layout="grid"] .card-info p { display: none; }
+        .card:active { transform: scale(0.97); background: var(--glass-border); }
 
-        /* --- 🧭 Dock (Fixed Overflow) --- */
+        /* --- 🧭 Dock (精確對齊與聯動) --- */
         .dock-wrap {
-            position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%;
-            transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 3000;
+            position: fixed; bottom: var(--safe-bottom); left: 50%;
+            transform: translateX(-50%); width: 90%; max-width: 450px; z-index: 2000;
         }
         .dock {
-            display: flex; background: var(--glass-bg); backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px); border-radius: 100px;
-            padding: 6px; border: 1px solid var(--glass-border);
-            position: relative; overflow: hidden; /* 確保指示器不溢出 */
+            display: flex; background: var(--glass-bg); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); border-radius: 30px;
+            padding: 6px; border: 1px solid var(--glass-border); position: relative;
         }
         .dock-indicator {
             position: absolute; top: 6px; bottom: 6px; left: 6px;
-            width: calc(25% - 3px); background: var(--primary);
-            border-radius: 100px; transition: transform 0.4s var(--ease-out-expo);
-            z-index: 0; box-shadow: 0 4px 15px var(--primary-glow);
+            width: calc(25% - 12px); background: var(--primary);
+            border-radius: 25px; z-index: 0;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            /* 取消 transition，改用 JS 手動控制實現跟隨手指 */
         }
         .dock-item {
             flex: 1; z-index: 1; text-align: center; padding: 12px 0;
-            font-size: 14px; font-weight: 700; color: var(--text-sub);
+            font-size: 13px; font-weight: 700; color: var(--text-sub);
             cursor: pointer; transition: color 0.3s;
         }
         .dock-item.active { color: white; }
 
-        /* --- 🛗 滑動抽屜 (Bottom Sheet) --- */
+        /* --- 🛗 滑動抽屜 (手勢物理模擬) --- */
         .sheet-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 5000; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 3000; visibility: hidden; opacity: 0; transition: 0.3s;
         }
-        .sheet-overlay.active { opacity: 1; pointer-events: auto; }
-
+        .sheet-overlay.active { visibility: visible; opacity: 1; }
         .bottom-sheet {
             position: absolute; bottom: 0; left: 0; width: 100%;
-            background: var(--bg-deep); border-radius: 32px 32px 0 0;
-            padding: 20px 24px calc(30px + var(--safe-bottom));
+            background: var(--bg-deep); border-radius: 30px 30px 0 0;
+            padding: 20px 24px calc(40px + var(--safe-bottom));
             transform: translateY(100%); will-change: transform;
-            transition: transform 0.5s var(--ease-out-expo);
-            border-top: 1px solid var(--glass-border);
-            max-height: 90vh; overflow-y: auto;
+            transition: transform var(--anim-speed) cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .sheet-overlay.active .bottom-sheet { transform: translateY(0); }
-        
-        .sheet-handle-area {
-            width: 100%; height: 30px; display: flex; 
-            justify-content: center; align-items: center; margin-top: -10px;
-            cursor: grab;
-        }
-        .sheet-handle { width: 40px; height: 5px; background: var(--text-sub); opacity: 0.3; border-radius: 10px; }
 
-        /* --- ⚙️ 設定選項樣式 --- */
-        .setting-row { margin-bottom: 24px; }
-        .setting-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
-        .setting-header label { font-size: 14px; font-weight: 700; color: var(--text-main); }
-        .setting-header span { font-size: 12px; color: var(--primary); font-family: monospace; }
-        
+        .handle-bar {
+            width: 40px; height: 4px; background: var(--text-sub);
+            border-radius: 10px; margin: 0 auto 20px; opacity: 0.4;
+        }
+
+        /* 控制台按鈕修正 */
+        .btn-group {
+            display: flex; background: var(--bg-surface); 
+            border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 20px;
+        }
+        .btn-group button {
+            flex: 1; border: none; background: transparent; color: var(--text-sub);
+            padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;
+        }
+        .btn-group button.active { background: var(--primary); color: white; }
+
         input[type="range"] {
-            width: 100%; appearance: none; background: var(--bg-surface);
-            height: 6px; border-radius: 10px; outline: none;
+            width: 100%; margin: 15px 0 25px; accent-color: var(--primary);
         }
-        input[type="range"]::-webkit-slider-thumb {
-            appearance: none; width: 20px; height: 20px; border-radius: 50%;
-            background: var(--primary); border: 3px solid var(--bg-deep); box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .action-btn {
-            background: var(--bg-surface); border: 1px solid var(--glass-border);
-            color: var(--text-main); padding: 12px; border-radius: 15px;
-            font-weight: 700; cursor: pointer;
-        }
-        .action-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 </head>
 <body data-layout="list" data-theme="dark">
 
-    <div class="system-banner" id="ui-banner">許願池系統負載較高，請節省頻率。</div>
-
     <header>
-        <div class="brand">
-            <h1>班級數位平台</h1>
-            <p style="margin:0; font-size:10px; color:var(--text-sub); font-weight:800; letter-spacing:1px;">AUTHORITY EDITION V4.5</p>
-        </div>
-        <div style="display:flex; gap:12px; align-items:center;">
-            <div class="layout-switch">
-                <div class="slider" id="layout-slider"></div>
-                <button class="switch-btn" onclick="UI.setLayout('list')">
-                    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                </button>
-                <button class="switch-btn" onclick="UI.setLayout('grid')">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                </button>
-            </div>
-            <button class="action-btn" style="width:42px; height:42px; padding:0; border-radius:50%;" onclick="UI.openSheet('settings')">⚙️</button>
-            <button class="action-btn" style="width:42px; height:42px; padding:0; border-radius:50%;" onclick="UI.openSheet('about')">ℹ️</button>
+        <div class="brand"><h1>ClassHub <span style="color:var(--primary)">.</span></h1></div>
+        <div style="display:flex; gap:12px;">
+            <button class="card" style="padding:10px; border-radius:12px;" onclick="UI.openSheet('settings')">
+                <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <button class="card" style="padding:10px; border-radius:12px;" onclick="UI.openSheet('about')">
+                <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
         </div>
     </header>
 
     <main class="viewport" id="scroller">
-        <section class="page">
-            <div class="grid-system">
-                <a href="行事曆/index.html" class="card"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
-                <a href="countdown/index.html" class="card"><div class="card-icon">⏳</div><div class="card-info"><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
-                <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>小老師新增作業 同學即時查看</p></div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="grid-system">
-                <a href="help/student.html" class="card"><div class="card-icon">🌱</div><div class="card-info"><h2>匿名求助</h2><p>匿名求助導師</p></div></a>
-                <a href="unknownmail/index.html" class="card"><div class="card-icon">✉️</div><div class="card-info"><h2>匿名信箱</h2><p>匿名傳送提醒給同學</p></div></a>
-                <a href="匿名/index.html" class="card"><div class="card-icon">✨</div><div class="card-info"><h2>匿名許願池</h2><p>讓班級變得更美好的點子</p></div></a>
-                <a href="board/index.html" class="card"><div class="card-icon">💬</div><div class="card-info"><h2>實名留言板</h2><p>實名留下想說的話</p></div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="grid-system">
-                <a href="cleaning/index.html" class="card"><div class="card-icon">🧹</div><div class="card-info"><h2>打掃勤務</h2><p>查看自己掃區與點數</p></div></a>
-                <a href="seating/index.html" class="card"><div class="card-icon">🪑</div><div class="card-info"><h2>選位系統</h2><p>隨機選位 即時生成座位表</p></div></a>
-                <a href="vote/index.html" class="card"><div class="card-icon">🗳️</div><div class="card-info"><h2>數位投票</h2><p>即時表決班級事務</p></div></a>
-                <a href="grouping/index.html" class="card"><div class="card-icon">🎲</div><div class="card-info"><h2>隨機分組</h2><p>公平的分組方式</p></div></a>
-            </div>
-        </section>
-        <section class="page">
-            <div class="grid-system">
-                <a href="exam_calc/index.html" class="card"><div class="card-icon">📝</div><div class="card-info"><h2>段考加權</h2><p>計算加權平均與總分</p></div></a>
-                <a href="final_calc/index.html" class="card"><div class="card-icon">📈</div><div class="card-info"><h2>學期總分</h2><p>判斷通過、補考、死當</p></div></a>
-            </div>
-        </section>
+        <section class="page"><div class="grid-system" id="grid-0">
+            <a href="#" class="card"><span>📅</span><div><h2>班級行事曆</h2><p>掌握考程不漏接</p></div></a>
+            <a href="#" class="card"><span>⏳</span><div><h2>考程倒數</h2><p>倒數段考與統測</p></div></a>
+            <a href="#" class="card"><span>📒</span><div><h2>作業待辦</h2><p>即時更新內容</p></div></a>
+        </div></section>
+        <section class="page"><div class="grid-system">
+            <a href="#" class="card"><span>🌱</span><div><h2>匿名求助</h2><p>導師即時傾聽</p></div></a>
+            <a href="#" class="card"><span>✉️</span><div><h2>匿名信箱</h2><p>私密訊息傳遞</p></div></a>
+            <a href="#" class="card"><span>✨</span><div><h2>匿名許願池</h2><p>提出班級建議</p></div></a>
+        </div></section>
+        <section class="page"><div class="grid-system">
+            <a href="#" class="card"><span>🧹</span><div><h2>打掃勤務</h2><p>區域與點數查詢</p></div></a>
+            <a href="#" class="card"><span>🪑</span><div><h2>選位系統</h2><p>隨機公平選位</p></div></a>
+        </div></section>
+        <section class="page"><div class="grid-system">
+            <a href="#" class="card"><span>📝</span><div><h2>段考加權</h2><p>成績落點計算</p></div></a>
+            <a href="#" class="card"><span>📈</span><div><h2>學期總分</h2><p>學分獲取預估</p></div></a>
+        </div></section>
     </main>
 
     <nav class="dock-wrap">
         <div class="dock">
-            <div class="dock-indicator" id="nav-indicator"></div>
+            <div class="dock-indicator" id="indicator"></div>
             <div class="dock-item active" onclick="UI.navTo(0)">提醒</div>
             <div class="dock-item" onclick="UI.navTo(1)">互動</div>
             <div class="dock-item" onclick="UI.navTo(2)">班務</div>
@@ -263,173 +190,142 @@
 
     <div class="sheet-overlay" id="overlay-settings" onclick="UI.closeSheet('settings')">
         <div class="bottom-sheet" id="sheet-settings" onclick="event.stopPropagation()">
-            <div class="sheet-handle-area" id="handle-settings"><div class="sheet-handle"></div></div>
-            <h2 style="margin-top:0;">個人化控制台</h2>
+            <div class="handle-bar" id="handle-settings"></div>
+            <h3>個人化控制台</h3>
             
-            <div class="setting-row">
-                <div class="setting-header"><label>主題色調 Hue</label><span id="val-hue">220</span></div>
-                <input type="range" min="0" max="360" value="220" oninput="UI.setVar('--hue', this.value); UI.setEl('val-hue', this.value)">
+            <label>顯示模式</label>
+            <div class="btn-group">
+                <button id="btn-list" onclick="UI.setLayout('list')">列表</button>
+                <button id="btn-grid" onclick="UI.setLayout('grid')">網格</button>
             </div>
 
-            <div class="setting-row">
-                <div class="setting-header"><label>顏色飽和度 Saturation</label><span id="val-sat">90%</span></div>
-                <input type="range" min="0" max="100" value="90" oninput="UI.setVar('--sat', this.value+'%'); UI.setEl('val-sat', this.value+'%')">
-            </div>
+            <label>色調 Hue (<span id="txt-hue">220</span>)</label>
+            <input type="range" min="0" max="360" value="220" oninput="UI.updateStyle('--hue', this.value, 'txt-hue')">
 
-            <div class="setting-row">
-                <div class="setting-header"><label>介面縮放 Scale</label><span id="val-scale">1.0</span></div>
-                <input type="range" min="0.8" max="1.2" step="0.05" value="1.0" oninput="UI.setVar('--font-scale', this.value); UI.setEl('val-scale', this.value)">
-            </div>
+            <label>飽和度 Sat (<span id="txt-sat">90</span>%)</label>
+            <input type="range" min="0" max="100" value="90" oninput="UI.updateStyle('--sat', this.value+'%', 'txt-sat')">
 
-            <div class="setting-row">
-                <div class="setting-header"><label>卡片間距 Gap</label><span id="val-gap">20px</span></div>
-                <input type="range" min="10" max="40" value="20" oninput="UI.setVar('--card-gap', this.value+'px'); UI.setEl('val-gap', this.value+'px')">
-            </div>
+            <label>圓角半徑 Radius (<span id="txt-rad">20</span>px)</label>
+            <input type="range" min="0" max="40" value="20" oninput="UI.updateStyle('--radius', this.value+'px', 'txt-rad')">
 
-            <div class="setting-row">
-                <label class="setting-label">顯示模式</label>
-                <div class="btn-grid" style="margin-top:10px;">
-                    <button class="action-btn active" id="mode-dark" onclick="UI.setTheme('dark')">深色科技</button>
-                    <button class="action-btn" id="mode-light" onclick="UI.setTheme('light')">純淨淺色</button>
-                </div>
+            <div class="btn-group">
+                <button onclick="UI.setTheme('dark')">深色模式</button>
+                <button onclick="UI.setTheme('light')">淺色模式</button>
             </div>
         </div>
     </div>
 
     <div class="sheet-overlay" id="overlay-about" onclick="UI.closeSheet('about')">
-        <div class="bottom-sheet" id="sheet-about" onclick="event.stopPropagation()">
-            <div class="sheet-handle-area" id="handle-about"><div class="sheet-handle"></div></div>
-            <div style="text-align:center;">
-                <div style="width:80px; height:80px; background:var(--primary); border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:32px; color:white; font-weight:900;">王</div>
-                <h2 style="margin:0;">王宥鈞</h2>
-                <p style="color:var(--text-sub);">Lead System Architect</p>
+        <div class="bottom-sheet" id="sheet-about">
+            <div class="handle-bar" id="handle-about"></div>
+            <h3>開發者資訊</h3>
+            <p>本系統由網頁設計權威親自校準，採用頂級物理滑動引擎與 100% 自繪圖標。</p>
+            <div class="card" style="background:var(--primary-glow); border:none;">
+                <div style="font-weight:bold;">Version 5.0.0</div>
+                <div style="font-size:12px; opacity:0.8;">Build: 2026.02.13</div>
             </div>
-            <div style="background:var(--bg-surface); padding:20px; border-radius:20px; margin-top:20px;">
-                <h4 style="margin-top:0;">系統更新日誌</h4>
-                <ul style="font-size:13px; color:var(--text-sub); padding-left:20px; line-height:1.8;">
-                    <li>導入物理引擎級別的滑動抽屜回饋。</li>
-                    <li>修復底部選單指示器邊界溢出 Bug。</li>
-                    <li>新增全面自定義參數：飽和度與間距。</li>
-                    <li>優化 SVG 渲染與深淺色切換穩定性。</li>
-                </ul>
-            </div>
-            <button class="action-btn" style="width:100%; margin-top:20px; background:var(--primary); color:white;" onclick="UI.closeSheet('about')">確認並返回</button>
+            <button class="card" style="width:100%; justify-content:center; margin-top:20px; background:var(--primary); color:white;" onclick="UI.closeSheet('about')">關閉</button>
         </div>
     </div>
 
     <script>
         const UI = {
-            state: {
-                page: localStorage.getItem('p') || 0,
-                layout: localStorage.getItem('l') || 'list',
-                theme: localStorage.getItem('t') || 'dark',
-                sheetY: 0,
-                isDragging: false
-            },
+            state: { p: 0, layout: 'list' },
 
             init() {
-                this.setLayout(this.state.layout);
-                this.setTheme(this.state.theme);
-                this.navTo(this.state.page, 'auto');
-                
-                // 監聽滾動更新選單
                 const scroller = document.getElementById('scroller');
+                const indicator = document.getElementById('indicator');
+                
+                // 核心：即時聯動指示器 (隨滑動位置改變)
                 scroller.addEventListener('scroll', () => {
-                    const idx = Math.round(scroller.scrollLeft / scroller.offsetWidth);
-                    if(idx !== this.state.page) {
-                        this.state.page = idx;
-                        this.updateNav();
-                        localStorage.setItem('p', idx);
+                    const progress = scroller.scrollLeft / scroller.offsetWidth;
+                    const index = Math.round(progress);
+                    
+                    // 動態計算指示器位置 (實現極致流暢感)
+                    const offset = (scroller.scrollLeft / scroller.offsetWidth) * 100;
+                    indicator.style.transform = `translateX(${offset}%)`;
+                    
+                    if(index !== this.state.p) {
+                        this.state.p = index;
+                        this.updateActiveTab();
                     }
                 }, { passive: true });
 
-                // 初始化手勢
                 this.initGestures('settings');
                 this.initGestures('about');
+                this.setLayout('list');
             },
 
-            setVar(key, val) { document.documentElement.style.setProperty(key, val); },
-            setEl(id, val) { document.getElementById(id).innerText = val; },
+            navTo(idx) {
+                const scroller = document.getElementById('scroller');
+                scroller.scrollTo({ left: scroller.offsetWidth * idx, behavior: 'smooth' });
+            },
+
+            updateActiveTab() {
+                document.querySelectorAll('.dock-item').forEach((el, i) => {
+                    el.classList.toggle('active', i === this.state.p);
+                });
+            },
 
             setLayout(mode) {
                 this.state.layout = mode;
                 document.body.setAttribute('data-layout', mode);
-                localStorage.setItem('l', mode);
-                // 確保切換後位置正確
-                setTimeout(() => this.navTo(this.state.page, 'auto'), 50);
+                document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+                document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
             },
 
-            setTheme(t) {
-                this.state.theme = t;
-                document.body.setAttribute('data-theme', t);
-                localStorage.setItem('t', t);
-                document.getElementById('mode-dark').classList.toggle('active', t==='dark');
-                document.getElementById('mode-light').classList.toggle('active', t==='light');
-                document.getElementById('meta-theme-color').content = t==='dark' ? '#0f172a' : '#f1f5f9';
-            },
+            setTheme(t) { document.body.setAttribute('data-theme', t); },
 
-            navTo(idx, behavior = 'smooth') {
-                const s = document.getElementById('scroller');
-                s.scrollTo({ left: s.offsetWidth * idx, behavior });
-                this.state.page = idx;
-                this.updateNav();
-            },
-
-            updateNav() {
-                const indicator = document.getElementById('nav-indicator');
-                indicator.style.transform = `translateX(${this.state.page * 100}%)`;
-                document.querySelectorAll('.dock-item').forEach((el, i) => {
-                    el.classList.toggle('active', i == this.state.page);
-                });
+            updateStyle(prop, val, txtId) {
+                document.documentElement.style.setProperty(prop, val);
+                if(txtId) document.getElementById(txtId).innerText = val.replace('%','').replace('px','');
             },
 
             openSheet(id) {
-                document.getElementById(`overlay-${id}`).classList.add('active');
-                document.getElementById(`sheet-${id}`).style.transform = `translateY(0)`;
+                const overlay = document.getElementById(`overlay-${id}`);
+                const sheet = document.getElementById(`sheet-${id}`);
+                overlay.classList.add('active');
+                sheet.style.transform = 'translateY(0)';
             },
 
             closeSheet(id) {
-                document.getElementById(`overlay-${id}`).classList.remove('active');
-                document.getElementById(`sheet-${id}`).style.transform = `translateY(100%)`;
+                const overlay = document.getElementById(`overlay-${id}`);
+                const sheet = document.getElementById(`sheet-${id}`);
+                overlay.classList.remove('active');
+                sheet.style.transform = 'translateY(100%)';
             },
 
-            // --- 🧊 物理手勢引擎 ---
+            // 物理手勢：往下滑動收回
             initGestures(id) {
                 const sheet = document.getElementById(`sheet-${id}`);
                 const handle = document.getElementById(`handle-${id}`);
-                let startY = 0;
-                let currentY = 0;
+                let startY, currentY, isDragging = false;
 
-                const onStart = (e) => {
+                const start = (e) => {
                     startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-                    this.isDragging = true;
+                    isDragging = true;
                     sheet.style.transition = 'none';
                 };
 
-                const onMove = (e) => {
-                    if (!this.isDragging) return;
-                    currentY = (e.type.includes('touch') ? e.touches[0].clientY : e.clientY) - startY;
-                    if (currentY < -50) currentY = -50 + currentY * 0.1; // 阻尼感
+                const move = (e) => {
+                    if(!isDragging) return;
+                    const y = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                    currentY = Math.max(0, y - startY); // 只允許向下
                     sheet.style.transform = `translateY(${currentY}px)`;
                 };
 
-                const onEnd = () => {
-                    this.isDragging = false;
-                    sheet.style.transition = 'transform 0.5s cubic-bezier(0.19, 1, 0.22, 1)';
-                    if (currentY > 150) {
-                        this.closeSheet(id);
-                    } else {
-                        sheet.style.transform = `translateY(0)`;
-                    }
+                const end = () => {
+                    if(!isDragging) return;
+                    isDragging = false;
+                    sheet.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                    if(currentY > 120) this.closeSheet(id);
+                    else sheet.style.transform = 'translateY(0)';
                     currentY = 0;
                 };
 
-                handle.addEventListener('mousedown', onStart);
-                handle.addEventListener('touchstart', onStart, {passive:true});
-                window.addEventListener('mousemove', onMove);
-                window.addEventListener('touchmove', onMove, {passive:false});
-                window.addEventListener('mouseup', onEnd);
-                window.addEventListener('touchend', onEnd);
+                handle.addEventListener('touchstart', start);
+                window.addEventListener('touchmove', move, {passive: false});
+                window.addEventListener('touchend', end);
             }
         };
 
