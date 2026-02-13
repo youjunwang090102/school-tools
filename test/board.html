@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級動態牆 v7.0 (高質感旗艦版)</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <style>
+        /* --- 現代化色板與基礎設定 --- */
+        :root { 
+            --primary: #4f46e5; --primary-hover: #4338ca; 
+            --secondary: #10b981; --danger: #ef4444; 
+            --bg: #f8fafc; --surface: #ffffff; 
+            --text-main: #0f172a; --text-muted: #64748b;
+            --teacher: #8b5cf6;
+        }
+        body { font-family: -apple-system, "SF Pro TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
+        * { box-sizing: border-box; }
+        
+        .container { width: 100%; max-width: 1050px; padding: 20px; }
+        .card { background: var(--surface); border-radius: 24px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); }
+        
+        /* --- 網頁佈局 --- */
+        .main-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 850px) { .main-layout { grid-template-columns: 1fr 380px; } }
+
+        /* --- 頂部導覽列 --- */
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: var(--surface); padding: 15px 24px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .user-profile { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1.1rem; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; }
+        .logout-btn { background: #f1f5f9; color: var(--text-muted); padding: 8px 16px; border-radius: 12px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: 0.2s; }
+        .logout-btn:hover { background: #e2e8f0; color: var(--text-main); }
+
+        /* --- 輸入區塊 --- */
+        .post-area { display: flex; flex-direction: column; gap: 12px; }
+        .post-input-wrapper { display: flex; gap: 12px; align-items: flex-end; }
+        textarea.post-input { flex: 1; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; font-size: 1rem; resize: none; min-height: 80px; transition: 0.3s; font-family: inherit; }
+        textarea.post-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        .send-btn { background: var(--primary); color: white; border: none; padding: 0 24px; height: 50px; border-radius: 14px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .send-btn:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+
+        /* --- 留言列表 --- */
+        .msg-list { display: flex; flex-direction: column; gap: 16px; max-height: 75vh; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
+        .msg-list::-webkit-scrollbar { width: 6px; }
+        .msg-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .msg-item { background: var(--surface); padding: 20px; border-radius: 20px; border: 1px solid #f1f5f9; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; gap: 15px; animation: fadeIn 0.4s ease-out; position: relative; overflow: hidden; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .msg-item.is-teacher { background: #faf5ff; border-color: #f3e8ff; }
+        .msg-item.is-teacher::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--teacher); }
+        
+        .msg-content-wrapper { flex: 1; min-width: 0; }
+        .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .msg-author { font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .msg-role-tag { font-size: 0.7rem; padding: 3px 8px; border-radius: 8px; background: #e0e7ff; color: var(--primary); font-weight: 600; }
+        .msg-item.is-teacher .msg-role-tag { background: #f3e8ff; color: var(--teacher); }
+        .msg-time { font-size: 0.8rem; color: var(--text-muted); }
+        .msg-text { color: #334155; line-height: 1.6; word-break: break-word; white-space: pre-wrap; font-size: 0.95rem; }
+        .msg-text a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        .msg-text a:hover { text-decoration: underline; }
+        .delete-btn { background: #fee2e2; color: var(--danger); border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+        .delete-btn:hover { background: var(--danger); color: white; transform: scale(1.1); }
+
+        /* --- 管理面板控制 --- */
+        .admin-toggle-btn { background: var(--teacher); color: white; border: none; padding: 16px; border-radius: 16px; width: 100%; font-weight: bold; font-size: 1rem; margin-bottom: 20px; cursor: pointer; display: none; transition: 0.2s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
+        .admin-toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); }
+        
+        #adminPanel { display: none; background: #1e293b; color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        
+        select.admin-select { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 12px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 0.95rem; }
+        .admin-btn { width: 100%; padding: 14px; background: var(--danger); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .admin-btn:hover { filter: brightness(1.2); }
+        
+        .active-mute-item { background: rgba(255,255,255,0.05); padding: 12px 15px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
+        .unmute-btn { background: var(--secondary); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+
+        /* --- 共用與提示 --- */
+        input.login-input { width: 100%; padding: 16px; margin: 10px 0; border-radius: 16px; border: 2px solid #e2e8f0; font-size: 1rem; transition: 0.3s; }
+        input.login-input:focus { border-color: var(--primary); outline: none; }
+        .mute-warning { color: #991b1b; font-weight: bold; background: #fef2f2; padding: 15px; border-radius: 12px; margin-top: 15px; font-size: 0.9rem; display: none; border: 1px solid #fecaca; display: flex; align-items: center; gap: 8px; }
+        
+        /* 自訂 Toast 提示框 */
+        #toastContainer { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { min-width: 250px; background: white; color: var(--text-main); padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; transform: translateX(120%); opacity: 0; transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 5px solid var(--primary); }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.success { border-left-color: var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<div class="container">
+    <div id="loginCard" class="card" style="max-width: 400px; margin: 8vh auto; padding: 40px 30px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">💬</div>
+            <h2 style="margin: 0; color: var(--text-main);">班級動態牆</h2>
+            <p style="color: var(--text-muted); margin-top: 5px; font-size: 0.9rem;">歡迎回來，請登入您的帳號</p>
+        </div>
+        
+        <input type="number" id="stuId" class="login-input" autocomplete="username" placeholder="請輸入座號 (例: 05)">
+        <input type="password" id="stuPw" class="login-input" autocomplete="current-password" placeholder="請輸入密碼">
+        <button class="send-btn" style="width: 100%; margin-top: 20px;" onclick="doLogin()">登入系統</button>
+    </div>
+
+    <div id="mainView" style="display: none;">
+        <div class="top-nav">
+            <div class="user-profile">
+                <div id="navAvatar" class="avatar"></div>
+                <div id="userName">載入中...</div>
+            </div>
+            <button class="logout-btn" onclick="location.reload()">登出系統</button>
+        </div>
+
+        <div class="main-layout">
+            <div class="left-col">
+                <div class="card post-area">
+                    <div class="post-input-wrapper">
+                        <textarea id="msgInput" class="post-input" placeholder="有什麼新鮮事想跟班上分享？..."></textarea>
+                        <button class="send-btn" onclick="sendMsg()">發佈</button>
+                    </div>
+                    <div id="selfMuteHint" class="mute-warning" style="display: none;"></div>
+                </div>
+                
+                <div id="msgList" class="msg-list">
+                    </div>
+            </div>
+
+            <div class="right-col">
+                <button id="adminShowBtn" class="admin-toggle-btn" onclick="toggleAdminPanel(true)">
+                    🛡️ 開啟管理控制台
+                </button>
+                
+                <div id="adminPanel">
+                    <div class="admin-header">
+                        <span style="font-size: 1.1rem; font-weight: bold;">🛡️ 禁言管理系統</span>
+                        <button onclick="toggleAdminPanel(false)" style="background: rgba(255,255,255,0.1); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer;">關閉</button>
+                    </div>
+                    
+                    <select id="targetSelect" class="admin-select"></select>
+                    <select id="daysSelect" class="admin-select">
+                        <option value="0.0416">禁言 1 小時</option>
+                        <option value="1">禁言 1 天</option>
+                        <option value="3">禁言 3 天</option>
+                        <option value="999">永久禁言</option>
+                    </select>
+                    <button class="admin-btn" onclick="executeMute()">執行禁言</button>
+                    
+                    <div style="margin-top: 25px; border-top: 1px solid #334155; padding-top: 15px;">
+                        <span style="color: #94a3b8; font-size: 0.85rem; font-weight: bold;">生效中的禁言名單</span>
+                        <div id="activeMuteList" style="max-height: 250px; overflow-y: auto; margin-top: 10px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Firebase 配置 ---
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+        authDomain: "vote-6668.firebaseapp.com",
+        projectId: "vote-6668",
+        storageBucket: "vote-6668.firebasestorage.app",
+        messagingSenderId: "389284021944",
+        appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let me = null;
+    let isMuted = false;
+
+    // --- UI 優化新功能：Toast 提示框 ---
+    function showToast(msg, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = '💡';
+        if(type === 'error') icon = '❌';
+        if(type === 'success') icon = '✅';
+        
+        toast.innerHTML = `<span>${icon}</span> <span>${escapeHTML(msg)}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+
+    // --- 新功能：計算相對時間 (Time Ago) ---
+    function timeAgo(date) {
+        if (!date) return "剛剛";
+        const seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return "剛剛";
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} 分鐘前`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} 小時前`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days} 天前`;
+        return date.toLocaleDateString();
+    }
+
+    // --- 新功能：網址自動轉換連結 (Linkify) ---
+    function linkify(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, function(url) {
+            return `<a href="${url}" target="_blank">${url}</a>`;
+        });
+    }
+
+    // --- 新功能：產生專屬顏色頭像背景 ---
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        const hue = Math.abs(hash % 360);
+        return `hsl(${hue}, 70%, 60%)`; // 使用 HSL 確保顏色亮麗不刺眼
+    }
+
+    // --- 安全防護工具 ---
+    async function hashPassword(password) {
+        try {
+            if (!crypto || !crypto.subtle) return password;
+            const msgBuffer = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) { return password; }
+    }
+
+    function escapeHTML(str) {
+        return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+    }
+
+    // --- 登入邏輯 ---
+    async function doLogin() {
+        const idInput = document.getElementById('stuId').value;
+        const pwInput = document.getElementById('stuPw').value;
+        if(!idInput || !pwInput) return showToast("請完整輸入座號與密碼", "error");
+
+        const id = idInput.padStart(2, '0'); 
+        const hashedInputPw = await hashPassword(pwInput); 
+
+        try {
+            const doc = await db.collection("students").doc(id).get();
+            if (doc.exists) {
+                const data = doc.data();
+                let isMatch = false;
+                const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                if (isDbPasswordHashed) {
+                    if (data.password === hashedInputPw) isMatch = true;
+                } else {
+                    if (data.password === pwInput) {
+                        isMatch = true;
+                        await db.collection("students").doc(id).update({ password: hashedInputPw });
+                    }
+                }
+
+                if (isMatch) {
+                    if (data.status === "active") {
+                        if (data.forceReset === true) {
+                            showToast("提醒：您目前使用的是預設密碼，請盡快前往首頁修改！", "error");
+                        } else {
+                            showToast("登入成功！", "success");
+                        }
+                        me = { id, ...data };
+                        startApp();
+                    } else { 
+                        showToast("帳號尚未啟用，請等待管理員核准。", "error"); 
+                    }
+                } else { 
+                    showToast("密碼錯誤，請重新輸入", "error"); 
+                }
+            } else { 
+                showToast("找不到此座號", "error"); 
+            }
+        } catch (e) { showToast("連線失敗：" + e.message, "error"); }
+    }
+
+    function startApp() {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('mainView').style.display = 'block';
+        
+        // 設定頂部使用者資訊與頭像
+        const firstChar = me.name ? me.name.charAt(0) : me.id;
+        const avatarEl = document.getElementById('navAvatar');
+        avatarEl.innerText = firstChar;
+        avatarEl.style.backgroundColor = stringToColor(me.name || me.id);
+        document.getElementById('userName').innerText = `${escapeHTML(me.name)} (#${me.id})`;
+        
+        const isTeacher = (me.role === 'teacher' || me.role === 'admin');
+        if (isTeacher) {
+            document.getElementById('adminShowBtn').style.display = 'block';
+            toggleAdminPanel(true);
+            loadStudentSelector();
+            listenMuteList();
+        }
+        
+        listenMessages(isTeacher);
+        checkMyMute();
+    }
+
+    // --- 管理面板控制 ---
+    function toggleAdminPanel(show) {
+        document.getElementById('adminPanel').style.display = show ? 'block' : 'none';
+        document.getElementById('adminShowBtn').style.display = show ? 'none' : 'block';
+    }
+
+    // --- 禁言邏輯 (原封不動保留) ---
+    async function loadStudentSelector() {
+        const snap = await db.collection("students").get();
+        const select = document.getElementById('targetSelect');
+        const sorted = snap.docs.sort((a,b) => parseInt(a.id) - parseInt(b.id));
+        select.innerHTML = '<option value="">請選擇要禁言的學生...</option>';
+        sorted.forEach(doc => {
+            if(doc.data().role !== 'teacher') {
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.innerText = `${parseInt(doc.id)}號 ${escapeHTML(doc.data().name)}`;
+                select.appendChild(opt);
+            }
+        });
+    }
+
+    function listenMuteList() {
+        db.collection("mute_records").onSnapshot(async snap => {
+            const listArea = document.getElementById('activeMuteList');
+            listArea.innerHTML = '';
+            
+            const stuSnap = await db.collection("students").get();
+            let names = {};
+            stuSnap.forEach(d => names[d.id] = d.data().name);
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.until > Date.now()) {
+                    const div = document.createElement('div');
+                    div.className = 'active-mute-item';
+                    div.innerHTML = `
+                        <div>
+                            <span style="font-weight:bold;">${parseInt(doc.id)}號 ${escapeHTML(names[doc.id] || '學生')}</span><br>
+                            <small style="color:#94a3b8">至 ${new Date(data.until).toLocaleString()}</small>
+                        </div>
+                        <button class="unmute-btn" onclick="unmute('${doc.id}')">解除</button>
+                    `;
+                    listArea.appendChild(div);
+                }
+            });
+        });
+    }
+
+    async function executeMute() {
+        const sid = document.getElementById('targetSelect').value;
+        const days = parseFloat(document.getElementById('daysSelect').value);
+        if(!sid) return showToast("請先選擇要禁言的學生", "error");
+        
+        const until = Date.now() + (days * 24 * 60 * 60 * 1000);
+        await db.collection("mute_records").doc(sid).set({ until: until });
+        showToast("已成功執行禁言", "success");
+    }
+
+    async function unmute(sid) { 
+        if(confirm("確定解除此學生的禁言？")) {
+            await db.collection("mute_records").doc(sid).delete(); 
+            showToast("已解除禁言", "success");
+        }
+    }
+
+    function checkMyMute() {
+        db.collection("mute_records").doc(me.id).onSnapshot(doc => {
+            const hint = document.getElementById('selfMuteHint');
+            if (doc.exists && doc.data().until > Date.now()) {
+                isMuted = true;
+                hint.style.display = 'flex';
+                hint.innerHTML = `⚠️ 您目前處於禁言狀態，預計於 ${new Date(doc.data().until).toLocaleString()} 解除。`;
+            } else {
+                isMuted = false;
+                hint.style.display = 'none';
+            }
+        });
+    }
+
+    // --- 留言板邏輯 ---
+    async function sendMsg() {
+        if (isMuted) return showToast("您目前處於禁言狀態，無法發言！", "error");
+        const inputEl = document.getElementById('msgInput');
+        const content = inputEl.value.trim();
+        if(!content) return;
+        
+        await db.collection("messages").add({
+            author: me.name, authorId: me.id, content: content,
+            role: me.role || 'student', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        inputEl.value = "";
+        showToast("留言發佈成功！", "success");
+    }
+
+    function listenMessages(isTeacher) {
+        db.collection("messages").orderBy("createdAt", "desc").limit(50).onSnapshot(snap => {
+            const container = document.getElementById('msgList');
+            container.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const rawDate = d.createdAt ? d.createdAt.toDate() : null;
+                const displayTime = timeAgo(rawDate); // 使用新的相對時間功能
+                
+                // 安全處理並轉換網址
+                const safeName = escapeHTML(d.author);
+                let safeContent = escapeHTML(d.content);
+                safeContent = linkify(safeContent); // 將網址變連結
+
+                const avatarChar = safeName.charAt(0);
+                const avatarColor = stringToColor(d.author || 'U');
+                const isMsgTeacher = d.role === 'teacher' || d.role === 'admin';
+                const roleTag = isMsgTeacher ? '<span class="msg-role-tag">管理員</span>' : '';
+
+                const div = document.createElement('div');
+                div.className = `msg-item ${isMsgTeacher ? 'is-teacher' : ''}`;
+                
+                div.innerHTML = `
+                    <div class="avatar" style="background-color: ${avatarColor}; flex-shrink: 0;">${avatarChar}</div>
+                    <div class="msg-content-wrapper">
+                        <div class="msg-header">
+                            <div class="msg-author">
+                                ${safeName} ${roleTag}
+                                <span class="msg-time">${displayTime}</span>
+                            </div>
+                            ${isTeacher ? `<button class="delete-btn" title="刪除留言" onclick="deleteMsg('${doc.id}')">✖</button>` : ''}
+                        </div>
+                        <div class="msg-text">${safeContent}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        });
+    }
+
+    async function deleteMsg(mid) { 
+        if(confirm("確定要刪除這則留言嗎？")) {
+            await db.collection("messages").doc(mid).delete(); 
+            showToast("留言已刪除", "success");
+        }
+    }
+</script>
+</body>
+</html>
