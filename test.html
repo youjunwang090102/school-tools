@@ -3,572 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ClassHub Ultimate | The Pinnacle of Web Design</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+    <title>ClassHub | Apple Experience</title>
     <style>
-        /* * =========================================
-         * 🎨 CORE DESIGN SYSTEM (CSS VARS)
-         * =========================================
-         */
         :root {
-            /* 基礎色系 - 使用 HSL 實現精準動態控制 */
-            --h: 215; --s: 90%; --l: 60%;
-            --primary: hsl(var(--h), var(--s), var(--l));
-            --primary-rgb: 56, 189, 248;
-            --accent: #f472b6;
-            
-            /* 背景系統 */
-            --bg-base: #020617;
-            --bg-surface: #0f172a;
-            --bg-card: #1e293b;
-            --glass: rgba(15, 23, 42, 0.8);
-            
-            /* 文字系統 */
-            --text-p: #f8fafc;
-            --text-s: #94a3b8;
-            --text-dim: #64748b;
-            
-            /* 物理參數 */
-            --radius-lg: 32px;
-            --radius-md: 20px;
-            --radius-sm: 12px;
-            --blur: 20px;
-            --transition: 0.4s cubic-bezier(0.2, 0, 0, 1);
-            
-            /* 自定義個人化變數 (由 JS 動態修改) */
-            --p-scale: 1.0;
-            --p-spacing: 16px;
-            --p-weight: 500;
-            --p-anim-speed: 0.5s;
-            --p-glass-opacity: 0.8;
-            
+            /* Apple Colors */
+            --bg-color: #000000;
+            --surface: #1c1c1e;
+            --text-p: #f5f5f7;
+            --text-s: #86868b;
+            --accent: #0071e3;
+            --glass: rgba(28, 28, 30, 0.7);
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
+            
+            /* UI Settings */
+            --radius-main: 20px;
+            --radius-btn: 12px;
+            --anim-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
+            --anim-spring: cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* 淺色主題映射 */
         [data-theme="light"] {
-            --bg-base: #f1f5f9;
-            --bg-surface: #ffffff;
-            --bg-card: #f8fafc;
-            --text-p: #0f172a;
-            --text-s: #475569;
-            --text-dim: #94a3b8;
-            --glass: rgba(255, 255, 255, 0.85);
+            --bg-color: #f5f5f7;
+            --surface: #ffffff;
+            --text-p: #1d1d1f;
+            --text-s: #6e6e73;
+            --glass: rgba(245, 245, 247, 0.8);
         }
 
-        /* * =========================================
-         * 🛠 RESET & BASE STYLES
-         * =========================================
-         */
         * {
             margin: 0; padding: 0; box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
             -webkit-font-smoothing: antialiased;
-            scrollbar-width: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        *::-webkit-scrollbar { display: none; }
 
         body {
-            background-color: var(--bg-base);
+            background-color: var(--bg-color);
             color: var(--text-p);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            font-weight: var(--p-weight);
-            line-height: 1.5;
-            overflow: hidden; /* 由物理引擎控制滾動 */
-            height: 100vh; width: 100vw;
-            touch-action: none; /* 禁用預設手勢 */
-        }
-
-        /* * =========================================
-         * 🏗 LAYOUT ENGINE
-         * =========================================
-         */
-        #app-canvas {
-            position: relative; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            transition: transform var(--p-anim-speed) var(--transition);
-        }
-
-        /* 當抽屜打開時的背景縮放效果 */
-        body.sheet-open #app-canvas {
-            transform: scale(0.92) translateY(-20px);
-            filter: brightness(0.7) blur(2px);
-            border-radius: var(--radius-lg);
             overflow: hidden;
+            height: 100vh;
+            transition: background-color 0.5s ease;
         }
 
+        /* --- 🍏 Apple Header --- */
         header {
-            padding: calc(var(--safe-top) + 20px) 24px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; background: linear-gradient(to bottom, var(--bg-base), transparent);
+            position: fixed; top: 0; width: 100%; height: 44px;
+            background: var(--glass); backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            z-index: 1000; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 22px; border-bottom: 0.5px solid rgba(255,255,255,0.1);
         }
 
-        .brand-zone h1 {
-            font-size: 26px; font-weight: 900; letter-spacing: -1.5px;
-            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        .logo { font-size: 17px; font-weight: 600; letter-spacing: -0.5px; opacity: 0.92; }
+        .header-tools { display: flex; gap: 20px; }
+        .h-btn { background: none; border: none; color: var(--text-p); cursor: pointer; opacity: 0.8; transition: 0.2s; }
+        .h-btn:hover { opacity: 1; }
+
+        /* --- 📱 Physics Viewport --- */
+        #viewport {
+            display: flex; width: 100vw; height: 100vh;
+            overflow-x: auto; scroll-snap-type: x mandatory;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+        }
+        #viewport::-webkit-scrollbar { display: none; }
+        
+        .page {
+            flex: 0 0 100vw; height: 100vh; scroll-snap-align: start;
+            padding: calc(44px + 40px) 20px 150px; overflow-y: auto;
         }
 
-        .top-actions { display: flex; gap: 12px; }
-        .circle-btn {
-            width: 48px; height: 48px; border-radius: 50%;
-            background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.08);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.3s; color: var(--text-p);
+        /* --- 📦 Card Grid --- */
+        .apple-grid {
+            display: grid; gap: 20px; width: 100%; max-width: 1000px; margin: 0 auto;
         }
-        .circle-btn:hover { background: var(--primary); color: white; transform: translateY(-2px); }
+        @media (min-width: 800px) { .apple-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 799px) { .apple-grid { grid-template-columns: 1fr; } }
 
-        /* * =========================================
-         * 📱 MAIN VIEWPORT & GRID (超過 200 行的高級適配)
-         * =========================================
-         */
-        .viewport-master {
-            flex: 1; display: flex; overflow-x: auto;
-            scroll-snap-type: x mandatory; scroll-behavior: auto;
-            will-change: transform;
-        }
-
-        .section-page {
-            flex: 0 0 100vw; height: 100%; overflow-y: auto;
-            padding: 20px 24px 160px; scroll-snap-align: start;
-        }
-
-        .dynamic-grid {
-            display: grid; gap: var(--p-spacing);
-            max-width: 1400px; margin: 0 auto;
-            transition: all 0.5s var(--transition);
-        }
-
-        /* 強大的響應式佈局：智慧偵測手機、平板、桌面 */
-        @media (min-width: 1200px) { .dynamic-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (min-width: 768px) and (max-width: 1199px) { .dynamic-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 767px) { .dynamic-grid { grid-template-columns: 1fr; } }
-
-        .app-card {
-            background: var(--bg-card); border-radius: var(--radius-md);
+        .apple-card {
+            background: var(--surface); border-radius: var(--radius-main);
             padding: 24px; text-decoration: none; color: inherit;
-            display: flex; flex-direction: column; gap: 16px;
-            border: 1px solid rgba(255,255,255,0.03);
-            position: relative; overflow: hidden;
-            transition: all 0.4s var(--transition);
+            display: flex; flex-direction: column; gap: 12px;
+            transition: transform 0.4s var(--anim-apple), background-color 0.3s;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.04);
         }
-        .app-card::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-            opacity: 0; transition: 0.3s;
-        }
-        .app-card:hover { transform: translateY(-8px) scale(1.02); border-color: var(--primary); }
-        .app-card:hover::before { opacity: 1; }
+        .apple-card:active { transform: scale(0.96); background-color: rgba(255,255,255,0.05); }
 
-        .card-icon {
-            width: 56px; height: 56px; border-radius: 16px;
-            background: linear-gradient(135deg, var(--bg-surface), var(--bg-base));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 28px; box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        }
+        .card-icon { font-size: 32px; height: 40px; }
+        .card-title { font-size: 19px; font-weight: 600; letter-spacing: -0.2px; }
+        .card-desc { font-size: 14px; color: var(--text-s); line-height: 1.4; }
 
-        .card-content h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .card-content p { font-size: 14px; color: var(--text-s); line-height: 1.4; }
-
-        /* * =========================================
-         * 🧭 DOCK ENGINE (ULTIMATE FLUIDITY)
-         * =========================================
-         */
-        .dock-wrapper {
-            position: fixed; bottom: calc(var(--safe-bottom) + 15px);
+        /* --- 🧭 Fixed Dock (No Overflow) --- */
+        .dock-container {
+            position: fixed; bottom: calc(var(--safe-bottom) + 12px);
             left: 50%; transform: translateX(-50%);
-            width: 92%; max-width: 500px; z-index: 1000;
+            width: 90%; max-width: 400px; z-index: 500;
         }
-        .dock-glass {
-            background: var(--glass); backdrop-filter: blur(var(--blur));
-            -webkit-backdrop-filter: blur(var(--blur));
-            border-radius: 40px; padding: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: flex; position: relative; gap: 4px;
+        .dock {
+            background: rgba(44, 44, 46, 0.7); backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-radius: 34px; padding: 4px; display: flex;
+            position: relative; border: 0.5px solid rgba(255,255,255,0.08);
+            overflow: hidden; /* 防止指示器溢出 */
+        }
+        .dock-indicator-track {
+            position: absolute; inset: 4px; width: calc(100% - 8px); z-index: 0;
         }
         .dock-indicator {
-            position: absolute; top: 8px; left: 8px; bottom: 8px;
-            width: calc(25% - 10px); background: var(--primary);
-            border-radius: 32px; z-index: 0;
-            box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.4);
-            /* 此處由 JS 控制 transform 以達成 1:1 跟隨 */
+            position: absolute; top: 0; left: 0; bottom: 0;
+            width: 25%; background: rgba(255,255,255,0.12);
+            border-radius: 30px; transition: transform 0.4s var(--anim-spring);
         }
-        .dock-tab {
-            flex: 1; padding: 14px 0; text-align: center;
-            z-index: 1; cursor: pointer; color: var(--text-dim);
-            font-size: 14px; font-weight: 800; transition: color 0.3s;
+        .dock-item {
+            flex: 1; z-index: 1; text-align: center; padding: 12px 0;
+            font-size: 13px; font-weight: 600; color: var(--text-s);
+            cursor: pointer; transition: color 0.3s;
         }
-        .dock-tab.active { color: white; }
+        .dock-item.active { color: var(--text-p); }
 
-        /* * =========================================
-         * 🧬 ADVANCED BOTTOM SHEET (PHYSICS ENGINE)
-         * =========================================
-         */
+        /* --- 🛗 Apple Material Sheet --- */
         .sheet-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 2000; display: none; opacity: 0;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 2000; opacity: 0; visibility: hidden; transition: 0.4s;
         }
-        .master-sheet {
+        .sheet-overlay.active { opacity: 1; visibility: visible; }
+        
+        .apple-sheet {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: var(--bg-surface); border-radius: 40px 40px 0 0;
-            z-index: 2100; transform: translateY(100%);
-            will-change: transform; transition: transform var(--p-anim-speed) var(--transition);
-            max-height: 95vh; display: flex; flex-direction: column;
+            background: var(--surface); border-radius: 30px 30px 0 0;
+            padding: 10px 20px calc(40px + var(--safe-bottom));
+            transform: translateY(100%); z-index: 2100;
+            will-change: transform; transition: transform 0.6s var(--anim-apple);
+            max-height: 94vh;
         }
-        .sheet-header {
-            padding: 12px; display: flex; justify-content: center; cursor: grab;
-        }
-        .sheet-drag-handle {
-            width: 48px; height: 6px; background: var(--text-dim);
-            border-radius: 3px; opacity: 0.3;
-        }
-        .sheet-body {
-            flex: 1; overflow-y: auto; padding: 0 32px 60px;
-        }
+        .sheet-handle-zone { width: 100%; height: 34px; display: flex; justify-content: center; cursor: grab; }
+        .sheet-handle { width: 36px; height: 5px; background: var(--text-s); opacity: 0.4; border-radius: 10px; margin-top: 8px; }
 
-        /* * =========================================
-         * ⚙️ CONTROL PANEL ELEMENTS
-         * =========================================
-         */
-        .control-section { margin-bottom: 32px; }
-        .control-section h4 { 
-            text-transform: uppercase; font-size: 12px; letter-spacing: 2px;
-            color: var(--text-dim); margin-bottom: 16px;
-        }
-        
-        .toggle-group {
-            background: var(--bg-base); border-radius: var(--radius-sm);
-            padding: 6px; display: flex; gap: 4px;
-        }
-        .toggle-btn {
-            flex: 1; padding: 12px; border: none; background: none;
-            color: var(--text-s); font-weight: 700; border-radius: calc(var(--radius-sm) - 4px);
-            cursor: pointer; transition: 0.3s;
-        }
-        .toggle-btn.active { background: var(--primary); color: white; }
+        .sheet-content { overflow-y: auto; height: 100%; padding-top: 10px; }
+        .sheet-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 24px; }
 
-        .slider-wrap {
-            padding: 10px 0;
-        }
-        .slider-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
-        
+        /* --- ⚙️ Individual Control Dashboard --- */
+        .setting-group { background: rgba(255,255,255,0.03); border-radius: 14px; padding: 4px; display: flex; margin-bottom: 25px; }
+        .setting-btn { flex: 1; border: none; background: none; color: var(--text-s); padding: 10px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+        .setting-btn.active { background: rgba(255,255,255,0.1); color: var(--text-p); }
+
+        .slider-box { margin-bottom: 25px; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-s); margin-bottom: 10px; }
         input[type="range"] {
-            -webkit-appearance: none; width: 100%; background: var(--bg-base);
-            height: 8px; border-radius: 4px; outline: none;
+            -webkit-appearance: none; width: 100%; background: rgba(255,255,255,0.1);
+            height: 6px; border-radius: 3px; outline: none;
         }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 24px; height: 24px;
-            background: var(--primary); border-radius: 50%; border: 4px solid var(--bg-surface);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+            -webkit-appearance: none; width: 26px; height: 26px; background: #fff;
+            border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.3); cursor: pointer;
         }
-
-        /* * =========================================
-         * 🛰️ ANIMATIONS
-         * =========================================
-         */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .floating { animation: float 4s ease-in-out infinite; }
 
     </style>
 </head>
-<body>
+<body data-theme="dark">
 
-    <div id="app-canvas">
-        <header>
-            <div class="brand-zone">
-                <h1>ClassHub Premium</h1>
-                <div style="font-size: 10px; color: var(--text-dim); font-weight: 800; letter-spacing: 2px;">AUTHORITY v7.0 ULTIMATE</div>
+    <header>
+        <div class="logo">ClassHub</div>
+        <div class="header-tools">
+            <button class="h-btn" onclick="UI.openSheet()">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 00 1.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 00 1.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="viewport">
+        <section class="page">
+            <div class="apple-grid">
+                <a href="#" class="apple-card"><div class="card-icon">📅</div><div class="card-title">班級行事曆</div><div class="card-desc">掌握考程與重要活動紀錄</div></a>
+                <a href="#" class="apple-card"><div class="card-icon">⏳</div><div class="card-title">考程倒數</div><div class="card-desc">距離期末考僅剩 12 天</div></a>
             </div>
-            <div class="top-actions">
-                <div class="circle-btn" onclick="Core.openSheet('settings')">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 00 1.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                </div>
-                <div class="circle-btn" onclick="Core.openSheet('about')">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                </div>
+        </section>
+        <section class="page">
+            <div class="apple-grid">
+                <a href="#" class="apple-card"><div class="card-icon">✉️</div><div class="card-title">匿名信箱</div><div class="card-desc">傳達那些無法當面說出口的話</div></a>
+                <a href="#" class="apple-card"><div class="card-icon">🌱</div><div class="card-title">匿名求助</div><div class="card-desc">與導師進行隱私溝通</div></a>
             </div>
-        </header>
+        </section>
+        <section class="page">
+            <div class="apple-grid">
+                <a href="#" class="apple-card"><div class="card-icon">🧹</div><div class="card-title">打掃勤務</div><div class="card-desc">查看個人負責區域與點數回報</div></a>
+            </div>
+        </section>
+        <section class="page">
+            <div class="apple-grid">
+                <a href="#" class="apple-card"><div class="card-icon">📈</div><div class="card-title">學期總分</div><div class="card-desc">全自動化學分與加權平均計算</div></a>
+            </div>
+        </section>
+    </main>
 
-        <main class="viewport-master" id="scroller">
-            <section class="section-page">
-                <div class="dynamic-grid" id="grid-p1">
-                    </div>
-            </section>
-            <section class="section-page">
-                <div class="dynamic-grid" id="grid-p2"></div>
-            </section>
-            <section class="section-page">
-                <div class="dynamic-grid" id="grid-p3"></div>
-            </section>
-            <section class="section-page">
-                <div class="dynamic-grid" id="grid-p4"></div>
-            </section>
-        </main>
-    </div>
-
-    <div class="dock-wrapper">
-        <div class="dock-glass">
-            <div class="dock-indicator" id="ind"></div>
-            <div class="dock-tab active" onclick="Core.nav(0)">提醒</div>
-            <div class="dock-tab" onclick="Core.nav(1)">互動</div>
-            <div class="dock-tab" onclick="Core.nav(2)">班務</div>
-            <div class="dock-tab" onclick="Core.nav(3)">成績</div>
+    <div class="dock-container">
+        <div class="dock">
+            <div class="dock-indicator-track">
+                <div class="dock-indicator" id="indicator"></div>
+            </div>
+            <div class="dock-item active" onclick="UI.nav(0)">提醒</div>
+            <div class="dock-item" onclick="UI.nav(1)">互動</div>
+            <div class="dock-item" onclick="UI.nav(2)">班務</div>
+            <div class="dock-item" onclick="UI.nav(3)">成績</div>
         </div>
     </div>
 
-    <div class="sheet-overlay" id="overlay" onclick="Core.closeSheet()"></div>
-    <div class="master-sheet" id="sheet">
-        <div class="sheet-header" id="drag-zone"><div class="sheet-drag-handle"></div></div>
-        <div class="sheet-body">
-            <div id="content-settings">
-                <h2>個人化控制面板</h2>
-                <p style="color: var(--text-dim); margin-bottom: 24px;">自定義您的頂尖交互體驗</p>
-                
-                <div class="control-section">
-                    <h4>主題模式</h4>
-                    <div class="toggle-group">
-                        <button class="toggle-btn active" id="t-dark" onclick="Core.setTheme('dark')">深邃暗黑</button>
-                        <button class="toggle-btn" id="t-light" onclick="Core.setTheme('light')">純粹明亮</button>
-                    </div>
-                </div>
+    <div class="sheet-overlay" id="overlay" onclick="UI.closeSheet()"></div>
+    <div class="apple-sheet" id="sheet">
+        <div class="sheet-handle-zone" id="handle"><div class="sheet-handle"></div></div>
+        <div class="sheet-content">
+            <div class="sheet-title">個人化控制中心</div>
+            
+            <div class="slider-box">
+                <div class="slider-header"><span>色調 Hue</span><b id="val-h">210</b></div>
+                <input type="range" min="0" max="360" value="210" oninput="UI.setVar('--accent', `hsl(${this.value}, 100%, 50%)`); UI.setEl('val-h', this.value)">
+            </div>
 
-                <div class="control-section">
-                    <h4>色彩系統 (Dynamic HSL)</h4>
-                    <div class="slider-wrap">
-                        <div class="slider-label"><span>色相 Hue</span><b id="val-h">215</b></div>
-                        <input type="range" min="0" max="360" value="215" oninput="Core.updateUI('--h', this.value, 'val-h')">
-                    </div>
-                    <div class="slider-wrap">
-                        <div class="slider-label"><span>飽和度 Saturation</span><b id="val-s">90%</b></div>
-                        <input type="range" min="0" max="100" value="90" oninput="Core.updateUI('--s', this.value + '%', 'val-s')">
-                    </div>
-                </div>
+            <div class="slider-box">
+                <div class="slider-header"><span>玻璃透明度</span><b id="val-o">0.7</b></div>
+                <input type="range" min="0.1" max="1" step="0.1" value="0.7" oninput="UI.setVar('--glass', `rgba(28, 28, 30, ${this.value})`); UI.setEl('val-o', this.value)">
+            </div>
 
-                <div class="control-section">
-                    <h4>物理引擎微調</h4>
-                    <div class="slider-wrap">
-                        <div class="slider-label"><span>介面縮放 Scale</span><b id="val-scale">1.0x</b></div>
-                        <input type="range" min="0.8" max="1.2" step="0.01" value="1.0" oninput="Core.updateUI('--p-scale', this.value, 'val-scale')">
-                    </div>
-                    <div class="slider-wrap">
-                        <div class="slider-label"><span>卡片間距 Spacing</span><b id="val-space">16px</b></div>
-                        <input type="range" min="8" max="40" value="16" oninput="Core.updateUI('--p-spacing', this.value + 'px', 'val-space')">
-                    </div>
-                    <div class="slider-wrap">
-                        <div class="slider-label"><span>動畫時長 Duration</span><b id="val-speed">0.5s</b></div>
-                        <input type="range" min="0.1" max="1.0" step="0.1" value="0.5" oninput="Core.updateUI('--p-anim-speed', this.value + 's', 'val-speed')">
-                    </div>
-                </div>
+            <div class="setting-group">
+                <button class="setting-btn active" id="btn-dark" onclick="UI.setTheme('dark')">深色模式</button>
+                <button class="setting-btn" id="btn-light" onclick="UI.setTheme('light')">淺色模式</button>
+            </div>
 
-                <div class="control-section">
-                    <h4>關於開發者</h4>
-                    <div class="app-card" style="background: var(--bg-base);">
-                        <div class="card-content">
-                            <h3>王宥鈞 (Authority)</h3>
-                            <p>本平台採用極限優化代碼構建，旨在提供全球最頂尖的班級數位化體驗。每一行程式碼都經過物理計算與美學校準。</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="sheet-title" style="margin-top:40px">開發者資訊</div>
+            <div class="apple-card" style="margin-bottom:100px;">
+                <div class="card-title">王宥鈞</div>
+                <div class="card-desc">本系統基於 Apple 官網設計語言打造，追求極致的物理觸感與排版美學。</div>
             </div>
         </div>
     </div>
 
     <script>
-        /**
-         * =========================================
-         * 🧠 AUTHORITY CORE ENGINE (超過 500 行邏輯補完)
-         * =========================================
-         */
-        const Core = {
-            state: {
-                activePage: 0,
-                isDragging: false,
-                startY: 0,
-                currentY: 0,
-                sheetMode: 'closed', // closed, partial, full
-                theme: 'dark'
-            },
-
-            // 大量模擬數據，確保網頁豐富度
-            data: [
-                [
-                    {t: '班級行事曆', d: '精密考程與重要活動紀錄', i: '📅'},
-                    {t: '考程倒數', d: '距下次大型考程還有 12 天', i: '⏳'},
-                    {t: '作業待辦', d: '目前有 3 項作業需繳交', i: '📒'},
-                    {t: '公告系統', d: '查看導師與學校最新通知', i: '📢'}
-                ],
-                [
-                    {t: '匿名求助', d: '專業心理輔導與諮詢通道', i: '🌱'},
-                    {t: '匿名信箱', d: '安全、保密的情感表達空間', i: '✉️'},
-                    {t: '匿名許願', d: '為了班級更好的各種點子', i: '✨'},
-                    {t: '實名討論', d: '針對班級事務的公開辯論', i: '💬'}
-                ],
-                [
-                    {t: '打掃勤務', d: '今日掃區分派：後外操場', i: '🧹'},
-                    {t: '選位系統', d: '基於物理隨機演算法的選位', i: '🪑'},
-                    {t: '數位投票', d: '班級聚餐地點即時表決', i: '🗳️'},
-                    {t: '隨機抽人', d: '公平、公正的課堂互動工具', i: '🎲'}
-                ],
-                [
-                    {t: '段考加權', d: '輸入成績即時計算落點分析', i: '📝'},
-                    {t: '學期總分', d: '全學期修業學分預判系統', i: '📈'},
-                    {t: '學科曲線', d: '可視化您的強項與弱點學科', i: '📊'},
-                    {t: '補考查詢', d: '自動偵測是否符合補考資格', i: '🔎'}
-                ]
-            ],
+        const UI = {
+            state: { p: 0, startY: 0, currentY: 0, mode: 'partial' },
 
             init() {
-                this.renderCards();
-                this.initScrollEngine();
-                this.initPhysicsSheet();
-                this.initKeyboardSupport();
-                console.log("Authority Core v7.0 System Initialized...");
-            },
-
-            // 渲染數百行邏輯支撐的卡片系統
-            renderCards() {
-                this.data.forEach((pageData, pIdx) => {
-                    const container = document.getElementById(`grid-p${pIdx+1}`);
-                    pageData.forEach(item => {
-                        const card = document.createElement('a');
-                        card.className = 'app-card floating';
-                        card.href = '#';
-                        card.innerHTML = `
-                            <div class="card-icon">${item.i}</div>
-                            <div class="card-content">
-                                <h3>${item.t}</h3>
-                                <p>${item.d}</p>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                    });
-                });
-            },
-
-            // 物理連動滾動引擎
-            initScrollEngine() {
-                const scroller = document.getElementById('scroller');
-                const ind = document.getElementById('ind');
-                const tabs = document.querySelectorAll('.dock-tab');
-
-                scroller.addEventListener('scroll', () => {
-                    const scrollRatio = scroller.scrollLeft / scroller.offsetWidth;
-                    ind.style.transform = `translateX(${scrollRatio * 100}%)`;
+                const vp = document.getElementById('viewport');
+                const ind = document.getElementById('indicator');
+                
+                // 1. 物理連動指示器
+                vp.addEventListener('scroll', () => {
+                    const ratio = vp.scrollLeft / vp.offsetWidth;
+                    ind.style.transform = `translateX(${ratio * 100}%)`;
                     
-                    const newPage = Math.round(scrollRatio);
-                    if (newPage !== this.state.activePage) {
-                        this.state.activePage = newPage;
-                        tabs.forEach((t, i) => t.classList.toggle('active', i === newPage));
+                    const idx = Math.round(ratio);
+                    if(idx !== this.state.p) {
+                        this.state.p = idx;
+                        document.querySelectorAll('.dock-item').forEach((t, i) => t.classList.toggle('active', i === idx));
                     }
                 }, { passive: true });
+
+                this.initGestures();
             },
 
-            nav(idx) {
-                const scroller = document.getElementById('scroller');
-                scroller.scrollTo({
-                    left: scroller.offsetWidth * idx,
-                    behavior: 'smooth'
-                });
+            nav(i) {
+                document.getElementById('viewport').scrollTo({ left: window.innerWidth * i, behavior: 'smooth' });
             },
 
-            // 頂級物理抽屜 (支援三段式手勢)
-            initPhysicsSheet() {
+            setVar(k, v) { document.documentElement.style.setProperty(k, v); },
+            setEl(id, v) { document.getElementById(id).innerText = v; },
+
+            setTheme(t) {
+                document.body.setAttribute('data-theme', t);
+                document.getElementById('btn-dark').classList.toggle('active', t==='dark');
+                document.getElementById('btn-light').classList.toggle('active', t==='light');
+            },
+
+            openSheet() {
+                document.getElementById('overlay').classList.add('active');
+                document.getElementById('sheet').style.transform = 'translateY(0)';
+            },
+
+            closeSheet() {
+                document.getElementById('overlay').classList.remove('active');
+                document.getElementById('sheet').style.transform = 'translateY(100%)';
+            },
+
+            // 2. 蘋果級物理手勢引擎 (三段式)
+            initGestures() {
                 const sheet = document.getElementById('sheet');
-                const dragZone = document.getElementById('drag-zone');
-                
-                const onStart = (e) => {
-                    this.state.isDragging = true;
+                const handle = document.getElementById('handle');
+
+                const start = (e) => {
                     this.state.startY = e.touches[0].clientY;
                     sheet.style.transition = 'none';
                 };
 
-                const onMove = (e) => {
-                    if (!this.state.isDragging) return;
+                const move = (e) => {
                     this.state.currentY = e.touches[0].clientY - this.state.startY;
-                    
-                    // 物理模擬：上拉阻尼，下滑順滑
-                    let moveY = this.state.currentY;
-                    if (this.state.sheetMode === 'partial' && moveY < 0) moveY *= 0.3;
-                    
-                    if (this.state.sheetMode === 'partial') {
-                        sheet.style.transform = `translateY(${moveY}px)`;
-                    } else if (this.state.sheetMode === 'full') {
-                        sheet.style.transform = `translateY(${Math.max(0, -window.innerHeight*0.1 + moveY)}px)`;
-                    }
+                    // 物理阻尼：上拉阻抗
+                    let y = this.state.currentY;
+                    if(y < 0) y = y * 0.2; 
+                    sheet.style.transform = `translateY(${y}px)`;
                 };
 
-                const onEnd = () => {
-                    this.state.isDragging = false;
-                    sheet.style.transition = `transform var(--p-anim-speed) var(--transition)`;
-                    
-                    if (this.state.currentY > 150) {
+                const end = () => {
+                    sheet.style.transition = 'transform 0.6s var(--anim-apple)';
+                    // 判定邏輯
+                    if(this.state.currentY > 150) {
                         this.closeSheet();
-                    } else if (this.state.currentY < -100) {
-                        this.expandSheetFull();
+                    } else if(this.state.currentY < -100) {
+                        sheet.style.transform = 'translateY(-15vh)'; // 展開更多
                     } else {
-                        sheet.style.transform = this.state.sheetMode === 'full' ? 'translateY(-10vh)' : 'translateY(0)';
+                        sheet.style.transform = 'translateY(0)'; // 回彈
                     }
                     this.state.currentY = 0;
                 };
 
-                dragZone.addEventListener('touchstart', onStart);
-                window.addEventListener('touchmove', onMove, { passive: false });
-                window.addEventListener('touchend', onEnd);
-            },
-
-            openSheet(type) {
-                this.state.sheetMode = 'partial';
-                document.body.classList.add('sheet-open');
-                document.getElementById('overlay').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('overlay').style.opacity = '1';
-                    document.getElementById('sheet').style.transform = 'translateY(0)';
-                }, 10);
-            },
-
-            closeSheet() {
-                this.state.sheetMode = 'closed';
-                document.body.classList.remove('sheet-open');
-                document.getElementById('sheet').style.transform = 'translateY(100%)';
-                document.getElementById('overlay').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('overlay').style.display = 'none';
-                }, 500);
-            },
-
-            expandSheetFull() {
-                this.state.sheetMode = 'full';
-                document.getElementById('sheet').style.transform = 'translateY(-10vh)';
-            },
-
-            updateUI(prop, val, valId) {
-                document.documentElement.style.setProperty(prop, val);
-                if (valId) document.getElementById(valId).innerText = val;
-            },
-
-            setTheme(m) {
-                this.state.theme = m;
-                document.body.setAttribute('data-theme', m);
-                document.getElementById('t-dark').classList.toggle('active', m === 'dark');
-                document.getElementById('t-light').classList.toggle('active', m === 'light');
-            },
-
-            initKeyboardSupport() {
-                window.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowRight') this.nav(Math.min(3, this.state.activePage + 1));
-                    if (e.key === 'ArrowLeft') this.nav(Math.max(0, this.state.activePage - 1));
-                    if (e.key === 'Escape') this.closeSheet();
-                });
+                handle.addEventListener('touchstart', start);
+                window.addEventListener('touchmove', move, { passive: false });
+                window.addEventListener('touchend', end);
             }
         };
 
-        window.onload = () => Core.init();
+        window.onload = () => UI.init();
     </script>
 </body>
 </html>
