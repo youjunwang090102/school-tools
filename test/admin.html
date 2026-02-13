@@ -7,54 +7,70 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #edf2f7; margin: 0; padding: 20px; }
-        .admin-container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        body { font-family: sans-serif; background: #edf2f7; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .login-container { width: 100%; max-width: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 30px; box-sizing: border-box; margin-top: 50px; text-align: center; }
+        .login-container input { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 14px; background: #2b6cb0; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .login-btn:hover { background: #2c5282; }
+        
+        .admin-container { width: 100%; max-width: 1000px; background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); box-sizing: border-box; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
-        button { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #4361ee; color: white; }
+        button { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #4361ee; color: white; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
         .danger-btn { background: #ef233c; }
         .warn-btn { background: #f6ad55; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f8fafc; color: #4a5568; }
-        select, input[type="text"] { padding: 6px; border-radius: 6px; border: 1px solid #cbd5e0; width: 100%; }
+        select, input[type="text"] { padding: 8px; border-radius: 6px; border: 1px solid #cbd5e0; width: 100%; box-sizing: border-box; }
         
-        .pending-box { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; margin-bottom: 20px; display:none; }
-        .pending-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #bee3f8; padding-bottom: 10px; }
+        .pending-box { background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .pending-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #bee3f8; padding-bottom: 10px; }
+        .pending-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
     </style>
 </head>
 <body>
 
-<div id="authCheck" style="text-align:center; padding:50px;"><h2>正在驗證管理員身分...</h2></div>
+<div id="adminLoginView" class="login-container">
+    <h2 style="color: #2b6cb0; margin-top: 0;">🛡️ 後台管理登入</h2>
+    <p style="color: #718096; font-size: 0.9rem; margin-bottom: 20px;">僅限導師與系統管理員使用</p>
+    <input type="text" id="adminId" placeholder="管理員座號">
+    <input type="password" id="adminPw" placeholder="密碼">
+    <button class="login-btn" onclick="doAdminLogin()">登入後台</button>
+    <button onclick="location.href='index.html'" style="background: transparent; color: #718096; border: 1px solid #cbd5e0; width: 100%; padding: 14px; border-radius: 12px; margin-top: 15px; font-weight: bold; cursor: pointer;">返回打掃管理系統</button>
+</div>
 
 <div id="adminPanel" class="admin-container" style="display:none;">
     <div class="header">
-        <h2 style="margin:0;">⚙️ 進階管理後台</h2>
+        <h2 style="margin:0; color:#2d3748;">⚙️ 班級進階管理後台</h2>
         <div>
+            <span id="adminNameDisplay" style="margin-right: 15px; font-weight: bold; color: #4a5568;"></span>
             <button class="warn-btn" onclick="editThreshold()">設定警告點數</button>
-            <button onclick="location.href='index.html'" style="background:#718096;">返回系統</button>
+            <button onclick="doAdminLogout()" style="background:#718096;">登出</button>
         </div>
     </div>
 
-    <div id="pendingBox" class="pending-box">
-        <h3 style="margin-top:0; color:#2b6cb0;">⏳ 待審核申請</h3>
+    <div id="pendingBox" class="pending-box" style="display:none;">
+        <h3 style="margin-top:0; color:#2b6cb0;">⏳ 待審核加入申請</h3>
         <div id="pendingList"></div>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button onclick="saveAllChanges()" style="background:#48bb78;">💾 儲存所有身分與工作變更</button>
-        <button onclick="batchDelete()" class="danger-btn">🗑️ 批次刪除選取學生</button>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        <button onclick="saveAllChanges()" style="background:#48bb78; font-size: 1rem;">💾 儲存下方所有【身分與工作】變更</button>
+        <button onclick="batchDelete()" class="danger-btn" style="font-size: 1rem;">🗑️ 批次刪除勾選學生</button>
     </div>
 
-    <table id="studentTable">
+    <table>
         <thead>
             <tr>
                 <th style="width: 50px;"><input type="checkbox" id="selectAll" onclick="toggleAll()"></th>
                 <th style="width: 60px;">座號</th>
                 <th style="width: 120px;">姓名</th>
-                <th style="width: 150px;">身分權限</th>
+                <th style="width: 160px;">身分權限</th>
                 <th>打掃工作 (可手動輸入新工作)</th>
-                <th style="width: 100px;">操作</th>
+                <th style="width: 100px;">密碼管理</th>
             </tr>
         </thead>
         <tbody id="studentBody"></tbody>
@@ -76,24 +92,62 @@
     }
     function escapeHTML(str) { return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag)); }
 
-    // 權限驗證 (讀取 localStorage)
     window.onload = async () => {
         const saved = localStorage.getItem('classAppMe');
-        if(!saved) { alert("請先從首頁登入"); location.href = 'index.html'; return; }
-        const me = JSON.parse(saved);
-        if(!['admin', 'teacher'].includes(me.role)) { alert("權限不足，僅限導師/管理員使用"); location.href = 'index.html'; return; }
-        
-        document.getElementById('authCheck').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        loadData();
+        if(saved) {
+            const me = JSON.parse(saved);
+            if(['admin', 'teacher'].includes(me.role)) {
+                showAdminPanel(me.name);
+                return;
+            }
+        }
+        document.getElementById('adminLoginView').style.display = 'block';
     };
 
+    async function doAdminLogin() {
+        let rawId = document.getElementById('adminId').value;
+        if(!rawId) return alert("請輸入帳號");
+        let id = rawId.length === 1 ? "0" + rawId : rawId;
+        const pw = document.getElementById('adminPw').value;
+        if(!pw) return alert("請輸入密碼");
+        
+        const hashedInputPw = await hashPassword(pw);
+
+        try {
+            let doc = await db.collection("students").doc(id).get();
+            if(!doc.exists && rawId.length > 2) { 
+                doc = await db.collection("students").doc(rawId).get();
+                if(doc.exists) id = rawId;
+            }
+
+            if(doc.exists) {
+                const data = doc.data();
+                if(!['admin', 'teacher'].includes(data.role)) return alert("❌ 登入失敗：您的身分不是管理員，無法進入後台。");
+                if(data.password === hashedInputPw) {
+                    const me = { id, ...data };
+                    localStorage.setItem('classAppMe', JSON.stringify(me));
+                    showAdminPanel(me.name);
+                } else alert("❌ 登入失敗：密碼錯誤");
+            } else alert("❌ 登入失敗：找不到此帳號");
+        } catch(e) { alert("登入時發生錯誤：" + e.message); }
+    }
+
+    function doAdminLogout() {
+        localStorage.removeItem('classAppMe');
+        location.reload(); 
+    }
+
+    function showAdminPanel(adminName) {
+        document.getElementById('adminLoginView').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('adminNameDisplay').innerText = `管理員：${escapeHTML(adminName)}`;
+        loadData();
+    }
+
     async function loadData() {
-        // 載入工作選項
         const jobSnap = await db.collection("duty_options").get();
         jobOptions = []; jobSnap.forEach(doc => jobOptions.push(doc.id));
         
-        // 載入學生資料
         db.collection("students").onSnapshot(snap => {
             allStudents = [];
             const pendingList = [];
@@ -119,12 +173,14 @@
         allStudents.sort((a,b) => parseInt(a.id) - parseInt(b.id));
         const tbody = document.getElementById('studentBody');
         tbody.innerHTML = "";
+        
         allStudents.forEach(s => {
             const roleSelect = `
                 <select class="role-select">
                     <option value="student" ${s.role==='student'?'selected':''}>一般學生</option>
-                    <option value="inner_manager" ${s.role==='inner_manager'?'selected':''}>內衛生 (幹部)</option>
-                    <option value="outer_manager" ${s.role==='outer_manager'?'selected':''}>外衛生 (幹部)</option>
+                    <option value="inner_manager" ${s.role==='inner_manager'?'selected':''}>內衛生 (打掃幹部)</option>
+                    <option value="outer_manager" ${s.role==='outer_manager'?'selected':''}>外衛生 (打掃幹部)</option>
+                    <option value="teacher" ${s.role==='teacher'?'selected':''}>導師/管理員</option>
                 </select>`;
             
             tbody.innerHTML += `
@@ -134,7 +190,7 @@
                     <td>${escapeHTML(s.name)}</td>
                     <td>${roleSelect}</td>
                     <td>${getJobSelectHTML(s.duty_zone)}</td>
-                    <td><button onclick="resetPw('${s.id}')" class="warn-btn" style="padding:4px 8px; font-size:0.8rem;">↺ 重設密碼</button></td>
+                    <td><button onclick="resetPw('${s.id}')" class="warn-btn" style="padding:6px; font-size:0.8rem;">↺ 密碼還原</button></td>
                 </tr>`;
         });
     }
@@ -143,74 +199,74 @@
         const box = document.getElementById('pendingBox');
         const plist = document.getElementById('pendingList');
         if(list.length > 0) {
-            box.style.display = 'block'; plist.innerHTML = "";
+            box.style.display = 'block'; 
+            plist.innerHTML = "";
             list.forEach(s => {
                 plist.innerHTML += `
                 <div class="pending-item">
-                    <span><b>${s.id}</b> ${escapeHTML(s.name)}</span>
+                    <span><b>${s.id}</b> 號 - ${escapeHTML(s.name)}</span>
                     <div>
-                        <button onclick="approve('${s.id}')" style="background:#48bb78; padding:5px 10px;">✅ 批准</button>
-                        <button onclick="reject('${s.id}')" class="danger-btn" style="padding:5px 10px;">❌ 拒絕</button>
+                        <button onclick="approve('${s.id}')" style="background:#48bb78;">✅ 允許加入</button>
+                        <button onclick="reject('${s.id}')" class="danger-btn">❌ 拒絕並刪除</button>
                     </div>
                 </div>`;
             });
         } else { box.style.display = 'none'; }
     }
 
-    // --- 操作功能 ---
     function toggleAll() {
         const checked = document.getElementById('selectAll').checked;
         document.querySelectorAll('.stu-check').forEach(cb => cb.checked = checked);
     }
 
     window.saveAllChanges = async function() {
-        if(!confirm("確定要儲存列表上所有的身分與工作變更嗎？")) return;
+        if(!confirm("確定要儲存列表上所有的【身分】與【打掃工作】變更嗎？")) return;
         const rows = document.querySelectorAll('#studentBody tr');
         let newJobs = new Set();
-
         const batch = db.batch();
+
         rows.forEach(row => {
             const id = row.getAttribute('data-id');
             const newRole = row.querySelector('.role-select').value;
             const newJob = row.querySelector('.job-input').value.trim();
-            
             if(newJob && !jobOptions.includes(newJob)) newJobs.add(newJob);
-            
             const ref = db.collection('students').doc(id);
             batch.update(ref, { role: newRole, duty_zone: newJob || "未分配" });
         });
 
-        // 將手動輸入的新工作加入資料庫選項中
         newJobs.forEach(job => { batch.set(db.collection('duty_options').doc(job), { active: true }); });
-
         await batch.commit();
-        alert("✅ 所有變更已成功儲存！");
+        alert("✅ 所有變更已成功儲存並同步至資料庫！");
     }
 
     window.batchDelete = async function() {
         const checked = Array.from(document.querySelectorAll('.stu-check:checked')).map(cb => cb.value);
-        if(checked.length === 0) return alert("請先勾選要刪除的學生");
+        if(checked.length === 0) return alert("請先在左側勾選要刪除的學生");
         if(!confirm(`⚠️ 確定要永久刪除選取的 ${checked.length} 位學生嗎？\n此操作無法復原！`)) return;
 
         const batch = db.batch();
         checked.forEach(id => batch.delete(db.collection('students').doc(id)));
         await batch.commit();
         alert("✅ 批次刪除完成");
+        document.getElementById('selectAll').checked = false;
     }
 
     window.resetPw = async function(id) {
-        if(!confirm(`確定要將座號 ${id} 的密碼還原為預設嗎？(座號重複3次)`)) return;
+        if(!confirm(`確定要將座號 ${id} 的密碼還原為預設密碼嗎？(預設為座號重複3次)`)) return;
         const defPw = id.repeat(3); 
         await db.collection("students").doc(id).update({ password: await hashPassword(defPw), forceReset: true });
-        alert(`已還原密碼為：${defPw}`);
+        alert(`已還原密碼為：${defPw}\n學生下次登入時會被要求強制重設密碼。`);
     }
 
     window.approve = async function(id) { await db.collection("students").doc(id).update({ status: 'active' }); }
-    window.reject = async function(id) { if(confirm("確定拒絕並刪除此申請？")) await db.collection("students").doc(id).delete(); }
+    window.reject = async function(id) { if(confirm("確定拒絕並刪除此註冊申請？")) await db.collection("students").doc(id).delete(); }
     
     window.editThreshold = async function() {
-        const n = prompt("請輸入「記點達 N 次」時顯示警告：");
-        if(n && !isNaN(n)) { await db.collection("settings").doc("config").set({ threshold: parseInt(n) }, {merge:true}); alert("警告點數設定成功！"); }
+        const n = prompt("請輸入「缺失達 N 次」時要在首頁顯示警告：");
+        if(n && !isNaN(n)) { 
+            await db.collection("settings").doc("config").set({ threshold: parseInt(n) }, {merge:true}); 
+            alert("警告點數設定成功！"); 
+        }
     }
 </script>
 </body>
