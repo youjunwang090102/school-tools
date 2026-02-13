@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>班級數位平台 v4.1.0 (多班級分流版)</title>
+
+    <meta name="theme-color" id="chrome-theme" content="#f8fafc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" id="safari-theme" content="default">
+
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            const layout = localStorage.getItem('layout') || 'list-mode';
+            const lastPage = localStorage.getItem('lastPage') || '0';
+
+            if (theme === 'dark') document.documentElement.classList.add('dark-mode');
+            document.documentElement.setAttribute('data-layout', layout);
+            document.documentElement.setAttribute('data-init-page', lastPage);
+            
+            const gateStyle = document.createElement('style');
+            gateStyle.innerHTML = `
+                body { opacity: 0; }
+                [data-system-ready="true"] body { opacity: 1; transition: opacity 0.3s ease; }
+            `;
+            document.head.appendChild(gateStyle);
+        })();
+
+        const SYS_CONFIG = {
+            banner: "📢 歡迎使用跨班級數位平台，請使用 6 碼學號登入。",
+            author: {
+                name: "王宥鈞",
+                role: "開發者 ｜ Developer",
+                ver: "v4.1.0 (Multi-Class)",
+                updates: [
+                    "✨ [功能升級] 支援 6 碼學號登入與註冊。",
+                    "✨ [架構優化] 加入班級分流系統，支援多班級管理。",
+                    "- 註冊介面新增「所屬班級」選單。",
+                    "- 強化 Auth 與 Firestore 數據分流一致性。"
+                ]
+            }
+        };
+    </script>
+
+    <style>
+        /* =============================================
+           🎨 1. 變數與基礎核心系統 (保留原始 CSS)
+           ============================================= */
+        :root {
+            --p: #4361ee; 
+            --p-light: rgba(67, 97, 238, 0.1);
+            --g: #7209b7; 
+            --bg: #f8fafc; 
+            --card: #ffffff;
+            --text: #1e293b; 
+            --sub: #64748b; 
+            --border: rgba(0,0,0,0.08);
+            --nav-bg: rgba(255, 255, 255, 0.85); 
+            --banner-bg: #fff9db; 
+            --banner-text: #856404;
+            --accent: #4361ee;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --secondary: #10b981;
+        }
+
+        .dark-mode {
+            --bg: #020617; 
+            --card: #111827; 
+            --text: #f8fafc;
+            --sub: #94a3b8; 
+            --border: rgba(255,255,255,0.1);
+            --nav-bg: rgba(15, 23, 42, 0.85); 
+            --banner-bg: #1e1b0a; 
+            --banner-text: #ffe066;
+            --accent: #fbbf24;
+        }
+
+        /* 💡 門控介面優化 */
+        #auth-portal {
+            position: fixed; inset: 0; background: var(--bg); z-index: 10000;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            transition: transform 0.6s cubic-bezier(0.8, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+        #auth-portal.hide { transform: translateY(-100%); }
+
+        .auth-card {
+            background: var(--card); width: 100%; max-width: 420px;
+            border-radius: 35px; padding: 35px 25px; border: 1px solid var(--border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+        .auth-card h2 { margin: 0; color: var(--p); font-size: 24px; font-weight: 900; }
+        .auth-card p { color: var(--sub); margin: 6px 0 25px; font-size: 13px; font-weight: 500; }
+        
+        .auth-input-group { margin-bottom: 12px; text-align: left; }
+        .auth-input-group label { display: block; font-size: 12px; font-weight: 800; margin-bottom: 5px; color: var(--sub); margin-left: 10px; }
+        .auth-input, .auth-select {
+            width: 100%; padding: 14px 18px; border-radius: 16px;
+            border: 2px solid var(--border); background: var(--bg);
+            color: var(--text); font-size: 15px; font-weight: 600; outline: none; transition: 0.3s;
+            appearance: none;
+        }
+        .auth-input:focus, .auth-select:focus { border-color: var(--p); box-shadow: 0 0 0 4px var(--p-light); }
+        
+        .auth-btn {
+            width: 100%; padding: 16px; background: var(--p); color: white;
+            border: none; border-radius: 18px; font-weight: 900; font-size: 16px;
+            cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .auth-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3); }
+
+        .auth-switch { margin-top: 20px; font-size: 13px; color: var(--sub); font-weight: 600; cursor: pointer; }
+        .auth-switch b { color: var(--p); text-decoration: underline; }
+
+        /* 其餘原始設定保持不變 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; width: 100vw; height: 100dvh; background-color: var(--bg); color: var(--text); font-family: system-ui, sans-serif; overflow: hidden; position: fixed; }
+        header { height: 72px; padding: 0 20px; background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1000; }
+        .brand h1 { margin: 0; font-size: 20px; font-weight: 900; color: var(--p); }
+        .controls { display: flex; gap: 12px; align-items: center; }
+        .icon-btn { border: none; background: transparent; cursor: pointer; width: 40px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--sub); transition: 0.3s; }
+        .icon-btn.active { background: var(--p); color: #fff; }
+        .viewport { width: 100%; height: calc(100dvh - 72px - 40px); display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .page-panel { flex: 0 0 100%; height: 100%; scroll-snap-align: start; overflow-y: auto; padding: 25px 20px 180px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; text-decoration: none; color: inherit; display: flex; padding: 22px; align-items: center; position: relative; transition: 0.2s; }
+        .nav-dock { position: fixed; bottom: calc(25px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; z-index: 5000; }
+        .nav-glass { background: var(--nav-bg); backdrop-filter: blur(25px); border-radius: 100px; display: flex; padding: 6px; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+        .nav-item { flex: 1; text-align: center; padding: 14px 0; font-size: 14px; font-weight: 900; color: var(--sub); cursor: pointer; border-radius: 100px; }
+        .nav-item.active { color: #fff; background: var(--p); }
+        .top-notice { background: var(--banner-bg); color: var(--banner-text); padding: 9px 15px; font-size: 13px; text-align: center; font-weight: 700; border-bottom: 1px solid var(--border); }
+    </style>
+</head>
+<body data-layout="list-mode">
+
+    <div id="auth-portal">
+        <div class="auth-card" id="login-form">
+            <h2>平台登入</h2>
+            <p>請輸入學號與密碼進入您的班級</p>
+            <div class="auth-input-group">
+                <label>6 碼學號</label>
+                <input type="number" id="auth-id" class="auth-input" placeholder="學號 (例: 112001)">
+            </div>
+            <div class="auth-input-group">
+                <label>登入密碼</label>
+                <input type="password" id="auth-pw" class="auth-input" placeholder="請輸入密碼">
+            </div>
+            <button class="auth-btn" onclick="sysAuth.doLogin()">進入數位平台</button>
+            <div class="auth-switch" onclick="sysAuth.switchMode('reg')">新同學？<b>註冊帳號並選擇班級</b></div>
+        </div>
+
+        <div class="auth-card" id="reg-form" style="display:none;">
+            <h2>加入班級</h2>
+            <p>填寫學號與班級，待導師審核後生效</p>
+            <div class="auth-input-group">
+                <label>6 碼學號</label>
+                <input type="number" id="reg-id" class="auth-input" placeholder="例: 112001">
+            </div>
+            <div class="auth-input-group">
+                <label>真實姓名</label>
+                <input type="text" id="reg-name" class="auth-input" placeholder="例: 王大同">
+            </div>
+            <div class="auth-input-group">
+                <label>所屬班級</label>
+                <select id="reg-class" class="auth-select">
+                    <option value="">請選擇您的班級...</option>
+                    <option value="資三甲">資三甲</option>
+                    <option value="資三乙">資三乙</option>
+                    <option value="電三甲">電三甲</option>
+                </select>
+            </div>
+            <div class="auth-input-group">
+                <label>設定密碼</label>
+                <input type="password" id="reg-pw" class="auth-input" placeholder="建議 6 位數以上">
+            </div>
+            <button class="auth-btn" style="background:var(--secondary)" onclick="sysAuth.doRegister()">送出註冊申請</button>
+            <div class="auth-switch" onclick="sysAuth.switchMode('login')">已有帳號？<b>返回登入介面</b></div>
+        </div>
+    </div>
+
+    <div class="top-notice" id="ui-banner"></div>
+
+    <header>
+        <div class="brand">
+            <h1>班級數位平台</h1>
+            <p id="auth-status-text">Digital Classroom System</p>
+        </div>
+        <div class="controls">
+            <button class="icon-btn circle-tool" onclick="updateTheme()"><svg id="theme-icon" viewBox="0 0 24 24"></svg></button>
+            <button class="icon-btn circle-tool" onclick="sysAuth.doLogout()" title="登出系統">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="viewport" id="scroll-engine">
+        <section class="page-panel" id="panel-0"><div class="content-grid">
+            <a href="行事曆/index.html" class="card"><div class="card-icon">📅</div><div class="card-info"><h2>班級行事曆</h2><p>掌握考程與重要活動不漏接</p></div></a>
+            <a href="homework/index.html" class="card"><div class="card-icon">📒</div><div class="card-info"><h2>作業待辦</h2><p>班級專屬作業即時查看</p></div></a>
+        </div></section>
+        </main>
+
+    <nav class="nav-dock">
+        <div class="nav-glass">
+            <div class="nav-item" onclick="moveTo(0)">提醒</div>
+            <div class="nav-item" onclick="moveTo(1)">互動</div>
+            <div class="nav-item" onclick="moveTo(2)">班務</div>
+            <div class="nav-item" onclick="moveTo(3)">成績</div>
+        </div>
+    </nav>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
+            authDomain: "vote-6668.firebaseapp.com",
+            projectId: "vote-6668",
+            storageBucket: "vote-6668.firebasestorage.app",
+            messagingSenderId: "389284021944",
+            appId: "1:389284021944:web:3c5311697cbfc7c010564d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let me = null;
+
+        const sysAuth = {
+            switchMode: (mode) => {
+                document.getElementById('login-form').style.display = mode === 'login' ? 'block' : 'none';
+                document.getElementById('reg-form').style.display = mode === 'reg' ? 'block' : 'none';
+            },
+            doLogin: async () => {
+                const id = document.getElementById('auth-id').value;
+                const pw = document.getElementById('auth-pw').value;
+                if(id.length !== 6) return alert("請輸入 6 碼學號");
+                const email = `${id}@class.local`;
+                try {
+                    await auth.signInWithEmailAndPassword(email, pw);
+                } catch (e) { alert("登入失敗：學號或密碼錯誤"); }
+            },
+            doRegister: async () => {
+                const id = document.getElementById('reg-id').value;
+                const name = document.getElementById('reg-name').value;
+                const classId = document.getElementById('reg-class').value;
+                const pw = document.getElementById('reg-pw').value;
+                
+                if(id.length !== 6) return alert("學號必須為 6 碼");
+                if(!name || !classId || !pw) return alert("請填寫完整資訊");
+
+                const email = `${id}@class.local`;
+                try {
+                    await auth.createUserWithEmailAndPassword(email, pw);
+                    // 💡 Firestore 加入 classId 實現分流
+                    await db.collection("students").doc(id).set({
+                        name, classId, role: "student", score: 0, duty_zone: "未分配", status: "pending"
+                    });
+                    alert(`註冊成功！您已申請加入「${classId}」，請等待審核。`);
+                    await auth.signOut();
+                    sysAuth.switchMode('login');
+                } catch (e) { alert("註冊失敗：" + e.message); }
+            },
+            doLogout: async () => {
+                if(confirm("確定登出平台？")) {
+                    localStorage.removeItem('classAppMe');
+                    await auth.signOut();
+                    location.reload();
+                }
+            }
+        };
+
+        auth.onAuthStateChanged(async (user) => {
+            const portal = document.getElementById('auth-portal');
+            if (user) {
+                const id = user.email.split('@')[0];
+                try {
+                    const doc = await db.collection("students").doc(id).get();
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.status === 'pending') {
+                            alert("帳號審核中，請稍候。");
+                            await auth.signOut();
+                            return;
+                        }
+                        me = { id, ...data };
+                        localStorage.setItem('classAppMe', JSON.stringify(me));
+                        document.getElementById('auth-status-text').innerText = `${me.classId} ｜ ${me.name}`;
+                        portal.classList.add('hide');
+                    }
+                } catch (e) { console.error(e); }
+            } else {
+                portal.classList.remove('hide');
+            }
+        });
+
+        /* --- 基礎 UI 控制邏輯 --- */
+        const Hub = {
+            dom: { scroller: document.getElementById('scroll-engine'), tabs: document.querySelectorAll('.nav-item'), themeIcon: document.getElementById('theme-icon') },
+            state: { currentIdx: parseInt(localStorage.getItem('lastPage')) || 0, isDark: document.documentElement.classList.contains('dark-mode') }
+        };
+        function moveTo(idx) {
+            const width = Hub.dom.scroller.offsetWidth;
+            Hub.dom.scroller.scrollTo({ left: idx * width, behavior: 'smooth' });
+            Hub.state.currentIdx = idx;
+            localStorage.setItem('lastPage', idx);
+            updateNavUI();
+        }
+        function updateNavUI() { Hub.dom.tabs.forEach((tab, i) => tab.classList.toggle('active', i === Hub.state.currentIdx)); }
+        function updateTheme() {
+            Hub.state.isDark = !Hub.state.isDark;
+            document.documentElement.classList.toggle('dark-mode', Hub.state.isDark);
+            localStorage.setItem('theme', Hub.state.isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').innerHTML = Hub.state.isDark ? '☀️' : '🌑';
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ui-banner').innerText = SYS_CONFIG.banner;
+            document.getElementById('theme-icon').innerHTML = Hub.state.isDark ? '☀️' : '🌑';
+            setTimeout(() => {
+                moveTo(Hub.state.currentIdx);
+                document.documentElement.setAttribute('data-system-ready', 'true');
+            }, 50);
+        });
+    </script>
+</body>
+</html>
