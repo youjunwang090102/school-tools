@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級勤務管理系統 v4.0 </title>
+    <title>班級勤務管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -34,17 +34,14 @@
         .history-section { margin-top: 15px; border-top: 1px dashed #cbd5e0; padding-top: 10px; }
         .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 0.85rem; border-left: 4px solid var(--d); }
         
-        /* 學生卡片樣式 */
         .stu-card { background: white; border: 1px solid #eee; padding: 15px; border-radius: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition:0.2s; }
         .stu-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .score-badge { background: var(--d); color: white; padding: 2px 8px; border-radius: 8px; font-weight: bold; }
         
-        /* 警告區塊 */
         #alertSection { background: #fff5f5; border: 2px solid #fc8181; border-radius: 15px; padding: 15px; margin-bottom: 20px; display: none; animation: pulse 2s infinite; }
         @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(252, 129, 129, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(252, 129, 129, 0);} 100% {box-shadow: 0 0 0 0 rgba(252, 129, 129, 0);} }
         .alert-item { color: #c53030; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
 
-        /* 待審核區塊 */
         #pendingSection { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 15px; padding: 15px; margin-bottom: 20px; display: none; }
         .pending-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #bee3f8; }
         
@@ -188,7 +185,21 @@
 
     let me = null, selectedId = null, unsubS = null, unsubL = null;
     let tempResetId = null, currentCaptcha = "";
-    let alertThreshold = 3; // 預設 3 點，會從 DB 讀取
+    let alertThreshold = 3; 
+
+    // --- 安全防護工具 (不怕本地檔案報錯版) ---
+    async function hashPassword(password) {
+        try {
+            if (!crypto || !crypto.subtle) return password; // 避免在 file:/// 開啟時當機
+            const msgBuffer = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) { return password; }
+    }
+
+    function escapeHTML(str) {
+        return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+    }
 
     // 2. 基礎 UI 函式
     function setTab(m) {
@@ -210,25 +221,20 @@
         document.getElementById('captchaInput').value = "";
     }
 
-    // 3. 系統設定 (閾值) 讀取
     async function loadConfig() {
         try {
             const doc = await db.collection("settings").doc("config").get();
-            if(doc.exists && doc.data().threshold) {
-                alertThreshold = doc.data().threshold;
-            }
-        } catch(e) { console.log("Config load error", e); }
+            if(doc.exists && doc.data().threshold) alertThreshold = doc.data().threshold;
+        } catch(e) {}
     }
 
-    // 4. 登入
+    // 4. 登入 (含終極安全防護：防禦 Pass-the-Hash)
     async function doLogin() {
         let rawId = document.getElementById('loginId').value;
         if(!rawId) return;
-        
-        let id = rawId; 
-        if(rawId.length === 1) id = "0" + rawId;
-
+        let id = rawId.length === 1 ? "0" + rawId : rawId;
         const pw = document.getElementById('loginPw').value;
+        const hashedInputPw = await hashPassword(pw);
         
         try {
             let doc = await db.collection("students").doc(id).get();
@@ -237,44 +243,56 @@
                 if(doc.exists) id = rawId;
             }
 
-            if(doc.exists && doc.data().password === pw) {
+            if(doc.exists) {
                 const data = doc.data();
-                if(data.status === 'pending') {
-                    alert("⏳ 您的帳號正在審核中，請等待導師批准。");
-                    return;
+                let isMatch = false;
+                
+                // 🛡️ 嚴格判斷：如果資料庫的密碼長度是 64 (代表已經加密過)，就絕對不接受明碼比對！
+                const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                if (isDbPasswordHashed) {
+                    if (data.password === hashedInputPw) {
+                        isMatch = true;
+                    }
+                } else {
+                    // 如果還是舊版明碼 -> 允許明碼登入，並立刻背景升級為加密版
+                    if (data.password === pw) {
+                        isMatch = true;
+                        await db.collection("students").doc(id).update({ password: hashedInputPw });
+                    }
                 }
-                if (data.forceReset === true) {
-                    tempResetId = id;
+
+                if(isMatch) {
+                    if(data.status === 'pending') return alert("⏳ 您的帳號正在審核中，請等待導師批准。");
+                    if (data.forceReset === true) {
+                        tempResetId = id;
+                        document.getElementById('authTabs').style.display = 'none';
+                        document.getElementById('loginView').classList.remove('active');
+                        document.getElementById('resetView').classList.add('active');
+                        return;
+                    }
+                    me = { id, ...data };
                     document.getElementById('authTabs').style.display = 'none';
                     document.getElementById('loginView').classList.remove('active');
-                    document.getElementById('resetView').classList.add('active');
-                    return;
-                }
-                me = { id, ...data };
-                document.getElementById('authTabs').style.display = 'none';
-                document.getElementById('loginView').classList.remove('active');
-                document.getElementById('dashboardView').classList.add('active');
-                await loadConfig();
-                startApp();
-            } else {
-                alert("登入失敗：座號或密碼錯誤");
-            }
+                    document.getElementById('dashboardView').classList.add('active');
+                    await loadConfig();
+                    startApp();
+                } else alert("登入失敗：座號或密碼錯誤");
+            } else alert("登入失敗：找不到此帳號");
         } catch(e) { alert("系統錯誤：" + e.message); }
     }
 
     async function doForcePasswordChange() {
         const p1=document.getElementById('resetPw').value, p2=document.getElementById('resetPw2').value;
         if(!p1 || p1!==p2) return alert("密碼錯誤");
-        await db.collection("students").doc(tempResetId).update({ password: p1, forceReset: false });
+        await db.collection("students").doc(tempResetId).update({ password: await hashPassword(p1), forceReset: false });
         alert("密碼更新成功"); location.reload();
     }
 
-    // 5. 註冊
+    // 5. 註冊 (存入加密密碼)
     async function doRegister() {
         let rawId = document.getElementById('regId').value;
-        let id = rawId;
-        if(rawId.length === 1) id = "0" + rawId;
-        
+        let id = rawId.length === 1 ? "0" + rawId : rawId;
         const p1=document.getElementById('regPw').value, p2=document.getElementById('regPw2').value;
         const name=document.getElementById('regName').value;
         const uC=document.getElementById('captchaInput').value.toUpperCase();
@@ -287,10 +305,8 @@
         if(check.exists) return alert("此座號已註冊");
 
         await db.collection("students").doc(id).set({ 
-            name: name, password: p1, role: "student", 
-            duty_zone: "未分配", score: 0, warning: "",
-            forceReset: false,
-            status: "pending"
+            name: name, password: await hashPassword(p1), role: "student", 
+            duty_zone: "未分配", score: 0, warning: "", forceReset: false, status: "pending"
         });
         alert("申請已送出！請通知導師或管理員審核您的帳號。");
         setTab('login');
@@ -309,22 +325,19 @@
             else if(d.role==="inner_manager") rT=" (內衛生)";
             else if(d.role==="outer_manager") rT=" (外衛生)";
 
-            document.getElementById('welcomeTitle').innerText = `${doc.id} ${d.name}${rT}`;
-            document.getElementById('myJob').innerText = d.duty_zone;
-            document.getElementById('myScore').innerText = d.score || 0;
+            document.getElementById('welcomeTitle').innerText = `${doc.id} ${escapeHTML(d.name)}${rT}`;
+            document.getElementById('myJob').innerText = escapeHTML(d.duty_zone);
+            document.getElementById('myScore').innerText = `目前點數：${d.score || 0}`;
             document.getElementById('stuWarning').style.display = d.warning ? 'block' : 'none';
-            document.getElementById('warnText').innerText = d.warning || "";
+            document.getElementById('warnText').innerText = escapeHTML(d.warning);
         });
 
         db.collection("point_logs").where("studentId", "==", me.id).onSnapshot(snap => {
             const box = document.getElementById('myLogs'); box.innerHTML = "";
             let list = []; snap.forEach(l => list.push(l.data()));
             list.sort((a,b) => b.time - a.time).forEach(l => {
-                if(l.type === 'service') {
-                    box.innerHTML += `<div class="log-item" style="border-left-color:#48bb78; background:#f0fff4;"><span>${new Date(l.time).toLocaleString()}</span><b>完成愛班 (-${l.points})</b></div>`;
-                } else {
-                    box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><b>+1</b></div>`;
-                }
+                if(l.type === 'service') box.innerHTML += `<div class="log-item" style="border-left-color:#48bb78; background:#f0fff4;"><span>${new Date(l.time).toLocaleString()}</span><b>完成愛班 (-${l.points})</b></div>`;
+                else box.innerHTML += `<div class="log-item"><span>${new Date(l.time).toLocaleString()}</span><b>+1</b></div>`;
             });
         });
 
@@ -334,10 +347,7 @@
         if(isManager) {
             document.getElementById('adminSection').style.display = 'block';
             db.collection("students").onSnapshot(snap => {
-                const activeList = [];
-                const pendingList = [];
-                const alertList = []; 
-                
+                const activeList = [], pendingList = [], alertList = []; 
                 snap.forEach(doc => {
                     const d = doc.data();
                     const stu = { id: doc.id, ...d };
@@ -356,42 +366,34 @@
                     if(s.role === 'inner_manager') badge = '<span class="role-badge">內衛</span>';
                     if(s.role === 'outer_manager') badge = '<span class="role-badge">外衛</span>';
                     const warnStyle = s.score >= alertThreshold ? "border:2px solid var(--d);" : "";
-                    grid.innerHTML += `<div class="stu-card" style="${warnStyle}" onclick="openModal('${s.id}', '${s.name}')">
-                        <b>${s.id} ${s.name} ${badge}</b>
-                        <div>${s.duty_zone} <span class="score-badge">${s.score||0}</span></div>
+                    grid.innerHTML += `<div class="stu-card" style="${warnStyle}" onclick="openModal('${s.id}', '${escapeHTML(s.name)}')">
+                        <b>${s.id} ${escapeHTML(s.name)} ${badge}</b>
+                        <div>${escapeHTML(s.duty_zone)} <span class="score-badge">${s.score||0}</span></div>
                     </div>`;
                 });
 
                 const abox = document.getElementById('alertSection');
                 const alist = document.getElementById('alertList');
                 if(alertList.length > 0) {
-                    abox.style.display = 'block';
-                    alist.innerHTML = "";
-                    alertList.forEach(s => {
-                        alist.innerHTML += `<div class="alert-item">⚠️ ${s.id} ${s.name} (記點 ${s.score} 次)</div>`;
-                    });
-                } else {
-                    abox.style.display = 'none';
-                }
+                    abox.style.display = 'block'; alist.innerHTML = "";
+                    alertList.forEach(s => alist.innerHTML += `<div class="alert-item">⚠️ ${s.id} ${escapeHTML(s.name)} (記點 ${s.score} 次)</div>`);
+                } else abox.style.display = 'none';
 
                 const pbox = document.getElementById('pendingSection');
                 if(canApprove && pendingList.length > 0) {
                     pbox.style.display = 'block';
-                    const plist = document.getElementById('pendingList');
-                    plist.innerHTML = "";
+                    const plist = document.getElementById('pendingList'); plist.innerHTML = "";
                     pendingList.forEach(s => {
                         plist.innerHTML += `
                         <div class="pending-item">
-                            <span>${s.id} ${s.name}</span>
+                            <span>${s.id} ${escapeHTML(s.name)}</span>
                             <div style="display:flex; gap:5px;">
                                 <button onclick="approveStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem; background:var(--s); margin:0;">✅ 批准</button>
                                 <button onclick="rejectStudent('${s.id}')" style="width:auto; padding:5px 15px; font-size:0.8rem; background:var(--d); margin:0;">❌ 拒絕</button>
                             </div>
                         </div>`;
                     });
-                } else {
-                    pbox.style.display = 'none';
-                }
+                } else pbox.style.display = 'none';
             });
             refreshJobs();
         }
@@ -472,15 +474,8 @@
     window.doService = async function() {
         if(!confirm(`確認 ${selectedId} 已完成愛班服務？\n這將會扣除 ${alertThreshold} 點，並新增一筆服務紀錄。`)) return;
         try {
-            await db.collection("students").doc(selectedId).update({
-                score: firebase.firestore.FieldValue.increment(-alertThreshold)
-            });
-            await db.collection("point_logs").add({
-                studentId: selectedId,
-                time: Date.now(),
-                type: 'service',
-                points: alertThreshold
-            });
+            await db.collection("students").doc(selectedId).update({ score: firebase.firestore.FieldValue.increment(-alertThreshold) });
+            await db.collection("point_logs").add({ studentId: selectedId, time: Date.now(), type: 'service', points: alertThreshold });
             alert("已完成銷點！");
         } catch(e) { alert("操作失敗"); }
     }
@@ -488,7 +483,7 @@
     window.resetToDefaultPw = async function() {
         if(!confirm(`還原密碼？`)) return;
         const defPw = selectedId.repeat(3); 
-        await db.collection("students").doc(selectedId).update({ password: defPw, forceReset: true });
+        await db.collection("students").doc(selectedId).update({ password: await hashPassword(defPw), forceReset: true });
         alert(`密碼已還原為：${defPw}`);
         closeModal();
     }
@@ -544,11 +539,9 @@
         const oldVal = p.value;
         try {
             const s = await db.collection("duty_options").get();
-            let options = [];
-            s.forEach(doc => options.push(doc.id));
-            options.sort();
+            let options = []; s.forEach(doc => options.push(doc.id)); options.sort();
             p.innerHTML = '<option value="">-- 選擇已存工作 --</option>';
-            options.forEach(opt => p.innerHTML += `<option value="${opt}">${opt}</option>`);
+            options.forEach(opt => p.innerHTML += `<option value="${escapeHTML(opt)}">${escapeHTML(opt)}</option>`);
             if(oldVal) p.value = oldVal;
         } catch(e) {}
     }
