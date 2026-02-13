@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>匿名信箱 - LINE 聯網版</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>匿名信箱 - 班級連網版</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -14,7 +13,7 @@
         .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
         .login-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         
-        /* 綁定提示條 */
+        /* LINE 綁定提醒條 */
         #lineBindingNotice { display:none; background:#fff3cd; padding:12px; text-align:center; font-size:0.85rem; border-bottom:1px solid #ffeeba; color: #856404; }
         .line-btn { background: var(--line); color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 8px; }
 
@@ -33,14 +32,9 @@
         
         textarea { width: 100%; height: 120px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 16px; margin-top: 10px; resize: none; }
         button.main-btn { width: 100%; padding: 14px; background: var(--p); color: white; border: none; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
-        
         .msg-info { font-size: 0.7rem; color: #aaa; margin-bottom: 5px; }
         .reply-area { margin-top: 10px; padding: 8px; background: #f0fffb; border-radius: 8px; color: #008f7a; font-size: 0.85rem; border-left: 3px solid var(--s); }
         .admin-tag { background: #fff0f0; color: var(--t); font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; margin-bottom: 10px; display: inline-block; }
-        
-        .action-btns { margin-top: 10px; display: flex; gap: 8px; }
-        .action-btns button { padding: 5px 10px; font-size: 0.75rem; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; background: white; }
-        .btn-confirm { background: #e7f3ff !important; color: #007bff; border-color: #007bff !important; }
     </style>
 </head>
 <body>
@@ -48,14 +42,14 @@
     <div id="loginSection">
         <div class="login-card">
             <h2 style="color:var(--p)">匿名心聲箱</h2>
-            <input type="number" id="loginId" autocomplete="username" placeholder="座號 (例如 05)">
-            <input type="password" id="loginPw" autocomplete="current-password" placeholder="密碼">
+            <input type="number" id="loginId" placeholder="座號 (如 05)">
+            <input type="password" id="loginPw" placeholder="密碼">
             <button class="main-btn" onclick="doLogin()">登入</button>
         </div>
     </div>
 
     <div id="lineBindingNotice">
-        📢 綁定 LINE，有人寄信時立刻通知！
+        📢 綁定 LINE，即時收到匿名信通知！
         <button class="line-btn" onclick="linkToLineBot()">立即綁定</button>
     </div>
 
@@ -76,20 +70,9 @@
         <button class="main-btn" onclick="sendToStudents()">確認發送</button>
     </div>
 
-    <div id="sentBoxPage" class="container">
-        <h3>我寄出的信件</h3>
-        <div id="sentList"></div>
-    </div>
-
-    <div id="receivePage" class="container">
-        <h3>收到的信件</h3>
-        <div id="receiveList"></div>
-    </div>
-
-    <div id="adminPage" class="container">
-        <h3>🔍 全班信件紀錄</h3>
-        <div id="adminList"></div>
-    </div>
+    <div id="sentBoxPage" class="container"><h3>我寄出的信件</h3><div id="sentList"></div></div>
+    <div id="receivePage" class="container"><h3>收到的信件</h3><div id="receiveList"></div></div>
+    <div id="adminPage" class="container"><h3>🔍 全班信件紀錄</h3><div id="adminList"></div></div>
 
     <script>
         const firebaseConfig = { 
@@ -106,87 +89,44 @@
         let me = null;
         let selectedIds = [];
 
-        async function hashPassword(password) {
-            try {
-                if (!crypto || !crypto.subtle) return password;
-                const msgBuffer = new TextEncoder().encode(password);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-            } catch (e) { return password; }
-        }
-
         function escapeHTML(str) {
             return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
         }
 
-        async function doLogin() {
-            const rawId = document.getElementById('loginId').value;
-            if(!rawId) return alert("請輸入座號");
-            const id = rawId.padStart(2, '0');
-            const pwInput = document.getElementById('loginPw').value;
-            if(!pwInput) return alert("請輸入密碼");
-            
-            const hashedInputPw = await hashPassword(pwInput);
-
-            try {
-                const doc = await db.collection("students").doc(id).get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    let isMatch = false;
-                    const isDbPasswordHashed = (data.password && data.password.length === 64);
-
-                    if (isDbPasswordHashed) {
-                        if (data.password === hashedInputPw) isMatch = true;
-                    } else {
-                        if (data.password === pwInput) {
-                            isMatch = true;
-                            await db.collection("students").doc(id).update({ password: hashedInputPw });
-                        }
-                    }
-
-                    if (isMatch) {
-                        if(data.status === 'pending') return alert("⏳ 您的帳號正在審核中。");
-                        
-                        me = { id, ...data };
-                        document.getElementById('loginSection').style.display = 'none';
-                        document.getElementById('navBar').style.display = 'flex';
-                        if (me.role === 'teacher' || me.role === 'admin') document.getElementById('btn-admin').style.display = 'block';
-                        
-                        showPage('send');
-                        loadStudentList();
-                        startListenMessages();
-                        checkLineBinding(); // ✨ 登入成功後檢查 LINE 綁定狀態
-                    } else {
-                        alert("座號或密碼錯誤");
-                    }
-                } else {
-                    alert("座號不存在");
-                }
-            } catch (e) { alert("系統錯誤: " + e.message); }
+        async function hashPassword(password) {
+            const msgBuffer = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // ✨ LINE 相關新功能
+        async function doLogin() {
+            const id = document.getElementById('loginId').value.padStart(2, '0');
+            const pwInput = document.getElementById('loginPw').value;
+            const hashedPw = await hashPassword(pwInput);
+
+            const doc = await db.collection("students").doc(id).get();
+            if (doc.exists && (doc.data().password === pwInput || doc.data().password === hashedPw)) {
+                me = { id, ...doc.data() };
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('navBar').style.display = 'flex';
+                if (me.role === 'teacher' || me.role === 'admin') document.getElementById('btn-admin').style.display = 'block';
+                showPage('send');
+                loadStudentList();
+                startListenMessages();
+                checkLineBinding();
+            } else { alert("錯誤！"); }
+        }
+
         async function checkLineBinding() {
             const userDoc = await db.collection("users").doc(me.id).get();
-            if (userDoc.exists && userDoc.data().lineUserId) {
-                document.getElementById('lineBindingNotice').style.display = 'none';
-            } else {
-                document.getElementById('lineBindingNotice').style.display = 'block';
-            }
+            document.getElementById('lineBindingNotice').style.display = (userDoc.exists && userDoc.data().lineUserId) ? 'none' : 'block';
         }
 
         function linkToLineBot() {
-            // 請將此處換成您機器人的加入好友網址
-            const lineBotUrl = "https://line.me/R/ti/p/@您的機器人ID"; 
-            alert("請在加入好友後，傳送：\n\n綁定 " + me.id + "\n\n即可完成連動！");
+            // ✨ 換成你剛給我的連結
+            const lineBotUrl = "https://lin.ee/9fESlAY"; 
+            alert("請在加入好友後，輸入：\n\n綁定 " + me.id);
             window.location.href = lineBotUrl;
-        }
-
-        function showPage(p) {
-            document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(p + 'Page').style.display = 'block';
-            document.getElementById('btn-' + p).classList.add('active');
         }
 
         async function loadStudentList() {
@@ -210,86 +150,42 @@
 
         async function sendToStudents() {
             const content = document.getElementById('msgBody').value;
-            if (selectedIds.length === 0 || !content) return alert("請選擇對象並填寫內容");
-            if(confirm(`將傳送給這 ${selectedIds.length} 位同學，確定嗎？`)) {
-                const batch = db.batch();
-                selectedIds.forEach(tId => {
-                    const ref = db.collection("secret_messages").doc();
-                    batch.set(ref, {
-                        sender_id: me.id, sender_name: me.name, receiver_id: tId,
-                        content: content, reply: "", read: false,
-                        time: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+            if (selectedIds.length === 0 || !content) return;
+            const batch = db.batch();
+            selectedIds.forEach(tId => {
+                const ref = db.collection("secret_messages").doc();
+                batch.set(ref, {
+                    sender_id: me.id, receiver_id: tId, content: content, read: false, time: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                await batch.commit();
-                alert("發送成功！");
-                document.getElementById('msgBody').value = "";
-                selectedIds = [];
-                document.querySelectorAll('.stu-chip').forEach(c => c.classList.remove('selected'));
-                showPage('sentBox');
-            }
+            });
+            await batch.commit();
+            alert("已送出！");
+            showPage('sentBox');
+        }
+
+        function showPage(p) {
+            document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(p + 'Page').style.display = 'block';
+            document.getElementById('btn-' + p).classList.add('active');
         }
 
         function startListenMessages() {
             db.collection("secret_messages").where("receiver_id", "==", me.id).onSnapshot(snap => {
-                const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
-                updateBadge(unreadCount);
                 renderList(snap, 'receiveList', 'receive');
             });
-            db.collection("secret_messages").where("sender_id", "==", me.id).onSnapshot(snap => {
-                renderList(snap, 'sentList', 'sent');
-            });
-            if (me.role === 'teacher' || me.role === 'admin') {
-                db.collection("secret_messages").orderBy("time", "desc").onSnapshot(snap => {
-                    renderList(snap, 'adminList', 'admin');
-                });
-            }
-        }
-
-        function updateBadge(count) {
-            const badge = document.getElementById('unreadBadge');
-            badge.innerText = count;
-            badge.style.display = count > 0 ? 'flex' : 'none';
         }
 
         function renderList(snap, elementId, type) {
             const box = document.getElementById(elementId);
-            box.innerHTML = snap.empty ? "<p style='color:#ccc;text-align:center;padding:20px;'>尚無資料</p>" : "";
-            let docs = [];
-            snap.forEach(doc => docs.push({docId: doc.id, ...doc.data()}));
-            docs.sort((a, b) => (b.time?.seconds || 0) - (a.time?.seconds || 0));
-            docs.forEach(d => {
-                const t = d.time ? d.time.toDate().toLocaleString() : "傳送中...";
+            box.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
                 const card = document.createElement('div');
-                card.className = 'card' + (type === 'receive' && !d.read ? ' unread' : '');
-                let header = "";
-                if(type === 'admin') header = `<div class="admin-tag">來自: ${escapeHTML(d.sender_id)} ➔ 對象: ${escapeHTML(d.receiver_id)}</div>`;
-                if(type === 'sent') header = `<div class="msg-info" style="color:var(--p)">寄給座號：${escapeHTML(d.receiver_id)} ${d.read ? ' (已讀)' : ' (未讀)'}</div>`;
-                let actionButtons = "";
-                if(type === 'receive') {
-                    actionButtons = `<div class="action-btns">`;
-                    if(!d.read) actionButtons += `<button class="btn-confirm" onclick="markRead('${d.docId}')">確認讀信</button>`;
-                    if(!d.reply) actionButtons += `<button onclick="replyMsg('${d.docId}')">回覆對方</button>`;
-                    actionButtons += `</div>`;
-                }
-                card.innerHTML = `
-                    ${header}
-                    <div class="msg-info">📅 ${t}</div>
-                    <div style="font-weight:bold; color:#333; white-space: pre-wrap;">${escapeHTML(d.content)}</div>
-                    ${d.reply ? `<div class="reply-area"><b>回覆內容：</b><br>${escapeHTML(d.reply)}</div>` : ""}
-                    ${actionButtons}
-                `;
+                card.className = 'card';
+                card.innerHTML = `<div class="msg-info">座號: ${d.sender_id}</div><div>${escapeHTML(d.content)}</div>`;
                 box.appendChild(card);
             });
-        }
-
-        async function markRead(docId) {
-            await db.collection("secret_messages").doc(docId).update({ read: true });
-        }
-
-        async function replyMsg(docId) {
-            const r = prompt("請輸入回覆內容：");
-            if(r) { await db.collection("secret_messages").doc(docId).update({ reply: r, read: true }); }
         }
     </script>
 </body>
