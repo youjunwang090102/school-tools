@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>作業提醒系統 v3.1.1</title>
+    <title>作業提醒系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <style>
@@ -52,7 +52,7 @@
 
 <div class="container">
     <div id="loginCard" class="card">
-        <h2 style="text-align: center;">📝 作業管理系統 v3.1</h2>
+        <h2 style="text-align: center;">📝 作業管理系統 v3.2</h2>
         <input type="number" id="stuId" placeholder="座號 (例如: 5)">
         <input type="password" id="stuPw" placeholder="密碼">
         <button onclick="doLogin()">登入系統</button>
@@ -92,7 +92,7 @@
 </div>
 
 <script>
-    // Firebase 初始化 (請務必在 Google Cloud 設定網站限制，以免 apiKey 被盜用)
+    // Firebase 初始化 
     const firebaseConfig = { 
         apiKey: "AIzaSyCJavnjgSkyTzhoT5g9Retmyg005-gbld0",
         authDomain: "vote-6668.firebaseapp.com",
@@ -110,18 +110,53 @@
 
     let me = null;
 
+    // --- 安全防護工具 (與主系統同步) ---
+    async function hashPassword(password) {
+        try {
+            if (!crypto || !crypto.subtle) return password;
+            const msgBuffer = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) { return password; }
+    }
+
+    function escapeHTML(str) {
+        return String(str||'').replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag] || tag));
+    }
+
+    // --- 同步升級的登入邏輯 ---
     async function doLogin() {
         const idInput = document.getElementById('stuId').value;
         const pwInput = document.getElementById('stuPw').value;
         if(!idInput || !pwInput) return alert("請輸入座號與密碼");
 
         const id = idInput.padStart(2, '0'); 
+        const hashedInputPw = await hashPassword(pwInput); // 🔐 取得輸入密碼的加密字串
+
         try {
             const doc = await db.collection("students").doc(id).get();
             if (doc.exists) {
                 const data = doc.data();
-                if (data.password === pwInput) {
+                let isMatch = false;
+
+                // 🛡️ 雙重比對與阻擋 Pass-the-Hash
+                const isDbPasswordHashed = (data.password && data.password.length === 64);
+
+                if (isDbPasswordHashed) {
+                    if (data.password === hashedInputPw) isMatch = true;
+                } else {
+                    if (data.password === pwInput) {
+                        isMatch = true;
+                        // 背景升級加密
+                        await db.collection("students").doc(id).update({ password: hashedInputPw });
+                    }
+                }
+
+                if (isMatch) {
                     if (data.status === "active") {
+                        if (data.forceReset === true) {
+                            alert("⚠️ 溫馨提醒：您目前使用的是預設密碼，為了帳號安全，請撥空前往【班級打掃管理系統】進行密碼修改！");
+                        }
                         me = { id, ...data };
                         renderMain();
                     } else {
@@ -135,34 +170,33 @@
             }
         } catch (e) { 
             console.error(e);
-            alert("連線失敗"); 
+            alert("連線失敗：" + e.message); 
         }
     }
 
     function renderMain() {
         document.getElementById('loginCard').style.display = 'none';
         document.getElementById('mainView').style.display = 'block';
-        document.getElementById('helloName').innerText = `👋 歡迎，${me.name}`;
+        document.getElementById('helloName').innerText = `👋 歡迎，${escapeHTML(me.name)}`;
         
         const roles = me.subject_roles || [];
         document.getElementById('roleList').innerHTML = roles.length > 0 ? 
-            roles.map(r => `<span class="role-badge">${r}</span>`).join('') : `<span class="role-badge">📖 一般學生</span>`;
+            roles.map(r => `<span class="role-badge">${escapeHTML(r)}</span>`).join('') : `<span class="role-badge">📖 一般學生</span>`;
 
         const isAdmin = (me.role === 'admin' || me.role === 'teacher');
         if (isAdmin) {
             document.getElementById('adminBox').style.display = 'block';
-            loadStudentManager(); // 管理員登入時執行一次抓取
+            loadStudentManager(); 
         }
 
         if (isAdmin || roles.length > 0) {
             document.getElementById('managerBox').style.display = 'block';
             const canPost = isAdmin ? ALL_ROLES : roles;
-            document.getElementById('postSubjectSelector').innerHTML = canPost.map(r => `<option value="${r}">${r}</option>`).join('');
+            document.getElementById('postSubjectSelector').innerHTML = canPost.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('');
         }
         loadHomework();
     }
 
-    // --- 安全優化：改用 get() 避免編輯時觸發無限讀取 ---
     async function loadStudentManager() {
         try {
             const snap = await db.collection("students").get();
@@ -173,14 +207,14 @@
             sortedDocs.forEach(doc => {
                 const d = doc.data();
                 const currentRoles = d.subject_roles || [];
-                const roleBadges = currentRoles.map(r => `<span class="mini-role-tag">${r}</span>`).join('');
+                const roleBadges = currentRoles.map(r => `<span class="mini-role-tag">${escapeHTML(r)}</span>`).join('');
                 
                 const group = document.createElement('div');
                 group.className = 'stu-group';
                 group.setAttribute('data-search', `${doc.id} ${d.name}`);
                 group.innerHTML = `
                     <div class="stu-row" onclick="this.parentElement.classList.toggle('active')">
-                        <span><strong>${parseInt(doc.id)}號</strong> ${d.name} ${roleBadges}</span>
+                        <span><strong>${parseInt(doc.id)}號</strong> ${escapeHTML(d.name)} ${roleBadges}</span>
                         <span style="font-size:0.75rem; color:var(--p);">編輯 ▾</span>
                     </div>
                     <div class="role-editor">
@@ -188,7 +222,7 @@
                             ${ALL_ROLES.map(r => `
                                 <label class="role-option">
                                     <input type="checkbox" ${currentRoles.includes(r) ? 'checked' : ''} 
-                                    onchange="toggleRole('${doc.id}', '${r}', this.checked)"> ${r}
+                                    onchange="toggleRole('${doc.id}', '${escapeHTML(r)}', this.checked)"> ${escapeHTML(r)}
                                 </label>
                             `).join('')}
                         </div>
@@ -210,11 +244,9 @@
         const action = isAdd ? firebase.firestore.FieldValue.arrayUnion(role) : firebase.firestore.FieldValue.arrayRemove(role);
         try {
             await ref.update({ subject_roles: action });
-            // 更新完不需要 reloadStudentManager()，UI 會維持 checkbox 狀態
         } catch (e) { alert("更新權限失敗"); }
     }
 
-    // --- 作業處理邏輯 ---
     async function addHw() {
         const title = document.getElementById('hwTitle').value;
         const date = document.getElementById('hwDate').value;
@@ -229,7 +261,6 @@
         alert("發佈成功！");
     }
 
-    // --- 安全優化：加上時間過濾與數量限制 ---
     function loadHomework() {
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -239,7 +270,6 @@
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const limitStr = thirtyDaysAgo.toISOString().split('T')[0];
 
-        // 使用 where 和 limit 確保即使有幾萬條數據，每次只會讀取最新的 30 條
         db.collection("homework_reminders")
           .where("date", ">=", limitStr)
           .orderBy("date", "asc")
@@ -256,10 +286,10 @@
 
                 const html = `
                     <div class="hw-item ${isExpired ? 'expired' : ''}">
-                        <span class="subject-badge" style="${isExpired ? 'background:#94a3b8' : ''}">${d.subject}</span>
-                        <div class="hw-title">${d.title}</div>
-                        <div class="hw-info">截止日期：${d.date} | 發佈：${d.authorName}</div>
-                        ${isOwner ? `<div class="status-box">📊 已完成: ${d.done_list.length}人 (${d.done_list.join(", ")})</div>` : ''}
+                        <span class="subject-badge" style="${isExpired ? 'background:#94a3b8' : ''}">${escapeHTML(d.subject)}</span>
+                        <div class="hw-title">${escapeHTML(d.title)}</div>
+                        <div class="hw-info">截止日期：${escapeHTML(d.date)} | 發佈：${escapeHTML(d.authorName)}</div>
+                        ${isOwner ? `<div class="status-box">📊 已完成: ${d.done_list.length}人 (${d.done_list.map(id => escapeHTML(id)).join(", ")})</div>` : ''}
                         <div style="display:flex; gap:8px;">
                             <button class="done-btn ${hasDone ? 'already' : ''}" onclick="markDone('${doc.id}', ${hasDone})" style="flex:3;">
                                 ${hasDone ? '✅ 已完成' : '回報完成'}
