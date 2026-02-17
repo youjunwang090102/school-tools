@@ -3,80 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>馬年 3D 發大財 - 2000元旗艦版</title>
+    <title>馬年 3D 發大財 - 168,000 (終極版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a0505; font-family: 'Microsoft JhengHei', sans-serif; }
         
-        /* UI 介面層 */
+        /* === UI 介面 === */
         #ui-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            padding: 20px; box-sizing: border-box; z-index: 10;
         }
-
-        #title {
-            color: #ffd700;
-            font-size: 24px;
-            text-shadow: 0 0 10px #ff0000;
-            margin-top: 50px; /* 避開上傳按鈕 */
-        }
-
+        #title { color: #ffd700; font-size: 28px; text-shadow: 0 0 10px #ff0000; margin-top: 20px; font-weight: bold; }
         #counter-box {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 15px 40px;
-            border-radius: 50px;
-            border: 2px solid #ffd700;
-            margin-bottom: 50px;
-            text-align: center;
+            background: rgba(0, 0, 0, 0.7); padding: 15px 50px; border-radius: 50px;
+            border: 2px solid #ffd700; margin-bottom: 50px; text-align: center;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
-
-        #money-label { color: #aaa; font-size: 14px; }
-        #total-amount {
-            color: #00ff00;
-            font-size: 48px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-        }
-
+        #money-label { color: #ccc; font-size: 14px; letter-spacing: 2px; }
+        #total-amount { color: #00ff00; font-size: 56px; font-weight: bold; font-family: 'Courier New', monospace; }
+        
         #instruction {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 10px 20px;
-            border-radius: 8px;
-            pointer-events: none;
-            transition: opacity 0.5s;
-            z-index: 5;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 30px;
+            pointer-events: none; transition: opacity 0.5s; z-index: 5; font-size: 18px; border: 1px solid #fff;
         }
 
-        /* 上傳按鈕樣式 */
-        #upload-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            pointer-events: auto;
-            background: #ffd700;
-            color: #b30000;
-            border: 2px solid #fff;
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-            transition: transform 0.2s;
-            z-index: 20;
+        /* === 設定工具列 (打包後會被移除) === */
+        #toolbox {
+            position: absolute; top: 20px; left: 20px; width: 280px;
+            background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 10px;
+            pointer-events: auto; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 14px; color: #333;
         }
-        #upload-btn:hover { transform: scale(1.05); }
+        #toolbox h3 { margin: 0 0 10px 0; color: #b30000; border-bottom: 2px solid #ffd700; padding-bottom: 5px; }
+        .btn {
+            display: block; width: 100%; padding: 10px; margin-top: 10px;
+            border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .btn-upload { background: #eee; color: #333; border: 1px solid #ccc; }
+        .btn-upload:hover { background: #ddd; }
+        .btn-save { background: #b30000; color: #ffd700; }
+        .btn-save:hover { background: #d00000; transform: scale(1.02); }
         #file-input { display: none; }
+        #status-msg { margin-top: 8px; font-size: 12px; color: green; min-height: 1.2em; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
@@ -84,8 +54,19 @@
 </head>
 <body>
 
-    <button id="upload-btn" onclick="document.getElementById('file-input').click()">📁 載入鈔票圖片</button>
-    <input type="file" id="file-input" accept="image/*">
+    <div id="toolbox">
+        <h3>🛠️ 設定面板</h3>
+        <div>1. 上傳你的 2000 元圖片：</div>
+        <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">📁 選擇圖片</button>
+        <input type="file" id="file-input" accept="image/*">
+        <div id="status-msg">目前使用：預設圖</div>
+        
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+        
+        <div>2. 滿意後，下載獨立檔案：</div>
+        <button class="btn btn-save" onclick="exportStandalone()">💾 下載單一檔案 (包含圖片)</button>
+        <div style="font-size: 12px; color: #666; margin-top: 5px;">* 下載後的檔案可直接傳給別人</div>
+    </div>
 
     <div id="ui-container">
         <div id="title">馬年行大運 💰 恭喜發財</div>
@@ -98,222 +79,159 @@
     <div id="instruction">點擊紅包打開 👇</div>
 
     <script>
-        // --- 變數設定 ---
+        // === 核心變數 ===
+        // 如果是打包後的檔案，這個變數會被自動填入 Base64 字串
+        const EMBEDDED_IMAGE = ""; 
+
         const TOTAL_AMOUNT = 168000;
         const BILL_VALUE = 2000;
-        const TOTAL_BILLS = TOTAL_AMOUNT / BILL_VALUE; // 84張
+        const TOTAL_BILLS = TOTAL_AMOUNT / BILL_VALUE;
         let currentMoney = 0;
         let isOpened = false;
+        let billMaterial; // 全域材質變數
+        let currentBase64 = ""; // 暫存使用者上傳的圖片編碼
 
-        // --- 1. 場景初始化 ---
+        // --- 1. 初始化場景 ---
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x1a0505, 0.02);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 10, 20);
-        
+
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // --- 2. 燈光 ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-
         const dirLight = new THREE.DirectionalLight(0xffd700, 0.8);
         dirLight.position.set(5, 10, 7);
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // --- 3. 材質生成 ---
-        
-        // 紅包材質
+        // --- 2. 材質生成 ---
         function createEnvelopeTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#cc0000';
-            ctx.fillRect(0, 0, 512, 512);
-            for(let i=0; i<1000; i++) {
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
-                ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2);
-            }
-            ctx.font = 'bold 200px "Microsoft JhengHei"';
-            ctx.fillStyle = '#ffd700';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 10;
-            ctx.fillText('馬', 256, 256);
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(20, 20, 472, 472);
-
+            ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 512, 512);
+            for(let i=0; i<1000; i++) { ctx.fillStyle = 'rgba(255, 215, 0, 0.2)'; ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2); }
+            ctx.font = 'bold 200px "Microsoft JhengHei"'; ctx.fillStyle = '#ffd700'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 10; ctx.fillText('馬', 256, 256);
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 10; ctx.strokeRect(20, 20, 472, 472);
             return new THREE.CanvasTexture(canvas);
         }
 
-        // 預設鈔票材質 (紫色 2000 風格)
         function createDefaultBillTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-
-            // 紫色漸層底
             const gradient = ctx.createLinearGradient(0, 0, 512, 0);
-            gradient.addColorStop(0, '#d8bfd8'); // 淡紫
-            gradient.addColorStop(0.5, '#9370db'); // 中紫
-            gradient.addColorStop(1, '#d8bfd8');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 512, 256);
-
-            // 文字
-            ctx.fillStyle = '#4b0082';
-            ctx.font = 'bold 80px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText('2000', 480, 80);
-            ctx.textAlign = 'left';
-            ctx.fillText('貳仟圓', 30, 220);
-            
-            // 衛星天線示意圖 (圓圈)
-            ctx.beginPath();
-            ctx.arc(256, 128, 60, 0, 2 * Math.PI);
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth = 5;
-            ctx.stroke();
-
+            gradient.addColorStop(0, '#d8bfd8'); gradient.addColorStop(0.5, '#9370db'); gradient.addColorStop(1, '#d8bfd8');
+            ctx.fillStyle = gradient; ctx.fillRect(0, 0, 512, 256);
+            ctx.fillStyle = '#4b0082'; ctx.font = 'bold 80px Arial'; ctx.textAlign = 'right'; ctx.fillText('2000', 480, 80);
+            ctx.textAlign = 'left'; ctx.fillText('貳仟圓', 30, 220);
+            ctx.beginPath(); ctx.arc(256, 128, 60, 0, 2 * Math.PI); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 5; ctx.stroke();
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- 4. 建立物體 ---
-
+        // --- 3. 建立物件 ---
         const envelopeGroup = new THREE.Group();
         scene.add(envelopeGroup);
 
-        // 紅包袋身
         const envGeo = new THREE.BoxGeometry(4.2, 6, 0.25);
         const envMat = new THREE.MeshStandardMaterial({ map: createEnvelopeTexture() });
         const envelopeBody = new THREE.Mesh(envGeo, envMat);
         envelopeBody.castShadow = true;
         envelopeGroup.add(envelopeBody);
 
-        // 紅包蓋子
         const flapGroup = new THREE.Group();
         flapGroup.position.set(0, 3, 0.125);
         envelopeGroup.add(flapGroup);
-
         const flapGeo = new THREE.BoxGeometry(4.2, 1.5, 0.1);
         const flapMat = new THREE.MeshStandardMaterial({ color: 0xb30000 });
         const flap = new THREE.Mesh(flapGeo, flapMat);
         flap.position.set(0, -0.75, 0);
         flapGroup.add(flap);
 
-        // 鈔票池
+        // 鈔票設定
         const bills = [];
-        const billGeo = new THREE.PlaneGeometry(3.8, 1.9); // 配合真實鈔票比例
-        // 初始材質使用預設紫色
-        const billMat = new THREE.MeshStandardMaterial({ 
-            map: createDefaultBillTexture(),
+        const billGeo = new THREE.PlaneGeometry(3.8, 1.9);
+        
+        // 決定初始材質：如果有內嵌圖片就用，沒有就用預設
+        let initialMap;
+        if (EMBEDDED_IMAGE && EMBEDDED_IMAGE.length > 100) {
+            const img = new Image();
+            img.src = EMBEDDED_IMAGE;
+            initialMap = new THREE.Texture(img);
+            img.onload = () => { initialMap.needsUpdate = true; };
+            // 如果是打包版，隱藏工具列
+            const tb = document.getElementById('toolbox');
+            if(tb) tb.style.display = 'none';
+        } else {
+            initialMap = createDefaultBillTexture();
+        }
+
+        billMaterial = new THREE.MeshStandardMaterial({ 
+            map: initialMap, 
             side: THREE.DoubleSide,
-            roughness: 0.4
+            roughness: 0.4 
         });
 
         for (let i = 0; i < TOTAL_BILLS; i++) {
-            const bill = new THREE.Mesh(billGeo, billMat);
+            const bill = new THREE.Mesh(billGeo, billMaterial);
             bill.position.set(0, 0, 0); 
             bill.visible = false;
             envelopeGroup.add(bill);
             bills.push(bill);
         }
 
-        // --- 5. 圖片上傳處理邏輯 (關鍵修正) ---
-        const fileInput = document.getElementById('file-input');
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = function() {
-                    const texture = new THREE.Texture(img);
-                    texture.needsUpdate = true;
-                    
-                    // 更新所有鈔票的貼圖
-                    billMat.map = texture;
-                    billMat.needsUpdate = true;
-                    
-                    // 變更按鈕文字提示成功
-                    document.getElementById('upload-btn').innerText = "✅ 圖片已載入！";
-                    setTimeout(() => document.getElementById('upload-btn').innerText = "📁 載入鈔票圖片", 2000);
-                };
-            };
-            reader.readAsDataURL(file);
-        });
-
-        // --- 6. 互動與動畫 ---
+        // --- 4. 互動邏輯 ---
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('click', onMouseClick, false);
-
-        function onMouseClick(event) {
-            // 如果點擊的是 UI 按鈕，不觸發開紅包
-            if (event.target.id === 'upload-btn') return;
-
+        window.addEventListener('click', (event) => {
+            // 防止點到工具列觸發
+            if (event.target.closest('#toolbox') || event.target.closest('button')) return;
+            
             if (isOpened) return;
-
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(envelopeGroup.children, true);
-
-            if (intersects.length > 0) {
-                startAnimation();
-            }
-        }
+            if (raycaster.intersectObjects(envelopeGroup.children, true).length > 0) startAnimation();
+        }, false);
 
         function startAnimation() {
             isOpened = true;
             document.getElementById('instruction').style.opacity = 0;
+            // 隱藏工具列 (如果是編輯模式)
+            const tb = document.getElementById('toolbox');
+            if(tb) tb.style.opacity = 0.2; // 變淡以免干擾
 
-            gsap.to(flapGroup.rotation, {
-                x: -Math.PI + 0.5,
-                duration: 1,
-                ease: "back.out(1.7)"
-            });
-
+            gsap.to(flapGroup.rotation, { x: -Math.PI + 0.5, duration: 1, ease: "back.out(1.7)" });
+            
             bills.forEach((bill, index) => {
                 bill.visible = true;
                 const delay = 0.8 + (index * 0.08); 
-
-                gsap.to(bill.position, {
-                    y: 4, z: 0.5,
-                    duration: 0.5, delay: delay, ease: "power1.out",
-                    onComplete: () => {
-                        // 世界座標轉換模擬：脫離紅包
-                        // 這裡用簡單的位移模擬
-                        gsap.to(bill.position, {
-                            x: (Math.random() - 0.5) * 1.5,
-                            y: -6 + (index * 0.025),
-                            z: 8,
-                            duration: 0.8,
-                            ease: "bounce.out",
-                            onStart: updateCounter
-                        });
-                        gsap.to(bill.rotation, {
-                            x: Math.PI / 2,
-                            z: Math.random() * 0.5 - 0.25,
-                            duration: 0.8, delay: delay
-                        });
-                    }
-                });
+                gsap.to(bill.position, { y: 4, z: 0.5, duration: 0.5, delay: delay, ease: "power1.out", onComplete: () => {
+                    gsap.to(bill.position, { 
+                        x: (Math.random() - 0.5) * 1.5, 
+                        y: -6 + (index * 0.025), 
+                        z: 8, 
+                        duration: 0.8, 
+                        ease: "bounce.out", 
+                        onStart: updateCounter 
+                    });
+                    gsap.to(bill.rotation, { 
+                        x: Math.PI / 2, 
+                        z: Math.random() * 0.5 - 0.25, 
+                        duration: 0.8, 
+                        delay: delay 
+                    });
+                }});
             });
         }
 
@@ -327,21 +245,73 @@
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
-            if (!isOpened) {
-                envelopeGroup.rotation.y += 0.005;
-                envelopeGroup.position.y = Math.sin(Date.now() * 0.002) * 0.5;
-            }
+            if (!isOpened) { envelopeGroup.rotation.y += 0.005; envelopeGroup.position.y = Math.sin(Date.now() * 0.002) * 0.5; }
             renderer.render(scene, camera);
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
 
+        // --- 5. 工具列功能 (上傳與打包) ---
+        
+        // A. 上傳圖片並即時預覽
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                currentBase64 = event.target.result;
+                const img = new Image();
+                img.src = currentBase64;
+                img.onload = function() {
+                    const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    billMaterial.map = texture; // 即時更換場景中的貼圖
+                    billMaterial.needsUpdate = true;
+                    document.getElementById('status-msg').innerText = "✅ 圖片已更新！可開始遊戲或下載";
+                    document.getElementById('status-msg').style.color = "#00aa00";
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // B. 打包並下載功能
+        function exportStandalone() {
+            if (!currentBase64) {
+                if(!confirm("你還沒上傳圖片，確定要下載預設版本嗎？")) return;
+            }
+
+            // 1. 取得當前網頁的 HTML
+            let htmlContent = document.documentElement.outerHTML;
+
+            // 2. 移除工具列 (Toolbox)
+            // 我們使用正規表達式或 DOM 操作來移除 <div id="toolbox">...</div>
+            // 簡單作法：將其 style 改為 display:none，或者直接在字串中取代
+            const toolboxStart = htmlContent.indexOf('<div id="toolbox"');
+            const toolboxEnd = htmlContent.indexOf('</div>', toolboxStart) + 6;
+            // 比較保險的做法是直接注入 CSS 隱藏它，或者在變數中設定標記
+            
+            // 3. 注入 Base64 圖片數據 (Hardcode)
+            // 找到 const EMBEDDED_IMAGE = ""; 並填入數據
+            const searchStr = 'const EMBEDDED_IMAGE = "";';
+            const replaceStr = `const EMBEDDED_IMAGE = "${currentBase64 || ''}";`;
+            
+            if (htmlContent.includes(searchStr)) {
+                htmlContent = htmlContent.replace(searchStr, replaceStr);
+            } else {
+                alert("程式碼結構異常，無法自動注入圖片。");
+                return;
+            }
+
+            // 4. 下載檔案
+            const blob = new Blob([htmlContent], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'RedEnvelope_2000_Final.html'; // 檔名
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
     </script>
 </body>
 </html>
