@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>馬年 3D 發大財 - 168,000</title>
+    <title>馬年 3D 發大財 - 168,000 (真實鈔票版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a0505; font-family: 'Microsoft JhengHei', sans-serif; }
         
@@ -102,25 +102,20 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // --- 3. 材質生成函數 (使用 Canvas 動態繪圖) ---
+        // --- 3. 材質生成函數 ---
         
-        // 生成紅包材質 (紅色帶金馬字)
+        // 生成紅包材質 (紅色帶金馬字) - 維持原樣
         function createEnvelopeTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            // 紅底
             ctx.fillStyle = '#cc0000';
             ctx.fillRect(0, 0, 512, 512);
-            
-            // 金色雜點質感
             for(let i=0; i<1000; i++) {
                 ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
                 ctx.fillRect(Math.random()*512, Math.random()*512, 2, 2);
             }
-
-            // 金字 "馬"
             ctx.font = 'bold 200px "Microsoft JhengHei"';
             ctx.fillStyle = '#ffd700';
             ctx.textAlign = 'center';
@@ -128,8 +123,6 @@
             ctx.shadowColor = "rgba(0,0,0,0.5)";
             ctx.shadowBlur = 10;
             ctx.fillText('馬', 256, 256);
-            
-            // 邊框
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 10;
             ctx.strokeRect(20, 20, 472, 472);
@@ -138,36 +131,9 @@
             return tex;
         }
 
-        // 生成鈔票材質 (藍色 2000元)
-        function createBillTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-
-            // 銀色/藍色底
-            const gradient = ctx.createLinearGradient(0, 0, 256, 128);
-            gradient.addColorStop(0, '#c0c0c0');
-            gradient.addColorStop(0.5, '#aaccff');
-            gradient.addColorStop(1, '#c0c0c0');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 256, 128);
-
-            // 文字
-            ctx.fillStyle = '#224488';
-            ctx.font = 'bold 40px Arial';
-            ctx.fillText('2000', 140, 40);
-            ctx.font = 'bold 20px Arial';
-            ctx.fillText('CENTRAL BANK', 20, 110);
-            
-            // 圓形全息圖
-            ctx.beginPath();
-            ctx.arc(40, 50, 25, 0, 2 * Math.PI);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.fill();
-
-            const tex = new THREE.CanvasTexture(canvas);
-            return tex;
-        }
+        // 載入真實鈔票圖片紋理
+        const textureLoader = new THREE.TextureLoader();
+        const billTexture = textureLoader.load('image_0.png');
 
         // --- 4. 建立物體 (Objects) ---
 
@@ -175,7 +141,7 @@
         scene.add(envelopeGroup);
 
         // A. 紅包袋身
-        const envGeo = new THREE.BoxGeometry(4, 6, 0.2);
+        const envGeo = new THREE.BoxGeometry(4.2, 6, 0.25); // 稍微調大一點以容納鈔票
         const envMat = new THREE.MeshStandardMaterial({ map: createEnvelopeTexture() });
         const envelopeBody = new THREE.Mesh(envGeo, envMat);
         envelopeBody.castShadow = true;
@@ -183,21 +149,24 @@
 
         // B. 紅包蓋子 (Pivot 設在頂部)
         const flapGroup = new THREE.Group();
-        flapGroup.position.set(0, 3, 0.1); // 移到袋身頂部
+        flapGroup.position.set(0, 3, 0.125); // 移到袋身頂部
         envelopeGroup.add(flapGroup);
 
-        const flapGeo = new THREE.BoxGeometry(4, 1.5, 0.1);
+        const flapGeo = new THREE.BoxGeometry(4.2, 1.5, 0.1);
         const flapMat = new THREE.MeshStandardMaterial({ color: 0xb30000 }); // 略深的紅
         const flap = new THREE.Mesh(flapGeo, flapMat);
         flap.position.set(0, -0.75, 0); // 調整幾何中心，讓旋轉軸在頂部
         flapGroup.add(flap);
 
-        // C. 建立鈔票池 (隱藏在紅包裡)
+        // C. 建立鈔票池 (使用真實圖片)
         const bills = [];
-        const billGeo = new THREE.PlaneGeometry(3.6, 1.6);
+        // 根據圖片比例調整幾何尺寸，鈔票約為 16:7
+        const billGeo = new THREE.PlaneGeometry(3.8, 1.7); 
         const billMat = new THREE.MeshStandardMaterial({ 
-            map: createBillTexture(), 
-            side: THREE.DoubleSide 
+            map: billTexture, 
+            side: THREE.DoubleSide,
+            roughness: 0.5,
+            metalness: 0.1
         });
 
         for (let i = 0; i < TOTAL_BILLS; i++) {
@@ -250,9 +219,6 @@
             // 2. 鈔票依序飛出
             bills.forEach((bill, index) => {
                 bill.visible = true;
-                
-                // 將鈔票從群組轉移到世界座標 (這樣它掉出來後不會跟著紅包轉)
-                // 這裡簡化處理：直接用世界座標動畫，視覺上脫離
                 
                 // 設定延遲：越後面的越晚出來
                 const delay = 0.8 + (index * 0.08); 
