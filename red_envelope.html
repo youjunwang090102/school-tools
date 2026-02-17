@@ -2,65 +2,50 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <title>馬年紅包 - 快速打包工具</title>
+    <style>
+        body { font-family: 'Microsoft JhengHei', sans-serif; background: #222; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .box { border: 2px dashed #ffd700; padding: 50px; border-radius: 20px; background: #333; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        h1 { color: #ffd700; margin-bottom: 10px; }
+        p { color: #ccc; margin-bottom: 30px; }
+        button { padding: 20px 40px; font-size: 20px; cursor: pointer; background: #b30000; color: #fff; border: 2px solid #ffd700; border-radius: 10px; font-weight: bold; transition: 0.2s; }
+        button:hover { transform: scale(1.05); background: #d00000; }
+        #status { margin-top: 20px; color: #0f0; font-weight: bold; min-height: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h1>🧧 馬年紅包 - 最終打包機 🧧</h1>
+        <p>請選取你的「2000元圖片」，我會幫你把圖片寫入程式碼並產生檔案。</p>
+        
+        <input type="file" id="upload" accept="image/*" style="display:none">
+        <button onclick="document.getElementById('upload').click()">📁 選取圖片並下載 HTML</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <textarea id="template" style="display:none">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>馬年 3D 發大財 - 穩健版</title>
+    <title>馬年 3D 發大財 - 168,000</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a0505; font-family: 'Microsoft JhengHei', sans-serif; }
-        
-        /* UI 介面 */
-        #ui-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-            padding: 20px; box-sizing: border-box; z-index: 10;
-        }
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 20px; box-sizing: border-box; }
         #title { color: #ffd700; font-size: 28px; text-shadow: 0 0 10px #ff0000; margin-top: 20px; font-weight: bold; }
-        #counter-box {
-            background: rgba(0, 0, 0, 0.7); padding: 15px 50px; border-radius: 50px;
-            border: 2px solid #ffd700; margin-bottom: 50px; text-align: center;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-        }
+        #counter-box { background: rgba(0, 0, 0, 0.7); padding: 15px 50px; border-radius: 50px; border: 2px solid #ffd700; margin-bottom: 50px; text-align: center; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
         #money-label { color: #ccc; font-size: 14px; letter-spacing: 2px; }
         #total-amount { color: #00ff00; font-size: 56px; font-weight: bold; font-family: 'Courier New', monospace; }
-        
-        #instruction {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: white; background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 30px;
-            pointer-events: none; transition: opacity 0.5s; z-index: 5; font-size: 18px; border: 1px solid #fff;
-        }
-
-        /* 設定面板 */
-        #toolbox {
-            position: absolute; top: 20px; left: 20px; width: 260px;
-            background: #fff; padding: 15px; border-radius: 8px;
-            pointer-events: auto; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            font-size: 14px; color: #333;
-        }
-        #toolbox h3 { margin: 0 0 10px 0; color: #b30000; border-bottom: 2px solid #ffd700; }
-        .btn {
-            display: block; width: 100%; padding: 10px; margin-top: 8px;
-            border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
-        }
-        .btn-upload { background: #eee; border: 1px solid #ccc; }
-        .btn-save { background: #b30000; color: #ffd700; }
-        #file-input { display: none; }
-        #status-msg { margin-top: 8px; font-size: 13px; font-weight: bold; color: #666; }
+        #instruction { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 30px; pointer-events: none; transition: opacity 0.5s; z-index: 5; font-size: 18px; border: 1px solid #fff; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-
-    <div id="toolbox">
-        <h3>🧧 設定面板</h3>
-        <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">📁 1. 上傳鈔票圖</button>
-        <input type="file" id="file-input" accept="image/*">
-        <div id="status-msg">等待圖片...</div>
-        <hr style="margin: 10px 0;">
-        <button class="btn btn-save" onclick="exportStandalone()">💾 2. 下載完成檔</button>
-    </div>
-
     <div id="ui-container">
         <div id="title">馬年行大運 💰 恭喜發財</div>
         <div id="counter-box">
@@ -68,23 +53,18 @@
             <div id="total-amount">0</div>
         </div>
     </div>
-    
     <div id="instruction">點擊紅包打開 👇</div>
-
     <script>
-        // === 內嵌圖片區 (下載後會自動填入) ===
-        const EMBEDDED_IMAGE = ""; 
+        // === 你的圖片被寫在這裡 ===
+        const EMBEDDED_IMAGE = "{{IMAGE_DATA}}";
 
-        // === 遊戲變數 ===
         const TOTAL_AMOUNT = 168000;
         const BILL_VALUE = 2000;
         const TOTAL_BILLS = TOTAL_AMOUNT / BILL_VALUE;
         let currentMoney = 0;
         let isOpened = false;
-        let billMaterial; 
-        let currentBase64 = "";
+        let billMaterial;
 
-        // === 1. 初始化 ===
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x1a0505, 0.02);
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -100,7 +80,6 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // === 2. 材質 ===
         function createEnvelopeTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
@@ -113,27 +92,12 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        function createDefaultBillTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#9370db'; ctx.fillRect(0, 0, 512, 256);
-            ctx.fillStyle = '#4b0082'; ctx.font = 'bold 80px Arial'; ctx.textAlign = 'right'; ctx.fillText('2000', 480, 80);
-            ctx.textAlign = 'left'; ctx.fillText('預設圖', 30, 220);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // === 3. 物件 ===
         const envelopeGroup = new THREE.Group();
         scene.add(envelopeGroup);
-
-        // 紅包本體
         const envMat = new THREE.MeshStandardMaterial({ map: createEnvelopeTexture() });
         const envelopeBody = new THREE.Mesh(new THREE.BoxGeometry(4.2, 6, 0.25), envMat);
         envelopeBody.castShadow = true;
         envelopeGroup.add(envelopeBody);
-
-        // 紅包蓋
         const flapGroup = new THREE.Group();
         flapGroup.position.set(0, 3, 0.125);
         envelopeGroup.add(flapGroup);
@@ -141,13 +105,12 @@
         flap.position.set(0, -0.75, 0);
         flapGroup.add(flap);
 
-        // 鈔票
         const bills = [];
-        const billGeo = new THREE.PlaneGeometry(3.8, 1.9); // 2:1 比例
+        const billGeo = new THREE.PlaneGeometry(3.8, 1.9);
         billMaterial = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
 
-        // 初始化材質 (檢查是否有內嵌圖片)
-        if (EMBEDDED_IMAGE && EMBEDDED_IMAGE.length > 50) {
+        // === 圖片載入邏輯 ===
+        if (EMBEDDED_IMAGE.length > 50) {
             const img = new Image();
             img.src = EMBEDDED_IMAGE;
             img.onload = function() {
@@ -155,12 +118,7 @@
                 tex.needsUpdate = true;
                 billMaterial.map = tex;
                 billMaterial.needsUpdate = true;
-                // 隱藏工具列
-                const tb = document.getElementById('toolbox');
-                if(tb) tb.style.display = 'none';
             };
-        } else {
-            billMaterial.map = createDefaultBillTexture();
         }
 
         for (let i = 0; i < TOTAL_BILLS; i++) {
@@ -170,84 +128,12 @@
             bills.push(bill);
         }
 
-        // === 4. 圖片上傳邏輯 (最穩定的 Native DOM 方式) ===
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const statusMsg = document.getElementById('status-msg');
-            statusMsg.innerText = "⏳ 讀取中...";
-            statusMsg.style.color = "blue";
-
-            const reader = new FileReader();
-            
-            // 讀取完成的回調
-            reader.onload = function(event) {
-                const result = event.target.result; // Base64 字串
-                
-                // 創建一個原生 Image 物件來驗證圖片
-                const imageElement = new Image();
-                imageElement.src = result;
-
-                imageElement.onload = function() {
-                    // 1. 圖片載入成功，建立 Texture
-                    const newTexture = new THREE.Texture(imageElement);
-                    newTexture.needsUpdate = true; // 重要：告訴 GPU 更新
-
-                    // 2. 更新材質
-                    billMaterial.map = newTexture;
-                    billMaterial.needsUpdate = true;
-                    
-                    // 3. 儲存 Base64 供下載用
-                    currentBase64 = result;
-
-                    statusMsg.innerText = "✅ 成功換圖！";
-                    statusMsg.style.color = "green";
-                };
-
-                imageElement.onerror = function() {
-                    alert("❌ 圖片格式錯誤，瀏覽器無法解析。請試試看別張圖片 (JPG/PNG)。");
-                    statusMsg.innerText = "❌ 失敗";
-                    statusMsg.style.color = "red";
-                };
-            };
-
-            reader.onerror = function() {
-                alert("讀取檔案失敗。");
-            };
-
-            reader.readAsDataURL(file);
-        });
-
-        // === 5. 下載功能 ===
-        function exportStandalone() {
-            if (!currentBase64 && !confirm("未上傳圖片，要下載預設版嗎？")) return;
-
-            let html = document.documentElement.outerHTML;
-            // 替換變數
-            const search = 'const EMBEDDED_IMAGE = "";';
-            const replace = `const EMBEDDED_IMAGE = "${currentBase64}";`;
-            html = html.replace(search, replace);
-            // 隱藏工具列
-            html = html.replace('</style>', '#toolbox { display: none !important; } </style>');
-
-            const blob = new Blob([html], {type: 'text/html'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'RedEnvelope_Ready.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        // === 6. 動畫與控制 ===
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
-            if (event.target.closest('#toolbox') || event.target.closest('button')) return;
             if (isOpened) return;
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -258,8 +144,6 @@
         function startAnimation() {
             isOpened = true;
             document.getElementById('instruction').style.opacity = 0;
-            const tb = document.getElementById('toolbox'); if(tb) tb.style.opacity = 0.2;
-
             gsap.to(flapGroup.rotation, { x: -Math.PI + 0.5, duration: 1, ease: "back.out(1.7)" });
             bills.forEach((bill, index) => {
                 bill.visible = true;
@@ -270,13 +154,11 @@
                 }});
             });
         }
-
         function updateCounter() {
             currentMoney += BILL_VALUE;
             document.getElementById('total-amount').innerText = currentMoney.toLocaleString();
             gsap.fromTo(document.getElementById('total-amount'), {scale: 1.3}, {scale: 1, duration: 0.1});
         }
-
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -285,6 +167,42 @@
         }
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
+    </script>
+</body>
+</html>
+    </textarea>
+
+    <script>
+        document.getElementById('upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('status').innerText = "⏳ 處理中...";
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64String = event.target.result;
+                
+                // 讀取隱藏的模板
+                let template = document.getElementById('template').value;
+                
+                // 替換圖片佔位符
+                const finalHtml = template.replace('{{IMAGE_DATA}}', base64String);
+
+                // 產生下載
+                const blob = new Blob([finalHtml], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Final_Game.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                document.getElementById('status').innerText = "✅ 成功！檔案已下載";
+            };
+            reader.readAsDataURL(file);
+        });
     </script>
 </body>
 </html>
