@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>馬年 3D 發大財 - 168,000 (終極版)</title>
+    <title>馬年 3D 發大財 - 168,000 (修復版)</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a0505; font-family: 'Microsoft JhengHei', sans-serif; }
         
@@ -46,7 +46,7 @@
         .btn-save { background: #b30000; color: #ffd700; }
         .btn-save:hover { background: #d00000; transform: scale(1.02); }
         #file-input { display: none; }
-        #status-msg { margin-top: 8px; font-size: 12px; color: green; min-height: 1.2em; }
+        #status-msg { margin-top: 8px; font-size: 13px; font-weight: bold; color: #b30000; min-height: 1.2em; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
@@ -59,7 +59,7 @@
         <div>1. 上傳你的 2000 元圖片：</div>
         <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">📁 選擇圖片</button>
         <input type="file" id="file-input" accept="image/*">
-        <div id="status-msg">目前使用：預設圖</div>
+        <div id="status-msg">等待上傳...</div>
         
         <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
         
@@ -80,7 +80,6 @@
 
     <script>
         // === 核心變數 ===
-        // 如果是打包後的檔案，這個變數會被自動填入 Base64 字串
         const EMBEDDED_IMAGE = ""; 
 
         const TOTAL_AMOUNT = 168000;
@@ -159,16 +158,13 @@
         const bills = [];
         const billGeo = new THREE.PlaneGeometry(3.8, 1.9);
         
-        // 決定初始材質：如果有內嵌圖片就用，沒有就用預設
         let initialMap;
         if (EMBEDDED_IMAGE && EMBEDDED_IMAGE.length > 100) {
-            const img = new Image();
-            img.src = EMBEDDED_IMAGE;
-            initialMap = new THREE.Texture(img);
-            img.onload = () => { initialMap.needsUpdate = true; };
-            // 如果是打包版，隱藏工具列
+            // 如果代碼裡已經寫死圖片 (下載後的情況)
+            const loader = new THREE.TextureLoader();
+            initialMap = loader.load(EMBEDDED_IMAGE);
             const tb = document.getElementById('toolbox');
-            if(tb) tb.style.display = 'none';
+            if(tb) tb.style.display = 'none'; // 隱藏工具列
         } else {
             initialMap = createDefaultBillTexture();
         }
@@ -176,7 +172,8 @@
         billMaterial = new THREE.MeshStandardMaterial({ 
             map: initialMap, 
             side: THREE.DoubleSide,
-            roughness: 0.4 
+            roughness: 0.4,
+            metalness: 0.1
         });
 
         for (let i = 0; i < TOTAL_BILLS; i++) {
@@ -194,9 +191,7 @@
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
-            // 防止點到工具列觸發
             if (event.target.closest('#toolbox') || event.target.closest('button')) return;
-            
             if (isOpened) return;
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -207,9 +202,8 @@
         function startAnimation() {
             isOpened = true;
             document.getElementById('instruction').style.opacity = 0;
-            // 隱藏工具列 (如果是編輯模式)
             const tb = document.getElementById('toolbox');
-            if(tb) tb.style.opacity = 0.2; // 變淡以免干擾
+            if(tb) tb.style.opacity = 0.2; 
 
             gsap.to(flapGroup.rotation, { x: -Math.PI + 0.5, duration: 1, ease: "back.out(1.7)" });
             
@@ -251,26 +245,44 @@
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
 
-        // --- 5. 工具列功能 (上傳與打包) ---
+        // --- 5. 修復後的圖片上傳邏輯 ---
         
-        // A. 上傳圖片並即時預覽
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            const statusMsg = document.getElementById('status-msg');
+            statusMsg.innerText = "⏳ 讀取圖片中...";
+            statusMsg.style.color = "#b30000";
+
             const reader = new FileReader();
+            
             reader.onload = function(event) {
                 currentBase64 = event.target.result;
-                const img = new Image();
-                img.src = currentBase64;
-                img.onload = function() {
-                    const texture = new THREE.Texture(img);
-                    texture.needsUpdate = true;
-                    billMaterial.map = texture; // 即時更換場景中的貼圖
+                
+                // 使用 TextureLoader 確保圖片載入完成才更新
+                const loader = new THREE.TextureLoader();
+                
+                loader.load(currentBase64, function(newTexture) {
+                    // 成功載入後的回調函數
+                    
+                    // 1. 更新材質貼圖
+                    billMaterial.map = newTexture;
+                    
+                    // 2. 重要：強制更新材質旗標
                     billMaterial.needsUpdate = true;
-                    document.getElementById('status-msg').innerText = "✅ 圖片已更新！可開始遊戲或下載";
-                    document.getElementById('status-msg').style.color = "#00aa00";
-                };
+                    billMaterial.map.needsUpdate = true;
+
+                    statusMsg.innerText = "✅ 圖片已更新！";
+                    statusMsg.style.color = "green";
+                    
+                }, undefined, function(err) {
+                    statusMsg.innerText = "❌ 圖片載入失敗";
+                    console.error(err);
+                });
             };
+            
+            // 開始讀取
             reader.readAsDataURL(file);
         });
 
@@ -280,34 +292,31 @@
                 if(!confirm("你還沒上傳圖片，確定要下載預設版本嗎？")) return;
             }
 
-            // 1. 取得當前網頁的 HTML
             let htmlContent = document.documentElement.outerHTML;
-
-            // 2. 移除工具列 (Toolbox)
-            // 我們使用正規表達式或 DOM 操作來移除 <div id="toolbox">...</div>
-            // 簡單作法：將其 style 改為 display:none，或者直接在字串中取代
             const toolboxStart = htmlContent.indexOf('<div id="toolbox"');
             const toolboxEnd = htmlContent.indexOf('</div>', toolboxStart) + 6;
-            // 比較保險的做法是直接注入 CSS 隱藏它，或者在變數中設定標記
             
-            // 3. 注入 Base64 圖片數據 (Hardcode)
-            // 找到 const EMBEDDED_IMAGE = ""; 並填入數據
+            // 替換佔位符
             const searchStr = 'const EMBEDDED_IMAGE = "";';
             const replaceStr = `const EMBEDDED_IMAGE = "${currentBase64 || ''}";`;
             
             if (htmlContent.includes(searchStr)) {
                 htmlContent = htmlContent.replace(searchStr, replaceStr);
+                
+                // 簡單移除工具列 UI 代碼，讓下載版更乾淨
+                // 注意：這裡如果不移除，下載版還是會有工具列，但我們可以透過 CSS 隱藏
+                // 為了保險，我們直接在下載版中注入一段 CSS 來隱藏它
+                htmlContent = htmlContent.replace('</style>', '#toolbox { display: none !important; } </style>');
             } else {
                 alert("程式碼結構異常，無法自動注入圖片。");
                 return;
             }
 
-            // 4. 下載檔案
             const blob = new Blob([htmlContent], {type: 'text/html'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'RedEnvelope_2000_Final.html'; // 檔名
+            a.download = 'RedEnvelope_2000_Final.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
